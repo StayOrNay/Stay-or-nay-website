@@ -4,44 +4,37 @@ import { mapboxgl } from '../lib/mapbox';
 import { BALI, formatCoord } from './geo';
 import { baliLightPreset } from './daynight';
 
-// --- Timeline (ms) — three beats driven by one continuous rAF loop (no
-// separate Mapbox animations chained together, so there's still no visible
-// cut): a static pre-roll so the globe is actually loaded before anything
-// moves, then a full-Earth-view spin, then a quick zoom into Bali. --------
-const PRE_DELAY_MS = 1000; // hold still so tiles/style have a moment to load
-const SPIN_MS = 2000; // full-Earth-view spin
-const ZOOM_MS = 1100; // quick zoom into Bali — noticeably shorter than the spin
+// --- Timeline (ms) — ONE continuous eased flight, no delay and no phase
+// boundaries at all: a single curve carries center/zoom from the spin's
+// starting point all the way to landing on Bali. No phases means nothing
+// for a seam to happen between — this is what makes it smooth. ------------
+const FLIGHT_MS = 3100;
 const LABEL_DELAY_MS = 350;
 const FADE_MS = 500;
 
 const SPIN_ZOOM = 1.5;
-const SPIN_LNG_DELTA = 1080; // three full revolutions in SPIN_MS — a lot faster
+const SPIN_LNG_DELTA = 1080; // three full revolutions — a lot faster, unmistakably spinning
 const START_CENTER = [BALI.lon - SPIN_LNG_DELTA, 12];
 const ISLAND_ZOOM = 7.6;
 
-// The spin covers most of the distance to Bali at a constant full-Earth
-// zoom; the zoom-in beat covers the last stretch plus the entire zoom/pitch
-// change, so the "quick zoom" reads as a distinct, fast final move.
-const SPIN_COVERS = 0.9;
-const SPIN_END_CENTER = [
-  START_CENTER[0] + (BALI.lon - START_CENTER[0]) * SPIN_COVERS,
-  START_CENTER[1] + (BALI.lat - START_CENTER[1]) * SPIN_COVERS,
-];
-
 const PITCH_PEAK = 48;
+const PITCH_RISE_AT = 0.18; // fraction of FLIGHT_MS pitch starts rising into 3D
+const PITCH_FLAT_BY = 0.82; // fraction by which pitch is back to flat (2D)
 
+// Ease-out: maximum velocity right at the start (the fast spin), smoothly
+// decelerating all the way into the landing — one curve, no hand-off.
 function easeOutQuint(t) {
   return 1 - Math.pow(1 - t, 5);
 }
 
-// Pitch rises into a 3D tilt early in the zoom-in beat, then eases back to
-// flat (2D) before that beat ends, so it's clearly "landed" rather than
-// still tilting when it settles on Bali. `t` is local progress [0,1] within
-// the zoom-in beat only — flat during the pre-roll and the spin.
-function zoomInPitchProgress(t) {
-  const flatBy = 0.8;
-  if (t >= flatBy) return 0;
-  return Math.sin(Math.PI * Math.min(t / flatBy, 1));
+// 0 -> rises -> peaks -> falls -> 0, confined to [PITCH_RISE_AT, PITCH_FLAT_BY]
+// and flat outside it. Driven off raw (linear) time, not the eased position
+// progress, so the tilt reads as a smooth, independent temporal arc: flat
+// while spinning, 3D while approaching, flat (2D) again once landed.
+function pitchProgress(t) {
+  if (t <= PITCH_RISE_AT || t >= PITCH_FLAT_BY) return 0;
+  const local = (t - PITCH_RISE_AT) / (PITCH_FLAT_BY - PITCH_RISE_AT);
+  return Math.sin(Math.PI * local);
 }
 
 function gibsCloudUrl() {
@@ -54,12 +47,11 @@ function gibsCloudUrl() {
  * Cinematic globe splash: real photoreal satellite imagery via Mapbox's
  * Standard Satellite style, native `globe` projection, real local-time
  * day/night lighting. The whole sequence is one continuous, hand-driven
- * flight (a single requestAnimationFrame loop calling jumpTo every frame)
- * rather than separate Mapbox animations stitched together — there's no
- * visible cut between beats, only a change in rate of motion: (1) a brief
- * static hold so the globe is actually loaded before anything moves, (2) a
- * steady full-Earth-view spin, (3) a quick ease-out zoom into Bali with
- * pitch rising into a 3D tilt then flattening back to 2D as it lands.
+ * flight (a single requestAnimationFrame loop calling jumpTo every frame,
+ * never separate Mapbox animations stitched together) — no delay, no
+ * phases, no seams: one ease-out curve carries center/zoom/bearing from
+ * the fast spinning start all the way to landing on Bali, while pitch
+ * rises into a 3D tilt mid-flight and flattens back to 2D as it lands.
  * Config properties (lightPreset) are set on 'style.load' per Mapbox's
  * docs. A light NASA GIBS cloud pass sits on top as a bonus layer — its
  * failure never blocks the intro.
@@ -159,54 +151,36 @@ export function GlobeIntro({ onComplete }) {
 
     // One continuous, hand-rolled flight (a single rAF loop calling jumpTo
     // every frame) — never two separate Mapbox animations stitched
-    // together, so there's no visible cut between beats. The loop just
-    // changes behavior by elapsed time: hold still, then spin, then zoom in.
+    // together, so there's nothing for a seam to happen between. Position,
+    // zoom and bearing all ride the same eased curve from start to finish;
+    // pitch rises into 3D and flattens back to 2D on its own independent
+    // (but still continuous) arc layered on top.
     const runFlight = () => {
       // Anchor elapsed time to the FIRST rendered frame, not to the instant
       // this function was called. On mobile, the gap between "map
       // constructed" and "browser actually paints a frame" can be a full
       // second or more (slower JS engines, WebGL/shader compilation, style
       // parsing) — if startTime were captured here, that gap would eat
-      // straight into PRE_DELAY_MS/SPIN_MS before the loop ever ticks once,
-      // and the spin could be entirely skipped over (or shortened to
-      // nothing) by the time the first frame actually renders. This is the
-      // mobile-specific bug: desktop's faster init made the gap negligible.
+      // straight into FLIGHT_MS before the loop ever ticks once. Anchoring
+      // to the first tick's own timestamp means the full flight duration is
+      // always available no matter how slow the device was to get going.
       let startTime = null;
 
       const tick = (now) => {
         if (skipRef.current) return;
         if (startTime === null) startTime = now;
         const elapsed = now - startTime;
+        const tRaw = Math.min(elapsed / FLIGHT_MS, 1);
+        const t = easeOutQuint(tRaw);
 
-        if (elapsed < PRE_DELAY_MS) {
-          // Hold on the static full-Earth view — gives the style/tiles a
-          // moment to actually load before any motion starts, so we're
-          // never visibly spinning a half-loaded globe.
-          rafId = requestAnimationFrame(tick);
-          return;
-        }
-
-        if (elapsed < PRE_DELAY_MS + SPIN_MS) {
-          // Spin: constant full-Earth zoom, steady rotation speed.
-          const tSpin = (elapsed - PRE_DELAY_MS) / SPIN_MS;
-          const lng = START_CENTER[0] + (SPIN_END_CENTER[0] - START_CENTER[0]) * tSpin;
-          const lat = START_CENTER[1] + (SPIN_END_CENTER[1] - START_CENTER[1]) * tSpin;
-          map.jumpTo({ center: [lng, lat], zoom: SPIN_ZOOM, pitch: 0, bearing: 0 });
-          rafId = requestAnimationFrame(tick);
-          return;
-        }
-
-        const tZoomRaw = Math.min((elapsed - PRE_DELAY_MS - SPIN_MS) / ZOOM_MS, 1);
-        const tZoom = easeOutQuint(tZoomRaw);
-
-        const lng = SPIN_END_CENTER[0] + (BALI.lon - SPIN_END_CENTER[0]) * tZoom;
-        const lat = SPIN_END_CENTER[1] + (BALI.lat - SPIN_END_CENTER[1]) * tZoom;
-        const zoom = SPIN_ZOOM + (ISLAND_ZOOM - SPIN_ZOOM) * tZoom;
-        const pitch = PITCH_PEAK * zoomInPitchProgress(tZoomRaw);
+        const lng = START_CENTER[0] + (BALI.lon - START_CENTER[0]) * t;
+        const lat = START_CENTER[1] + (BALI.lat - START_CENTER[1]) * t;
+        const zoom = SPIN_ZOOM + (ISLAND_ZOOM - SPIN_ZOOM) * t;
+        const pitch = PITCH_PEAK * pitchProgress(tRaw);
 
         map.jumpTo({ center: [lng, lat], zoom, pitch, bearing: 0 });
 
-        if (tZoomRaw < 1) {
+        if (tRaw < 1) {
           rafId = requestAnimationFrame(tick);
           return;
         }
@@ -226,10 +200,42 @@ export function GlobeIntro({ onComplete }) {
       rafId = requestAnimationFrame(tick);
     };
 
-    // Starts immediately — does not wait for 'load' — so the timer-driven
-    // pre-roll is what guarantees load time, rather than gating on a 'load'
-    // event that could fire late or never on a bad connection.
-    runFlight();
+    // Don't start the flight until the container actually has real pixel
+    // dimensions. This is the real mobile bug: on phones the app shell can
+    // still be 0x0 (or the wrong size) for a beat after mount — webfonts
+    // loading, the URL bar settling, `dvh` recalculating — and Mapbox
+    // constructs its WebGL canvas at whatever size the container has *right
+    // then*. If that's 0x0, the canvas renders nothing, and because the
+    // flight is elapsed-time-based (not frame-count-based), by the time the
+    // container resizes to its real size the animation has already silently
+    // played out against an invisible canvas — it looks exactly like "the
+    // globe doesn't spin" even though the code ran. Waiting for a real size
+    // (or forcing one after a short grace period) fixes that at the source.
+    let flightStarted = false;
+    const startFlightWhenReady = () => {
+      if (flightStarted) return;
+      if (container.clientWidth > 0 && container.clientHeight > 0) {
+        flightStarted = true;
+        try {
+          map.resize();
+        } catch (err) {
+          // ignore
+        }
+        runFlight();
+      }
+    };
+    startFlightWhenReady();
+    // Safety net: if the container is somehow still collapsed after a short
+    // grace period (shouldn't happen, but better than the intro hanging
+    // forever), start anyway rather than leave the splash frozen.
+    const flightFallbackId = window.setTimeout(() => {
+      flightStarted = false;
+      startFlightWhenReady();
+      if (!flightStarted) {
+        flightStarted = true;
+        runFlight();
+      }
+    }, 1200);
 
     map.on('style.load', () => {
       try {
@@ -248,7 +254,10 @@ export function GlobeIntro({ onComplete }) {
       console.warn('Mapbox tile error (non-fatal):', e && e.error);
     });
 
-    const resizeObserver = new ResizeObserver(() => map.resize());
+    const resizeObserver = new ResizeObserver(() => {
+      map.resize();
+      startFlightWhenReady();
+    });
     resizeObserver.observe(container);
 
     // Mobile browsers (mainly mobile Safari) hand the page a viewport
@@ -278,6 +287,7 @@ export function GlobeIntro({ onComplete }) {
       if (rafId) cancelAnimationFrame(rafId);
       if (labelTimeoutId) clearTimeout(labelTimeoutId);
       if (fadeTimeoutId) clearTimeout(fadeTimeoutId);
+      clearTimeout(flightFallbackId);
       resizeTimeouts.forEach((id) => clearTimeout(id));
       window.removeEventListener('orientationchange', forceResize);
       if (window.visualViewport) {
