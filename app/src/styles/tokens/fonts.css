@@ -1,0 +1,11 @@
+/* ===========================================================================
+   StayOrNay — Webfonts
+   Bricolage Grotesque  — display / verdicts (characterful, editorial)
+   Hanken Grotesk       — body / UI (warm, legible)
+   Space Mono           — coordinates, labels, metadata (the "map stamp" voice)
+
+   NOTE: loaded from Google Fonts. For production, self-host the .woff2 files
+   and replace these @import lines with local @font-face rules.
+   =========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');

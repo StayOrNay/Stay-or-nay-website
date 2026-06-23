@@ -1,0 +1,30 @@
+/* ===========================================================================
+   StayOrNay — Spacing & sizing tokens
+   8px base grid with 2px/4px half-steps for dense mobile UI.
+   =========================================================================== */
+
+:root {
+  --space-0: 0;
+  --space-1: 0.25rem;  /* 4 */
+  --space-2: 0.5rem;   /* 8 */
+  --space-3: 0.75rem;  /* 12 */
+  --space-4: 1rem;     /* 16 */
+  --space-5: 1.5rem;   /* 24 */
+  --space-6: 2rem;     /* 32 */
+  --space-7: 2.5rem;   /* 40 */
+  --space-8: 3rem;     /* 48 */
+  --space-9: 4rem;     /* 64 */
+
+  /* Semantic spacing */
+  --gutter: var(--space-4);          /* default screen edge padding (16) */
+  --gutter-tight: var(--space-3);
+  --stack-tight: var(--space-2);
+  --stack: var(--space-4);
+  --stack-loose: var(--space-6);
+
+  /* Layout */
+  --screen-max: 28rem;               /* 448 — mobile canvas cap */
+  --tap-target: 2.75rem;             /* 44 — min hit area */
+  --header-h: 3.5rem;                /* 56 */
+  --tabbar-h: 4rem;                  /* 64 */
+}

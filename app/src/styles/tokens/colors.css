@@ -1,0 +1,127 @@
+/* ===========================================================================
+   StayOrNay — Color tokens
+   A cartographic travel palette: warm paper surfaces, deep map-ink text,
+   a confident "Stay" green and an honest "Nay" coral, satellite-blue accents.
+   =========================================================================== */
+
+:root {
+  /* --- Base ramps ----------------------------------------------------- */
+
+  /* Ink — deep green-black, the color of a satellite map at night */
+  --ink-900: #0C1714;
+  --ink-800: #15201C;
+  --ink-700: #223029;
+  --ink-600: #38473F;
+  --ink-500: #5A6A60;
+  --ink-400: #8A988E;
+  --ink-300: #B6C0B8;
+  --ink-200: #D6DCD6;
+  --ink-100: #E9ECE7;
+
+  /* Paper — warm cartographic cream, the surface of a folded map */
+  --paper-000: #FFFFFF;
+  --paper-050: #FBF8F1;
+  --paper-100: #F7F2E8;
+  --paper-200: #EFE8D8;
+  --paper-300: #E4DAC4;
+
+  /* Stay — verdant "go" green */
+  --stay-700: #0E6A47;
+  --stay-600: #14875A;
+  --stay-500: #1AA06B;
+  --stay-400: #3FBF8B;
+  --stay-200: #BDE9D5;
+  --stay-100: #DFF4EA;
+
+  /* Nay — honest tomato coral, the "do not book" verdict */
+  --nay-700: #B8341F;
+  --nay-600: #D9472E;
+  --nay-500: #ED5A3E;
+  --nay-400: #F47E68;
+  --nay-200: #FBD2C8;
+  --nay-100: #FDE8E2;
+
+  /* Sky — satellite / atmosphere blue, used for map UI + links */
+  --sky-700: #1E5C9E;
+  --sky-600: #2A77C4;
+  --sky-500: #3B8FD9;
+  --sky-300: #9CCBEF;
+  --sky-100: #E1F0FB;
+
+  /* Sun — amber highlight: ratings, premium, "hot right now" */
+  --sun-600: #E08A1E;
+  --sun-500: #F2A93B;
+  --sun-300: #F8CE86;
+  --sun-100: #FCEFD4;
+
+  /* --- Semantic aliases ----------------------------------------------- */
+
+  /* Text */
+  --text-strong: var(--ink-900);
+  --text-body: var(--ink-800);
+  --text-muted: var(--ink-500);
+  --text-faint: var(--ink-400);
+  --text-on-dark: var(--paper-050);
+  --text-on-accent: var(--paper-000);
+  --text-link: var(--sky-600);
+
+  /* Surfaces */
+  --surface-page: var(--paper-100);
+  --surface-card: var(--paper-000);
+  --surface-sunken: var(--paper-200);
+  --surface-ink: var(--ink-900);
+  --surface-ink-soft: var(--ink-800);
+  --surface-overlay: rgba(12, 23, 20, 0.62);
+
+  /* Borders + lines (topographic) */
+  --border-soft: var(--ink-100);
+  --border-default: var(--ink-200);
+  --border-strong: var(--ink-800);
+  --line-map: rgba(58, 71, 63, 0.18);
+
+  /* Brand / interactive */
+  --brand: var(--stay-600);
+  --brand-hover: var(--stay-700);
+  --brand-soft: var(--stay-100);
+  --accent: var(--sky-600);
+
+  /* Verdict semantics */
+  --verdict-stay: var(--stay-600);
+  --verdict-stay-soft: var(--stay-100);
+  --verdict-nay: var(--nay-600);
+  --verdict-nay-soft: var(--nay-100);
+
+  /* Status */
+  --success: var(--stay-600);
+  --danger: var(--nay-600);
+  --warning: var(--sun-600);
+  --info: var(--sky-600);
+
+  /* Ratings */
+  --rating-on: var(--sun-500);
+  --rating-off: var(--ink-200);
+}
+
+/* Dark scope — the "Google Earth at night" map context */
+.theme-night,
+[data-theme="night"] {
+  --text-strong: var(--paper-000);
+  --text-body: var(--paper-100);
+  --text-muted: var(--ink-300);
+  --text-faint: var(--ink-400);
+  --text-link: var(--sky-300);
+
+  --surface-page: var(--ink-900);
+  --surface-card: var(--ink-800);
+  --surface-sunken: var(--ink-700);
+  --surface-overlay: rgba(7, 14, 12, 0.72);
+
+  --border-soft: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.12);
+  --border-strong: var(--paper-200);
+  --line-map: rgba(214, 220, 214, 0.14);
+
+  --brand: var(--stay-500);
+  --brand-hover: var(--stay-400);
+  --brand-soft: rgba(26, 160, 107, 0.18);
+}

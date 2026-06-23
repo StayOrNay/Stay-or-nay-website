@@ -1,0 +1,27 @@
+/* ===========================================================================
+   StayOrNay — Elevation / shadow tokens
+   Soft, warm-tinted shadows (never pure black) — content floats above the map.
+   =========================================================================== */
+
+:root {
+  /* Warm ink-tinted ambient shadows */
+  --shadow-xs: 0 1px 2px rgba(12, 23, 20, 0.06);
+  --shadow-sm: 0 2px 6px rgba(12, 23, 20, 0.08);
+  --shadow-md: 0 6px 18px rgba(12, 23, 20, 0.10);
+  --shadow-lg: 0 14px 36px rgba(12, 23, 20, 0.14);
+  --shadow-xl: 0 24px 60px rgba(12, 23, 20, 0.20);
+
+  /* Map-pin drop: tight + grounded, for elements pinned over satellite imagery */
+  --shadow-pin: 0 4px 10px rgba(12, 23, 20, 0.28);
+
+  /* Bottom sheet rises from below */
+  --shadow-sheet: 0 -10px 40px rgba(12, 23, 20, 0.16);
+
+  /* Focus ring (keyboard accessibility) */
+  --ring: 0 0 0 3px rgba(59, 143, 217, 0.45);
+  --ring-stay: 0 0 0 3px rgba(26, 160, 107, 0.40);
+  --ring-nay: 0 0 0 3px rgba(237, 90, 62, 0.40);
+
+  /* Inset for sunken fields */
+  --shadow-inset: inset 0 1px 2px rgba(12, 23, 20, 0.07);
+}

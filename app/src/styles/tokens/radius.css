@@ -1,0 +1,14 @@
+/* ===========================================================================
+   StayOrNay — Radius tokens
+   Soft, friendly corners; full pills for verdict stamps & chips.
+   =========================================================================== */
+
+:root {
+  --radius-xs: 0.375rem;  /* 6  — tags, inputs inner */
+  --radius-sm: 0.625rem;  /* 10 — buttons, inputs */
+  --radius-md: 0.875rem;  /* 14 — small cards */
+  --radius-lg: 1.25rem;   /* 20 — villa cards, sheets */
+  --radius-xl: 1.75rem;   /* 28 — hero panels, bottom sheets */
+  --radius-pill: 999px;   /* verdict stamps, chips, avatars */
+  --radius-circle: 50%;
+}
