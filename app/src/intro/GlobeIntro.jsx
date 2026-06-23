@@ -15,7 +15,7 @@ const LABEL_DELAY_MS = 350;
 const FADE_MS = 500;
 
 const SPIN_ZOOM = 1.5;
-const SPIN_LNG_DELTA = 300; // a near-full revolution — unmistakably "spinning"
+const SPIN_LNG_DELTA = 760; // a little over two full revolutions in SPIN_MS — fast
 const START_CENTER = [BALI.lon - SPIN_LNG_DELTA, 12];
 const ISLAND_ZOOM = 7.6;
 
@@ -241,12 +241,38 @@ export function GlobeIntro({ onComplete }) {
     const resizeObserver = new ResizeObserver(() => map.resize());
     resizeObserver.observe(container);
 
+    // Mobile browsers (mainly mobile Safari) hand the page a viewport
+    // height that doesn't match what's actually visible once the
+    // address-bar/toolbar settles, which can leave the globe's canvas sized
+    // wrong right at construction — the spin still runs, it just renders
+    // into a stale-sized canvas and looks frozen. A couple of forced
+    // resizes right after mount, plus listening for the visual viewport
+    // and orientation actually changing, keeps the canvas honest without
+    // depending on the CSS fix alone.
+    const forceResize = () => {
+      try {
+        map.resize();
+      } catch (err) {
+        // ignore — map may already be torn down
+      }
+    };
+    const resizeTimeouts = [50, 250, 600].map((ms) => window.setTimeout(forceResize, ms));
+    window.addEventListener('orientationchange', forceResize);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', forceResize);
+    }
+
     return () => {
       completedRef.current = true;
       goToEndRef.current = null;
       if (rafId) cancelAnimationFrame(rafId);
       if (labelTimeoutId) clearTimeout(labelTimeoutId);
       if (fadeTimeoutId) clearTimeout(fadeTimeoutId);
+      resizeTimeouts.forEach((id) => clearTimeout(id));
+      window.removeEventListener('orientationchange', forceResize);
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', forceResize);
+      }
       resizeObserver.disconnect();
       map.remove();
     };

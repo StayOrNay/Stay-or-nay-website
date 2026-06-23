@@ -76,6 +76,14 @@ img {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  /* `dvh` tracks the *actual* visible viewport on mobile browsers (the
+     toolbar/URL-bar can retract/expand), where plain `vh` is locked to the
+     largest possible viewport. Without this, the shell — and anything
+     sized via `inset:0` inside it, like the Mapbox globe canvas — can be
+     handed the wrong height at first paint on phones, which is what was
+     making the globe intro render but never visibly animate. Browsers that
+     don't support `dvh` simply ignore this line and keep the `vh` above. */
+  height: 100dvh;
   width: 100%;
   max-width: var(--screen-max);
   margin: 0 auto;
@@ -90,6 +98,7 @@ img {
   }
   .app-shell {
     height: calc(100vh - 48px);
+    height: calc(100dvh - 48px);
     max-height: 900px;
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-xl);
