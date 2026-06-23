@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { SavedProvider } from './context/SavedContext';
 import { TabBar } from './components/shared';
-import { EarthIntro } from './intro/EarthIntro';
+import { GlobeIntro } from './intro/GlobeIntro';
 import { ExploreScreen } from './screens/ExploreScreen';
 import { FeedScreen } from './screens/FeedScreen';
 import { SavedScreen } from './screens/SavedScreen';
@@ -26,7 +26,7 @@ function AppShell() {
   return (
     <div className="app-shell">
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-        {introDone ? <Outlet /> : <EarthIntro onComplete={() => setIntroDone(true)} />}
+        {introDone ? <Outlet /> : <GlobeIntro onComplete={() => setIntroDone(true)} />}
       </div>
       {showTabs && <TabBar />}
     </div>
