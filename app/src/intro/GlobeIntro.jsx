@@ -10,12 +10,12 @@ import { baliLightPreset } from './daynight';
 // moves, then a full-Earth-view spin, then a quick zoom into Bali. --------
 const PRE_DELAY_MS = 1000; // hold still so tiles/style have a moment to load
 const SPIN_MS = 2000; // full-Earth-view spin
-const ZOOM_MS = 1400; // quick zoom into Bali
+const ZOOM_MS = 1100; // quick zoom into Bali — noticeably shorter than the spin
 const LABEL_DELAY_MS = 350;
 const FADE_MS = 500;
 
 const SPIN_ZOOM = 1.5;
-const SPIN_LNG_DELTA = 760; // a little over two full revolutions in SPIN_MS — fast
+const SPIN_LNG_DELTA = 1080; // three full revolutions in SPIN_MS — a lot faster
 const START_CENTER = [BALI.lon - SPIN_LNG_DELTA, 12];
 const ISLAND_ZOOM = 7.6;
 
@@ -162,10 +162,20 @@ export function GlobeIntro({ onComplete }) {
     // together, so there's no visible cut between beats. The loop just
     // changes behavior by elapsed time: hold still, then spin, then zoom in.
     const runFlight = () => {
-      const startTime = performance.now();
+      // Anchor elapsed time to the FIRST rendered frame, not to the instant
+      // this function was called. On mobile, the gap between "map
+      // constructed" and "browser actually paints a frame" can be a full
+      // second or more (slower JS engines, WebGL/shader compilation, style
+      // parsing) — if startTime were captured here, that gap would eat
+      // straight into PRE_DELAY_MS/SPIN_MS before the loop ever ticks once,
+      // and the spin could be entirely skipped over (or shortened to
+      // nothing) by the time the first frame actually renders. This is the
+      // mobile-specific bug: desktop's faster init made the gap negligible.
+      let startTime = null;
 
       const tick = (now) => {
         if (skipRef.current) return;
+        if (startTime === null) startTime = now;
         const elapsed = now - startTime;
 
         if (elapsed < PRE_DELAY_MS) {
