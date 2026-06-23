@@ -1,10 +1,7 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
-
-const SATELLITE_TILES = [
-  'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg',
-];
+import 'mapbox-gl/dist/mapbox-gl.css';
+import { mapboxgl } from '../../lib/mapbox';
+import { baliLightPreset } from '../../intro/daynight';
 
 function buildMarkerEl(villa) {
   const isStay = villa.verdict === 'stay';
@@ -38,9 +35,9 @@ function buildMarkerEl(villa) {
 }
 
 /**
- * Real interactive satellite map (EOX Sentinel-2 cloudless imagery), centered
- * on Bali, with clickable Google-Earth-style POI pins: a small name label
- * always visible, tap to open the villa's review.
+ * Real interactive satellite map — Mapbox's photorealistic Standard Satellite
+ * style, centered on Bali, with clickable Google-Earth-style POI pins: a
+ * small name label always visible, tap to open the villa's review.
  */
 export const SatelliteMap = forwardRef(function SatelliteMap(
   { villas, selectedId, onSelect, center = [115.17, -8.65], zoom = 10.3 },
@@ -57,42 +54,33 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
 
   useImperativeHandle(ref, () => ({
     recenter() {
-      if (mapRef.current) mapRef.current.flyTo({ center, zoom, duration: 900 });
+      if (mapRef.current) mapRef.current.flyTo({ center, zoom, pitch: 0, bearing: 0, duration: 900 });
     },
     flyToVilla(id) {
       const v = villas.find((x) => x.id === id);
-      if (v && mapRef.current) mapRef.current.flyTo({ center: [v.lon, v.lat], zoom: 13, duration: 900 });
+      if (v && mapRef.current) mapRef.current.flyTo({ center: [v.lon, v.lat], zoom: 14, pitch: 45, duration: 1100 });
     },
   }));
 
   useEffect(() => {
-    const map = new maplibregl.Map({
+    const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: {
-        version: 8,
-        sources: {
-          satellite: {
-            type: 'raster',
-            tiles: SATELLITE_TILES,
-            tileSize: 256,
-            maxzoom: 14,
-            attribution: '© EOX IT Services GmbH — Sentinel-2 cloudless',
-          },
-        },
-        layers: [
-          { id: 'bg', type: 'background', paint: { 'background-color': '#0C1714' } },
-          { id: 'satellite', type: 'raster', source: 'satellite' },
-        ],
-      },
+      style: 'mapbox://styles/mapbox/standard-satellite',
       center,
       zoom,
       dragRotate: false,
       touchPitch: false,
-      attributionControl: { compact: true },
+      attributionControl: true,
     });
     mapRef.current = map;
 
     map.on('load', () => {
+      try {
+        map.setConfigProperty('basemap', 'lightPreset', baliLightPreset());
+      } catch (err) {
+        // Non-fatal — older style revisions may not support config properties.
+      }
+
       villas.forEach((v) => {
         if (typeof v.lon !== 'number' || typeof v.lat !== 'number') return;
         const { wrap, badge } = buildMarkerEl(v);
@@ -100,11 +88,16 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
           e.stopPropagation();
           if (onSelectRef.current) onSelectRef.current(v.id);
         });
-        const marker = new maplibregl.Marker({ element: wrap, anchor: 'bottom' })
+        const marker = new mapboxgl.Marker({ element: wrap, anchor: 'bottom' })
           .setLngLat([v.lon, v.lat])
           .addTo(map);
         markersRef.current[v.id] = { marker, wrap, badge };
       });
+    });
+
+    map.on('error', (e) => {
+      // eslint-disable-next-line no-console
+      console.warn('Mapbox tile error (non-fatal):', e && e.error);
     });
 
     const resizeObserver = new ResizeObserver(() => map.resize());

@@ -1,21 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
-import { BALI, formatCoord, easeInOutCubic, clamp01, lerp } from './geo';
-import { buildTerminatorPolygon } from './solar';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import { mapboxgl } from '../lib/mapbox';
+import { BALI, formatCoord } from './geo';
+import { baliLightPreset } from './daynight';
 
-// --- Timeline (ms) — lands precisely on Bali within ~3.6s total ----------
-const SPIN_MS = 1200;
-const FLY_MS = 1500;
-const LABEL_MS = 500;
-const FADE_MS = 400;
+// --- Timeline (ms) — matches the reference spin → flyTo cinematic --------
+const SPIN_MS = 2600;
+const FLY_MS = 5200;
+const LABEL_DELAY_MS = 350;
+const FADE_MS = 500;
 
-const SPIN_START_ZOOM = 1.35;
-const LAND_ZOOM = 13.2;
-
-const SATELLITE_TILES = [
-  'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg',
-];
+const START_CENTER = [-40, 18];
+const SPIN_LNG_DELTA = 230;
+const ISLAND_ZOOM = 7.6;
 
 function gibsCloudUrl() {
   const d = new Date(Date.now() - 24 * 60 * 60 * 1000); // yesterday UTC — guaranteed processed
@@ -23,68 +20,12 @@ function gibsCloudUrl() {
   return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/${day}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`;
 }
 
-function buildStyle() {
-  return {
-    version: 8,
-    projection: { type: 'globe' },
-    sources: {
-      satellite: {
-        type: 'raster',
-        tiles: SATELLITE_TILES,
-        tileSize: 256,
-        maxzoom: 14,
-        attribution: '© EOX IT Services GmbH — Sentinel-2 cloudless',
-      },
-      clouds: {
-        type: 'raster',
-        tiles: [gibsCloudUrl()],
-        tileSize: 256,
-        maxzoom: 9,
-        attribution: 'NASA EOSDIS GIBS / VIIRS SNPP',
-      },
-      terminator: {
-        type: 'geojson',
-        data: buildTerminatorPolygon(),
-      },
-    },
-    layers: [
-      { id: 'space', type: 'background', paint: { 'background-color': '#000208' } },
-      { id: 'satellite', type: 'raster', source: 'satellite' },
-      {
-        id: 'clouds',
-        type: 'raster',
-        source: 'clouds',
-        paint: {
-          'raster-opacity': 0.5,
-          'raster-saturation': -1,
-          'raster-contrast': 0.55,
-          'raster-brightness-min': 0.5,
-        },
-      },
-      {
-        id: 'terminator',
-        type: 'fill',
-        source: 'terminator',
-        paint: { 'fill-color': '#00030c', 'fill-opacity': 0.5 },
-      },
-      { id: 'sky', type: 'sky', paint: { 'sky-type': 'atmosphere', 'sky-atmosphere-sun-intensity': 9 } },
-    ],
-    fog: {
-      range: [0.5, 9],
-      color: 'rgba(150,190,255,0.25)',
-      'high-color': '#0b1a2b',
-      'space-color': '#000208',
-      'horizon-blend': 0.06,
-      'star-intensity': 0.55,
-    },
-  };
-}
-
 /**
- * Cinematic photorealistic globe splash: real Sentinel-2 satellite imagery
- * (EOX s2cloudless), a live NASA GIBS cloud pass, and a real sun-position
- * day/night terminator — spins briefly, then flies down and lands precisely
- * on Bali within ~3.6 seconds before handing off to the app.
+ * Cinematic globe splash, modeled on a Mapbox GL JS reference: real photoreal
+ * satellite imagery via Mapbox's Standard Satellite style, native `globe`
+ * projection, a smoothstep-eased spin, then a flyTo landing on Bali with a
+ * real local-time day/night lighting preset. A light NASA GIBS cloud pass
+ * sits on top as a bonus layer — its failure never blocks the intro.
  */
 export function GlobeIntro({ onComplete }) {
   const containerRef = useRef(null);
@@ -116,88 +57,133 @@ export function GlobeIntro({ onComplete }) {
 
     let map;
     try {
-      map = new maplibregl.Map({
+      map = new mapboxgl.Map({
         container,
-        style: buildStyle(),
-        center: [BALI.lon - 150, 8],
-        zoom: SPIN_START_ZOOM,
+        style: 'mapbox://styles/mapbox/standard-satellite',
+        projection: 'globe',
+        center: START_CENTER,
+        zoom: 1.4,
+        pitch: 0,
         interactive: false,
-        attributionControl: { compact: true },
+        attributionControl: true, // required by Mapbox's terms
       });
     } catch (err) {
       setFailed(true);
-      window.setTimeout(finish, 600);
+      window.setTimeout(finish, 400);
       return undefined;
     }
 
     let raf = null;
     let labelTimeoutId = null;
     let fadeTimeoutId = null;
-    let flyTimeoutId = null;
     let finishTimeoutId = null;
-    let spinDone = false;
-    const start = performance.now();
-    const startLng = BALI.lon - 150;
+    let loadWatchdogId = null;
 
     const goToEnd = () => {
       if (raf) cancelAnimationFrame(raf);
       if (labelTimeoutId) clearTimeout(labelTimeoutId);
       if (fadeTimeoutId) clearTimeout(fadeTimeoutId);
       if (finishTimeoutId) clearTimeout(finishTimeoutId);
-      map.jumpTo({ center: [BALI.lon, BALI.lat], zoom: LAND_ZOOM });
+      if (loadWatchdogId) clearTimeout(loadWatchdogId);
+      try {
+        map.jumpTo({ center: [BALI.lon, BALI.lat], zoom: ISLAND_ZOOM, pitch: 30, bearing: -10 });
+      } catch (err) {
+        // ignore — we're tearing down anyway
+      }
       setShowLabel(true);
       setFading(true);
       window.setTimeout(finish, 250);
     };
     goToEndRef.current = goToEnd;
 
-    const spinTick = () => {
-      const elapsed = performance.now() - start;
-      const t = easeInOutCubic(clamp01(elapsed / SPIN_MS));
-      const lng = lerp(startLng, BALI.lon, t);
-      map.jumpTo({ center: [lng, lerp(8, BALI.lat, t)], zoom: SPIN_START_ZOOM });
-
-      if (elapsed >= SPIN_MS) {
-        spinDone = true;
-      } else {
-        raf = requestAnimationFrame(spinTick);
-      }
-
-      if (spinDone) {
-        map.flyTo({
-          center: [BALI.lon, BALI.lat],
-          zoom: LAND_ZOOM,
-          duration: FLY_MS,
-          curve: 1.3,
-          essential: true,
+    const addCloudLayer = () => {
+      try {
+        if (map.getSource('clouds')) return;
+        map.addSource('clouds', {
+          type: 'raster',
+          tiles: [gibsCloudUrl()],
+          tileSize: 256,
+          maxzoom: 9,
         });
+        map.addLayer({
+          id: 'clouds',
+          type: 'raster',
+          source: 'clouds',
+          paint: {
+            'raster-opacity': 0.4,
+            'raster-saturation': -1,
+            'raster-contrast': 0.5,
+            'raster-brightness-min': 0.5,
+          },
+        });
+      } catch (err) {
+        // Bonus layer only — never let a cloud-tile failure affect the intro.
+      }
+    };
+
+    const flyToBali = () => {
+      map.flyTo({
+        center: [BALI.lon, BALI.lat],
+        zoom: ISLAND_ZOOM,
+        pitch: 30,
+        bearing: -10,
+        duration: FLY_MS,
+        curve: 1.5,
+        essential: true,
+      });
+      finishTimeoutId = window.setTimeout(() => {
+        if (skipRef.current) return;
         labelTimeoutId = window.setTimeout(() => {
           if (skipRef.current) return;
           setShowLabel(true);
-        }, FLY_MS);
-        fadeTimeoutId = window.setTimeout(() => {
-          if (skipRef.current) return;
-          setFading(true);
-        }, FLY_MS + LABEL_MS);
-        finishTimeoutId = window.setTimeout(() => {
-          if (skipRef.current) return;
-          finish();
-        }, FLY_MS + LABEL_MS + FADE_MS);
-      }
+          fadeTimeoutId = window.setTimeout(() => {
+            if (skipRef.current) return;
+            setFading(true);
+            window.setTimeout(finish, FADE_MS);
+          }, LABEL_DELAY_MS + 900);
+        }, 0);
+      }, FLY_MS);
     };
 
-    const onLoad = () => {
-      raf = requestAnimationFrame(spinTick);
+    const runSpin = () => {
+      const start = performance.now();
+      const [startLng, startLat] = START_CENTER;
+      const spin = (now) => {
+        const t = Math.min((now - start) / SPIN_MS, 1);
+        const e = t * t * (3 - 2 * t); // smoothstep
+        map.setCenter([startLng + e * SPIN_LNG_DELTA, startLat * (1 - e)]);
+        if (t < 1) {
+          raf = requestAnimationFrame(spin);
+        } else {
+          flyToBali();
+        }
+      };
+      raf = requestAnimationFrame(spin);
     };
 
-    map.on('load', onLoad);
-    map.on('error', () => {
-      // Tile/network failure: never show a black screen — bail straight
-      // into the app rather than hang on a broken intro.
+    loadWatchdogId = window.setTimeout(() => {
       if (!completedRef.current) {
         setFailed(true);
         finish();
       }
+    }, 5000);
+
+    map.on('load', () => {
+      clearTimeout(loadWatchdogId);
+      try {
+        map.setConfigProperty('basemap', 'lightPreset', baliLightPreset());
+      } catch (err) {
+        // Older style revisions may not support config properties — non-fatal.
+      }
+      addCloudLayer();
+      runSpin();
+    });
+
+    map.on('error', (e) => {
+      // Tile/network hiccups (e.g. a single failed cloud tile) must never
+      // abort the cinematic — just log for debugging.
+      // eslint-disable-next-line no-console
+      console.warn('Mapbox tile error (non-fatal):', e && e.error);
     });
 
     const resizeObserver = new ResizeObserver(() => map.resize());
@@ -209,8 +195,8 @@ export function GlobeIntro({ onComplete }) {
       if (raf) cancelAnimationFrame(raf);
       if (labelTimeoutId) clearTimeout(labelTimeoutId);
       if (fadeTimeoutId) clearTimeout(fadeTimeoutId);
-      if (flyTimeoutId) clearTimeout(flyTimeoutId);
       if (finishTimeoutId) clearTimeout(finishTimeoutId);
+      if (loadWatchdogId) clearTimeout(loadWatchdogId);
       resizeObserver.disconnect();
       map.remove();
     };
@@ -223,7 +209,7 @@ export function GlobeIntro({ onComplete }) {
   };
 
   return (
-    <div style={{ position: 'absolute', inset: 0, background: '#000208', overflow: 'hidden' }}>
+    <div style={{ position: 'absolute', inset: 0, background: '#03040a', overflow: 'hidden' }}>
       <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
 
       {failed && (
