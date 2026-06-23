@@ -74,13 +74,15 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
     });
     mapRef.current = map;
 
-    map.on('load', () => {
+    map.on('style.load', () => {
       try {
         map.setConfigProperty('basemap', 'lightPreset', baliLightPreset());
       } catch (err) {
         // Non-fatal — older style revisions may not support config properties.
       }
+    });
 
+    map.on('load', () => {
       villas.forEach((v) => {
         if (typeof v.lon !== 'number' || typeof v.lat !== 'number') return;
         const { wrap, badge } = buildMarkerEl(v);

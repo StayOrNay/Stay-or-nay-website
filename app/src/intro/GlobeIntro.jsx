@@ -4,14 +4,16 @@ import { mapboxgl } from '../lib/mapbox';
 import { BALI, formatCoord } from './geo';
 import { baliLightPreset } from './daynight';
 
-// --- Timeline (ms) — matches the reference spin → flyTo cinematic --------
-const SPIN_MS = 2600;
-const FLY_MS = 5200;
+// --- Timeline (ms) — spins for exactly 3s, then zooms into Bali ----------
+const SPIN_MS = 3000;
+const FLY_MS = 2400;
 const LABEL_DELAY_MS = 350;
 const FADE_MS = 500;
 
-const START_CENTER = [-40, 18];
-const SPIN_LNG_DELTA = 230;
+const SPIN_ZOOM = 1.5;
+const SPIN_LNG_DELTA = 300; // a near-full revolution — unmistakably "spinning"
+const START_CENTER = [BALI.lon - SPIN_LNG_DELTA, 12];
+const SPIN_END_CENTER = [BALI.lon, 0];
 const ISLAND_ZOOM = 7.6;
 
 function gibsCloudUrl() {
@@ -21,11 +23,15 @@ function gibsCloudUrl() {
 }
 
 /**
- * Cinematic globe splash, modeled on a Mapbox GL JS reference: real photoreal
- * satellite imagery via Mapbox's Standard Satellite style, native `globe`
- * projection, a smoothstep-eased spin, then a flyTo landing on Bali with a
- * real local-time day/night lighting preset. A light NASA GIBS cloud pass
- * sits on top as a bonus layer — its failure never blocks the intro.
+ * Cinematic globe splash: real photoreal satellite imagery via Mapbox's
+ * Standard Satellite style, native `globe` projection, a constant-speed
+ * (linear-eased) spin for exactly 3 seconds, then a flyTo landing on Bali
+ * with a real local-time day/night lighting preset. Follows Mapbox's own
+ * documented patterns: spin via `easeTo` (not a manual rAF loop) so it
+ * doesn't depend on the heavier 'load' event firing, and config properties
+ * (lightPreset) are set on 'style.load' as Mapbox's docs prescribe. A light
+ * NASA GIBS cloud pass sits on top as a bonus layer — its failure never
+ * blocks the intro.
  */
 export function GlobeIntro({ onComplete }) {
   const containerRef = useRef(null);
@@ -62,7 +68,7 @@ export function GlobeIntro({ onComplete }) {
         style: 'mapbox://styles/mapbox/standard-satellite',
         projection: 'globe',
         center: START_CENTER,
-        zoom: 1.4,
+        zoom: SPIN_ZOOM,
         pitch: 0,
         interactive: false,
         attributionControl: true, // required by Mapbox's terms
@@ -73,19 +79,20 @@ export function GlobeIntro({ onComplete }) {
       return undefined;
     }
 
-    let raf = null;
     let labelTimeoutId = null;
     let fadeTimeoutId = null;
     let finishTimeoutId = null;
-    let loadWatchdogId = null;
+    let spinMoveEndHandler = null;
 
     const goToEnd = () => {
-      if (raf) cancelAnimationFrame(raf);
-      if (labelTimeoutId) clearTimeout(labelTimeoutId);
+      if (spinMoveEndHandler) {
+        map.off('moveend', spinMoveEndHandler);
+        spinMoveEndHandler = null;
+      }
       if (fadeTimeoutId) clearTimeout(fadeTimeoutId);
       if (finishTimeoutId) clearTimeout(finishTimeoutId);
-      if (loadWatchdogId) clearTimeout(loadWatchdogId);
       try {
+        map.stop();
         map.jumpTo({ center: [BALI.lon, BALI.lat], zoom: ISLAND_ZOOM, pitch: 30, bearing: -10 });
       } catch (err) {
         // ignore — we're tearing down anyway
@@ -128,60 +135,50 @@ export function GlobeIntro({ onComplete }) {
         pitch: 30,
         bearing: -10,
         duration: FLY_MS,
-        curve: 1.5,
+        curve: 1.4,
         essential: true,
       });
       finishTimeoutId = window.setTimeout(() => {
         if (skipRef.current) return;
-        labelTimeoutId = window.setTimeout(() => {
+        setShowLabel(true);
+        fadeTimeoutId = window.setTimeout(() => {
           if (skipRef.current) return;
-          setShowLabel(true);
-          fadeTimeoutId = window.setTimeout(() => {
-            if (skipRef.current) return;
-            setFading(true);
-            window.setTimeout(finish, FADE_MS);
-          }, LABEL_DELAY_MS + 900);
-        }, 0);
+          setFading(true);
+          window.setTimeout(finish, FADE_MS);
+        }, LABEL_DELAY_MS + 700);
       }, FLY_MS);
     };
 
-    const runSpin = () => {
-      const start = performance.now();
-      const [startLng, startLat] = START_CENTER;
-      const spin = (now) => {
-        const t = Math.min((now - start) / SPIN_MS, 1);
-        const e = t * t * (3 - 2 * t); // smoothstep
-        map.setCenter([startLng + e * SPIN_LNG_DELTA, startLat * (1 - e)]);
-        if (t < 1) {
-          raf = requestAnimationFrame(spin);
-        } else {
-          flyToBali();
-        }
-      };
-      raf = requestAnimationFrame(spin);
+    // Constant-speed (linear) spin over exactly SPIN_MS — Mapbox's own
+    // "Create a rotating globe" example uses easeTo + linear easing rather
+    // than a manual per-frame jumpTo loop, and critically, it does NOT wait
+    // for 'load' to start: camera animations queue safely pre-load, so the
+    // spin always starts immediately instead of risking a skipped intro on
+    // a slow connection.
+    map.easeTo({
+      center: SPIN_END_CENTER,
+      duration: SPIN_MS,
+      easing: (t) => t,
+    });
+    spinMoveEndHandler = () => {
+      if (skipRef.current) return;
+      flyToBali();
     };
+    map.once('moveend', spinMoveEndHandler);
 
-    loadWatchdogId = window.setTimeout(() => {
-      if (!completedRef.current) {
-        setFailed(true);
-        finish();
-      }
-    }, 5000);
-
-    map.on('load', () => {
-      clearTimeout(loadWatchdogId);
+    map.on('style.load', () => {
       try {
         map.setConfigProperty('basemap', 'lightPreset', baliLightPreset());
       } catch (err) {
         // Older style revisions may not support config properties — non-fatal.
       }
       addCloudLayer();
-      runSpin();
     });
 
     map.on('error', (e) => {
       // Tile/network hiccups (e.g. a single failed cloud tile) must never
-      // abort the cinematic — just log for debugging.
+      // abort the cinematic — just log for debugging. The spin/flyTo
+      // timeline above runs on its own fixed schedule regardless.
       // eslint-disable-next-line no-console
       console.warn('Mapbox tile error (non-fatal):', e && e.error);
     });
@@ -192,11 +189,10 @@ export function GlobeIntro({ onComplete }) {
     return () => {
       completedRef.current = true;
       goToEndRef.current = null;
-      if (raf) cancelAnimationFrame(raf);
+      if (spinMoveEndHandler) map.off('moveend', spinMoveEndHandler);
       if (labelTimeoutId) clearTimeout(labelTimeoutId);
       if (fadeTimeoutId) clearTimeout(fadeTimeoutId);
       if (finishTimeoutId) clearTimeout(finishTimeoutId);
-      if (loadWatchdogId) clearTimeout(loadWatchdogId);
       resizeObserver.disconnect();
       map.remove();
     };
