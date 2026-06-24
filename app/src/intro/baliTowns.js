@@ -61,6 +61,15 @@ export function addBaliTownLabels(map) {
     id: 'bali-towns-label',
     type: 'symbol',
     source: 'bali-towns',
+    // Mapbox Standard / Standard Satellite (v3) place custom layers using
+    // 'slot' rather than layer-id-relative ordering — without one, a
+    // custom layer's position in the merged style-import stack isn't
+    // guaranteed, and a symbol layer added this way can end up rendering
+    // with no visible error at all (per Mapbox's own docs on the Standard
+    // style's layer-insertion model). That's the actual cause of the
+    // labels not showing up — not glyphs, not style.load timing. 'top'
+    // keeps these above the satellite imagery and roads/place labels.
+    slot: 'top',
     layout: {
       'text-field': ['get', 'name'],
       'text-size': 13,

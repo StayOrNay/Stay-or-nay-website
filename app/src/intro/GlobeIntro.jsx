@@ -13,7 +13,8 @@ import { addBaliTownLabels } from './baliTowns';
 // phase only ever has to animate zoom/pitch — never position — which is
 // what keeps the hand-off between beats seamless rather than a jump.
 const PRE_DELAY_MS = 0; // no hold — motion starts on frame one
-const SPIN_MS = 2600; // full-Earth-view spin — "see the whole globe" for 2-3s
+const SPIN_MS = 3500; // one continuous spin beat, 3.5s — fast plateau then one decel
+const SPIN_FAST_MS = 1000; // first second of the spin holds at constant max velocity
 const ZOOM_MS = 1500; // zoom in from full globe to landing on Bali
 const LABEL_DELAY_MS = 350;
 const FADE_MS = 500;
@@ -34,18 +35,30 @@ const PITCH_PEAK = 48;
 const PITCH_RISE_AT = 0.12; // fraction of the ZOOM phase pitch starts rising into 3D
 const PITCH_FLAT_BY = 0.85; // fraction by which pitch is back to flat (2D) on landing
 
-// Fast-start, slow-finish curve for the SPIN: velocity is at its highest
-// the instant the page loads (derivative = 5 at t=0) and eases down to a
-// dead stop by the time it reaches Bali — so the globe reads as "already
-// spinning fast" from the very first frame, rather than ramping up from a
-// standstill.
-function easeOutQuint(t) {
-  return 1 - (1 - t) ** 5;
+// One continuous spin curve, not two separate-feeling ones: holds at a
+// constant MAX velocity for the first SPIN_FAST_MS (so the opening second
+// reads as "already spinning, really fast" with zero ramp-up), then a
+// single smooth ease-out deceleration down to a dead stop by the time it
+// reaches Bali. A plain easeOutQuint was tried first, but its velocity
+// decays so aggressively right from t=0 that across a 720°
+// (two-revolution) spin the back half crawled — reading as two distinct
+// spin "events" rather than one deceleration arc. This piecewise curve
+// fixes that without changing SPIN_LNG_DELTA: a flat fast plateau, then
+// one decay, with the raw (pre-normalization) velocity matching exactly
+// at the seam (both sides evaluate to slope 1 there) — only the invisible
+// second derivative (acceleration) kinks, not the motion itself.
+const SPIN_FAST_T = SPIN_FAST_MS / SPIN_MS;
+const SPIN_EASE_NORM = SPIN_FAST_T + (1 - SPIN_FAST_T) / 3;
+function spinEase(t) {
+  if (t <= SPIN_FAST_T) return t / SPIN_EASE_NORM;
+  const u = (t - SPIN_FAST_T) / (1 - SPIN_FAST_T);
+  const pos = SPIN_FAST_T + ((1 - SPIN_FAST_T) / 3) * (1 - (1 - u) ** 3);
+  return pos / SPIN_EASE_NORM;
 }
 
 // S-curve for the ZOOM-IN: zero velocity at both ends. Its zero velocity
-// at t=0 matches the spin's zero velocity at t=1 (easeOutQuint above ends
-// at a dead stop too) — so position, zoom, and pitch all have matching
+// at t=0 matches the spin's zero velocity at t=1 (spinEase above ends at
+// a dead stop too) — so position, zoom, and pitch all have matching
 // (zero) velocity right at the spin/zoom hand-off, which is what removes
 // the "kick" that made the two beats read as separate shots instead of one.
 function easeInOutQuint(t) {
@@ -73,6 +86,20 @@ const NIGHT_EDGE_OPACITY = 0.28;
 const CITY_GLOW_OPACITY = 0.35;
 const CITY_CORE_OPACITY = 0.9;
 
+const CLOUD_OPACITY = 0.45;
+// Clouds fade out as the camera's zoom crosses this range — fully gone
+// well before the cloud source's own maxzoom (9) would otherwise force it
+// to stretch a low-res tile over a much closer view (the "blurry over the
+// streets" bug). Tied to the actual zoom value rather than the zoom beat's
+// timing, so it disappears at the right ALTITUDE regardless of how the
+// easing curve moves through that altitude.
+const CLOUD_FADE_START_ZOOM = 5;
+const CLOUD_FADE_END_ZOOM = 8;
+
+const ICE_CAP_RADIUS_DEG = 5.6; // just past the 85.0511° Web-Mercator clip line
+const ICE_CAP_COLOR = '#eef2f5';
+const ICE_CAP_OPACITY = 0.88;
+
 /**
  * Adds the day/night hemisphere darkening + city-light glow layers, built
  * once from the real subsolar position at mount time. Geographic, not
@@ -95,6 +122,7 @@ function addNightLayers(map) {
     id: 'night-core',
     type: 'fill',
     source: 'night-core',
+    slot: 'bottom', // explicit slot — keeps stacking vs. clouds/ice-caps deterministic
     paint: { 'fill-color': '#03060f', 'fill-opacity': NIGHT_CORE_OPACITY },
   });
 
@@ -108,6 +136,7 @@ function addNightLayers(map) {
     id: 'night-edge',
     type: 'fill',
     source: 'night-edge',
+    slot: 'bottom',
     paint: { 'fill-color': '#03060f', 'fill-opacity': NIGHT_EDGE_OPACITY },
   });
 
@@ -124,6 +153,7 @@ function addNightLayers(map) {
     id: 'city-glow',
     type: 'circle',
     source: 'city-lights',
+    slot: 'bottom',
     paint: {
       'circle-radius': ['interpolate', ['linear'], ['get', 'weight'], 1, 6, 3, 16],
       'circle-color': '#ffd98a',
@@ -135,6 +165,7 @@ function addNightLayers(map) {
     id: 'city-core',
     type: 'circle',
     source: 'city-lights',
+    slot: 'bottom',
     paint: {
       'circle-radius': ['interpolate', ['linear'], ['get', 'weight'], 1, 1.4, 3, 3],
       'circle-color': '#fff6e0',
@@ -154,6 +185,59 @@ function setNightOpacity(map, factor) {
     // Layers may not exist yet (style still loading) or map may be torn
     // down — this overlay is decorative only, never let it throw.
   }
+}
+
+function setCloudOpacity(map, factor) {
+  try {
+    map.setPaintProperty('clouds', 'raster-opacity', CLOUD_OPACITY * factor);
+  } catch (err) {
+    // Layer may not exist yet (style still loading, or the cloud tile
+    // fetch failed) — bonus layer only, never let it throw.
+  }
+}
+
+// A small circle of constant latitude IS a circle around a geographic
+// pole — no spherical-trig bearing/distance math needed (and that math is
+// degenerate exactly at the poles anyway: cos(90°) collapses the bearing
+// term and atan2(0,0) returns 0 for every bearing in JS, which is why this
+// doesn't reuse terminator.js's hemisphereRing/destinationPoint here).
+function capRing(poleLat, radiusDeg, steps = 72) {
+  const lat = poleLat > 0 ? 90 - radiusDeg : -90 + radiusDeg;
+  const ring = [];
+  for (let i = 0; i <= steps; i++) {
+    const lon = -180 + (360 * i) / steps;
+    ring.push([lon, lat]);
+  }
+  return ring;
+}
+
+// The NASA GIBS cloud tiles are Web-Mercator (EPSG:3857), which is
+// mathematically undefined above ~85.0511°N/S — there is no real tile
+// data for the actual poles, full stop, no parameter fixes that. At the
+// spin's wide zoomed-out view the entire sphere (both poles included) is
+// on screen, so that gap reads as the clouds visibly stopping short of
+// the poles. A small pale disc capping each pole covers the gap — and is
+// geographically true to life besides: real polar caps do look white and
+// icy from space.
+function addIceCaps(map) {
+  [['ice-cap-north', 90], ['ice-cap-south', -90]].forEach(([id, poleLat]) => {
+    try {
+      if (map.getSource(id)) return;
+      map.addSource(id, {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'Polygon', coordinates: [capRing(poleLat, ICE_CAP_RADIUS_DEG)] } },
+      });
+      map.addLayer({
+        id,
+        type: 'fill',
+        source: id,
+        slot: 'bottom',
+        paint: { 'fill-color': ICE_CAP_COLOR, 'fill-opacity': ICE_CAP_OPACITY },
+      });
+    } catch (err) {
+      // Decorative only — never let it block the intro.
+    }
+  });
 }
 
 /**
@@ -232,6 +316,7 @@ export function GlobeIntro({ onComplete }) {
       try {
         map.jumpTo({ center: [BALI.lon, BALI.lat], zoom: ISLAND_ZOOM, pitch: 0, bearing: 0 });
         setNightOpacity(map, 0);
+        setCloudOpacity(map, 0);
       } catch (err) {
         // ignore — we're tearing down anyway
       }
@@ -254,6 +339,14 @@ export function GlobeIntro({ onComplete }) {
           id: 'clouds',
           type: 'raster',
           source: 'clouds',
+          slot: 'bottom', // explicit slot — keeps stacking vs. night/ice-caps deterministic
+          // Hard cutoff matching the source's own maxzoom: past this the
+          // raster would just be the same z9 tile stretched over a much
+          // closer view (overzoomed → blurry) — exactly what was making
+          // street-level Bali look hazy. The opacity fade below (tied to
+          // CLOUD_FADE_START/END_ZOOM) already takes it to 0 well before
+          // this, so this is a backstop, not the primary fix.
+          maxzoom: 9,
           paint: {
             // This is yesterday's real VIIRS pass, so the cloud cover it
             // shows is genuinely uneven already — thick over some regions,
@@ -261,7 +354,7 @@ export function GlobeIntro({ onComplete }) {
             // that real variation (denser white clouds read brighter and
             // more solid, clear sky/ocean recedes further into the
             // basemap) rather than laying down one flat haze everywhere.
-            'raster-opacity': 0.45,
+            'raster-opacity': CLOUD_OPACITY,
             'raster-saturation': -1,
             'raster-contrast': 0.75,
             'raster-brightness-min': 0.35,
@@ -309,9 +402,10 @@ export function GlobeIntro({ onComplete }) {
           lng = START_CENTER[0];
         } else if (elapsed < PRE_DELAY_MS + SPIN_MS) {
           // Beat 1: spin the whole way to Bali's longitude while staying
-          // zoomed out far enough to see the entire globe. easeOutQuint
-          // means this is already moving at full speed on frame one.
-          const spinT = easeOutQuint(Math.min((elapsed - PRE_DELAY_MS) / SPIN_MS, 1));
+          // zoomed out far enough to see the entire globe. spinEase means
+          // this is already moving at full speed on frame one, holding
+          // that speed for the first second before decelerating.
+          const spinT = spinEase(Math.min((elapsed - PRE_DELAY_MS) / SPIN_MS, 1));
           lng = START_CENTER[0] + (BALI.lon - START_CENTER[0]) * spinT;
           zoom = SPIN_ZOOM;
           pitch = 0;
@@ -330,6 +424,13 @@ export function GlobeIntro({ onComplete }) {
 
         map.jumpTo({ center: [lng, BALI.lat], zoom, pitch, bearing: 0 });
         setNightOpacity(map, nightFactor);
+        // Driven by the actual zoom value (altitude), not by beat timing —
+        // so clouds are reliably gone by the time the view is actually
+        // close enough to read as "street level", regardless of how the
+        // easing curve moves through that zoom range.
+        const cloudFade =
+          1 - Math.min(1, Math.max(0, (zoom - CLOUD_FADE_START_ZOOM) / (CLOUD_FADE_END_ZOOM - CLOUD_FADE_START_ZOOM)));
+        setCloudOpacity(map, cloudFade);
 
         if (elapsed < TOTAL_MS) {
           rafId = requestAnimationFrame(tick);
@@ -399,6 +500,18 @@ export function GlobeIntro({ onComplete }) {
       } catch (err) {
         // Older style revisions may not support config properties — non-fatal.
       }
+      // Order matters: each layer below renders on top of the previous
+      // one (no explicit 'before' needed since night/ice-caps share the
+      // 'bottom' slot and are added after clouds) — so the night-dark
+      // overlay correctly darkens both the clouds and the ice caps
+      // underneath it, instead of clouds showing through at full
+      // brightness over the night side like before.
+      addCloudLayer();
+      try {
+        addIceCaps(map);
+      } catch (err) {
+        // Decorative only — never let it block the intro.
+      }
       try {
         addNightLayers(map);
       } catch (err) {
@@ -409,7 +522,6 @@ export function GlobeIntro({ onComplete }) {
       } catch (err) {
         // Decorative only — never let it block the intro.
       }
-      addCloudLayer();
     });
 
     map.on('error', (e) => {
