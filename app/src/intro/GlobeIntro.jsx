@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { mapboxgl } from '../lib/mapbox';
-import { BALI, EXPLORE_ZOOM, formatCoord } from './geo';
+import { BALI, EXPLORE_ZOOM } from './geo';
 import { baliLightPreset } from './daynight';
 import { antisolarPoint, hemisphereRing, angularDistanceDeg, MAJOR_CITIES } from './terminator';
 import { addBaliTownLabels } from './baliTowns';
@@ -665,17 +665,26 @@ export function GlobeIntro({ onComplete }) {
             textAlign: 'center',
           }}
         >
+          {/* Landing caption — its own fade-in-then-fade-away (not just the
+              whole-screen fade at the very end), so "BALI, INDONESIA" reads
+              as its own beat: appears as the camera settles, holds a moment,
+              then dissolves before the cut into the real map. Driven by a
+              CSS keyframe (triggered once showLabel flips true) rather than
+              extra timers, so it can't drift out of sync with the existing
+              label/fade timeline. */}
           <div
             style={{
               fontFamily: "'Space Mono', monospace",
-              fontSize: 12,
-              letterSpacing: '0.08em',
+              fontSize: 13,
+              letterSpacing: '0.14em',
               color: 'var(--sky-300)',
-              marginBottom: 8,
+              marginBottom: 10,
               textShadow: '0 1px 6px rgba(0,0,0,0.6)',
+              opacity: 0,
+              animation: showLabel ? 'baliCaptionFade 1900ms ease-out forwards' : 'none',
             }}
           >
-            {formatCoord(BALI.lat, BALI.lon).toUpperCase()}
+            BALI, INDONESIA
           </div>
           <div
             style={{
@@ -692,6 +701,15 @@ export function GlobeIntro({ onComplete }) {
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes baliCaptionFade {
+          0% { opacity: 0; transform: translateY(8px); }
+          20% { opacity: 1; transform: translateY(0); }
+          72% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-6px); }
+        }
+      `}</style>
     </div>
   );
 }
