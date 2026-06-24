@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, Outlet, useLocation } from 'react-router-dom';
+import { Routes, Route, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { SavedProvider } from './context/SavedContext';
 import { TabBar, Sidebar } from './components/shared';
 import { GlobeIntro } from './intro/GlobeIntro';
@@ -28,13 +28,25 @@ import { ProfileScreen } from './screens/ProfileScreen';
  */
 function AppShell() {
   const location = useLocation();
+  const navigate = useNavigate();
   const isDesktop = useIsDesktop();
   const [introDone, setIntroDone] = useState(false);
   const showNav = introDone && !location.pathname.startsWith('/villa/');
 
+  // Clicking the wordmark takes you back to "the start" — the Bali
+  // globe-landing intro, not just the Explore screen underneath it. Routing
+  // to '/' first (in case you're deep on /villa/:id or another tab) and then
+  // dropping introDone back to false unmounts/remounts GlobeIntro fresh,
+  // since it's only ever in the tree while `!introDone` — same mechanism
+  // that plays it once on first load, just re-triggered on demand.
+  const replayIntro = () => {
+    navigate('/');
+    setIntroDone(false);
+  };
+
   return (
     <div className="app-shell" style={{ flexDirection: isDesktop ? 'row' : 'column' }}>
-      {isDesktop && showNav && <Sidebar />}
+      {isDesktop && showNav && <Sidebar onLogoClick={replayIntro} />}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minWidth: 0 }}>
         <Outlet />
         {!introDone && <GlobeIntro onComplete={() => setIntroDone(true)} />}

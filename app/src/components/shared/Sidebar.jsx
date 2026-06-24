@@ -15,7 +15,7 @@ const NAV_ITEMS = [
  * instead of a real website. Same four destinations, same active-state
  * logic, just reflowed for a wide canvas with room to spare.
  */
-export function Sidebar() {
+export function Sidebar({ onLogoClick }) {
   return (
     <nav
       style={{
@@ -29,7 +29,10 @@ export function Sidebar() {
         borderRight: '1px solid var(--border-soft)',
       }}
     >
-      <div
+      <button
+        type="button"
+        onClick={onLogoClick}
+        aria-label="Replay the StayOrNay intro"
         style={{
           fontFamily: 'var(--font-display)',
           fontWeight: 800,
@@ -37,12 +40,17 @@ export function Sidebar() {
           letterSpacing: '-0.01em',
           padding: '0 12px',
           marginBottom: 22,
+          border: 'none',
+          background: 'transparent',
+          cursor: 'pointer',
+          textAlign: 'left',
+          width: 'fit-content',
         }}
       >
-        <span style={{ color: 'var(--ink-900)' }}>Stay</span>
+        <span style={{ color: 'var(--stay-600)' }}>Stay</span>
         <span style={{ color: 'var(--ink-400)' }}>Or</span>
         <span style={{ color: 'var(--nay-600)' }}>Nay</span>
-      </div>
+      </button>
 
       {NAV_ITEMS.map(({ to, label, Icon }) => (
         <NavLink
