@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { Input, VerdictBadge, RatingStars, Tag, VillaCard } from '../components/core';
@@ -6,6 +6,7 @@ import { SatelliteMap } from '../components/shared';
 import { villas } from '../data/villas';
 import { useSaved } from '../context/SavedContext';
 import { useIsDesktop } from '../hooks/useMediaQuery';
+import { reverseGeocode } from '../lib/mapbox';
 
 /**
  * Explore — a real interactive satellite map (EOX Sentinel-2 cloudless
@@ -19,10 +20,26 @@ export function ExploreScreen() {
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
   const [selected, setSelected] = useState(null);
+  const [locationLabel, setLocationLabel] = useState('Bali, Indonesia');
   const mapRef = useRef(null);
+  const geocodeTimerRef = useRef(null);
+  const geocodeSeqRef = useRef(0);
   useSaved(); // keeps saved-state context warm for sibling routes
 
   const sel = villas.find((v) => v.id === selected);
+
+  // Re-geocodes the header label to wherever the map's camera actually
+  // settles — debounced so a drag/zoom gesture doesn't fire a request per
+  // frame, and guarded with a sequence number so a slow, stale request
+  // can't overwrite the label after a newer pan has already resolved.
+  const handleMoveEnd = useCallback(({ lon, lat }) => {
+    if (geocodeTimerRef.current) clearTimeout(geocodeTimerRef.current);
+    geocodeTimerRef.current = setTimeout(async () => {
+      const seq = ++geocodeSeqRef.current;
+      const label = await reverseGeocode(lon, lat);
+      if (label && seq === geocodeSeqRef.current) setLocationLabel(label);
+    }, 350);
+  }, []);
 
   return (
     <div style={{ position: 'relative', flex: 1, overflow: 'hidden', background: 'var(--ink-800)', display: 'flex' }}>
@@ -43,7 +60,7 @@ export function ExploreScreen() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <Input search iconLeft={<Search size={18} />} placeholder="Search Bali…" />
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-              Bali, Indonesia · {villas.length} verdicts
+              {locationLabel} · {villas.length} verdicts
             </div>
           </div>
           {villas.map((v) => (
@@ -60,7 +77,7 @@ export function ExploreScreen() {
       )}
 
       <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-        <SatelliteMap ref={mapRef} villas={villas} selectedId={selected} onSelect={setSelected} />
+        <SatelliteMap ref={mapRef} villas={villas} selectedId={selected} onSelect={setSelected} onMoveEnd={handleMoveEnd} />
 
         {/* Search bar floating over the map (mobile only — desktop's lives in the side panel) */}
         {!isDesktop && (
@@ -73,7 +90,7 @@ export function ExploreScreen() {
 
             {/* Region label */}
             <div style={{ position: 'absolute', top: 70, left: 16, zIndex: 6, fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
-              Bali, Indonesia · {villas.length} verdicts
+              {locationLabel} · {villas.length} verdicts
             </div>
           </>
         )}

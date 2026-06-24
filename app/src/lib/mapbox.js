@@ -24,3 +24,42 @@ mapboxgl.workerClass = MapboxWorker;
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
 export { mapboxgl };
+
+/**
+ * Reverse-geocodes a map center into a short "Place, Country" label (e.g.
+ * "Koh Tao, Thailand"), via Mapbox's own Geocoding v6 reverse endpoint —
+ * so the Explore screen's location header can follow the camera anywhere
+ * in the world, not just the curated Bali town list (which is decorative
+ * map labels, not meant to drive app UI text).
+ *
+ * Tries `types=place` first (city/town/village granularity, what you'd
+ * actually want in this label). Open ocean or very remote areas often have
+ * no "place" there at all, so it falls back to an unfiltered reverse query
+ * (locality/region/whatever's nearest) rather than returning nothing.
+ * Returns null — not a placeholder string — when both come up empty, so
+ * the caller can simply keep showing the last known label instead of
+ * flashing something like "Unknown".
+ */
+export async function reverseGeocode(lon, lat) {
+  const base = 'https://api.mapbox.com/search/geocode/v6/reverse';
+  const common = `longitude=${lon}&latitude=${lat}&access_token=${MAPBOX_TOKEN}&limit=1`;
+
+  async function tryQuery(extra) {
+    const res = await fetch(`${base}?${common}${extra}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const feature = data?.features?.[0];
+    if (!feature) return null;
+    const props = feature.properties || {};
+    const name = props.name || props.context?.place?.name || props.context?.locality?.name;
+    const country = props.context?.country?.name;
+    if (!name) return null;
+    return country ? `${name}, ${country}` : name;
+  }
+
+  try {
+    return (await tryQuery('&types=place,locality')) ?? (await tryQuery(''));
+  } catch {
+    return null;
+  }
+}

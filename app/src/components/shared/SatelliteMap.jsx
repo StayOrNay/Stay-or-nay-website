@@ -45,17 +45,22 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
   // Same center/zoom the globe intro lands its zoom-in on (see GlobeIntro's
   // ISLAND_ZOOM/BALI) — kept as one shared shot rather than two maps with
   // slightly different framing.
-  { villas, selectedId, onSelect, center = [BALI.lon, BALI.lat], zoom = EXPLORE_ZOOM },
+  { villas, selectedId, onSelect, onMoveEnd, center = [BALI.lon, BALI.lat], zoom = EXPLORE_ZOOM },
   ref,
 ) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
   const onSelectRef = useRef(onSelect);
+  const onMoveEndRef = useRef(onMoveEnd);
 
   useEffect(() => {
     onSelectRef.current = onSelect;
   }, [onSelect]);
+
+  useEffect(() => {
+    onMoveEndRef.current = onMoveEnd;
+  }, [onMoveEnd]);
 
   useImperativeHandle(ref, () => ({
     recenter() {
@@ -126,6 +131,20 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
       // eslint-disable-next-line no-console
       console.warn('Mapbox tile error (non-fatal):', e && e.error);
     });
+
+    // Lets the Explore screen's "Bali, Indonesia · N verdicts" header follow
+    // wherever the camera actually is, instead of being hardcoded — fires
+    // once the map first settles (so the label is correct from the very
+    // first frame, not just after the user's first pan) and again on every
+    // subsequent pan/zoom/fly that ends.
+    const reportCenter = () => {
+      if (onMoveEndRef.current) {
+        const c = map.getCenter();
+        onMoveEndRef.current({ lon: c.lng, lat: c.lat });
+      }
+    };
+    map.on('moveend', reportCenter);
+    map.once('load', reportCenter);
 
     const resizeObserver = new ResizeObserver(() => map.resize());
     resizeObserver.observe(containerRef.current);
