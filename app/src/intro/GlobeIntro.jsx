@@ -4,14 +4,15 @@ import { mapboxgl } from '../lib/mapbox';
 import { BALI, EXPLORE_ZOOM, formatCoord } from './geo';
 import { baliLightPreset } from './daynight';
 import { antisolarPoint, hemisphereRing, angularDistanceDeg, MAJOR_CITIES } from './terminator';
+import { addBaliTownLabels } from './baliTowns';
 
-// --- Timeline (ms) — three explicit beats: a held pre-roll on the full
-// globe, THEN a couple of seconds where the whole Earth is visible and
-// visibly spinning, THEN a zoom-in that lands on Bali. The spin always
-// ends exactly on Bali's longitude/latitude, so the zoom phase only ever
-// has to animate zoom/pitch — never position — which is what keeps the
-// hand-off between beats seamless rather than a jump.
-const PRE_DELAY_MS = 500; // hold on the spinning globe before motion starts
+// --- Timeline (ms) — two explicit beats: the globe is already spinning
+// fast on the very first rendered frame (no static hold before motion
+// starts), then it decelerates into a zoom-in that lands on Bali. The
+// spin always ends exactly on Bali's longitude/latitude, so the zoom
+// phase only ever has to animate zoom/pitch — never position — which is
+// what keeps the hand-off between beats seamless rather than a jump.
+const PRE_DELAY_MS = 0; // no hold — motion starts on frame one
 const SPIN_MS = 2600; // full-Earth-view spin — "see the whole globe" for 2-3s
 const ZOOM_MS = 1500; // zoom in from full globe to landing on Bali
 const LABEL_DELAY_MS = 350;
@@ -33,12 +34,20 @@ const PITCH_PEAK = 48;
 const PITCH_RISE_AT = 0.12; // fraction of the ZOOM phase pitch starts rising into 3D
 const PITCH_FLAT_BY = 0.85; // fraction by which pitch is back to flat (2D) on landing
 
-// One single S-curve used for BOTH the spin's longitude and the zoom-in's
-// zoom/pitch envelope. Velocity is zero at both ends of this curve, so the
-// spin eases to a dead stop exactly when the zoom-in's own ease-in begins
-// at zero speed too — position, zoom, and pitch all have matching (zero)
-// velocity right at the spin/zoom hand-off, which is what removes the
-// "kick" that made the two beats read as separate shots instead of one.
+// Fast-start, slow-finish curve for the SPIN: velocity is at its highest
+// the instant the page loads (derivative = 5 at t=0) and eases down to a
+// dead stop by the time it reaches Bali — so the globe reads as "already
+// spinning fast" from the very first frame, rather than ramping up from a
+// standstill.
+function easeOutQuint(t) {
+  return 1 - (1 - t) ** 5;
+}
+
+// S-curve for the ZOOM-IN: zero velocity at both ends. Its zero velocity
+// at t=0 matches the spin's zero velocity at t=1 (easeOutQuint above ends
+// at a dead stop too) — so position, zoom, and pitch all have matching
+// (zero) velocity right at the spin/zoom hand-off, which is what removes
+// the "kick" that made the two beats read as separate shots instead of one.
 function easeInOutQuint(t) {
   return t < 0.5 ? 16 * t ** 5 : 1 - ((-2 * t + 2) ** 5) / 2;
 }
@@ -153,10 +162,11 @@ function setNightOpacity(map, factor) {
  * day/night terminator with a scatter of city lights on the night side,
  * and real local-time lighting once landed. Driven entirely by a single
  * hand-rolled requestAnimationFrame loop calling jumpTo every frame (never
- * separate Mapbox animations stitched together), the sequence holds on
- * the full globe (PRE_DELAY_MS), spins it a couple of full revolutions
- * while the whole Earth stays on screen (SPIN_MS), then zooms in to land
- * on Bali (ZOOM_MS) — at the exact center/zoom/projection the live Explore
+ * separate Mapbox animations stitched together), the sequence is already
+ * spinning at full speed on the very first frame (no static hold), spins
+ * it a couple of full revolutions while decelerating and the whole Earth
+ * stays on screen (SPIN_MS), then zooms in to land on Bali (ZOOM_MS) — at
+ * the exact center/zoom/projection the live Explore
  * map opens with, so the shot continues straight into the real app rather
  * than cutting to a second, differently-framed map. Config properties
  * (lightPreset) are set on 'style.load' per Mapbox's docs. A light NASA
@@ -294,13 +304,14 @@ export function GlobeIntro({ onComplete }) {
         let nightFactor = 1;
 
         if (elapsed < PRE_DELAY_MS) {
-          // Held on the full globe, already spinning-in-place visually via
-          // the style's own rotation cue — camera itself doesn't move yet.
+          // PRE_DELAY_MS is 0 — this branch is effectively unreachable, kept
+          // only as a safety fallback for the very first frame.
           lng = START_CENTER[0];
         } else if (elapsed < PRE_DELAY_MS + SPIN_MS) {
           // Beat 1: spin the whole way to Bali's longitude while staying
-          // zoomed out far enough to see the entire globe.
-          const spinT = easeInOutQuint(Math.min((elapsed - PRE_DELAY_MS) / SPIN_MS, 1));
+          // zoomed out far enough to see the entire globe. easeOutQuint
+          // means this is already moving at full speed on frame one.
+          const spinT = easeOutQuint(Math.min((elapsed - PRE_DELAY_MS) / SPIN_MS, 1));
           lng = START_CENTER[0] + (BALI.lon - START_CENTER[0]) * spinT;
           zoom = SPIN_ZOOM;
           pitch = 0;
@@ -390,6 +401,11 @@ export function GlobeIntro({ onComplete }) {
       }
       try {
         addNightLayers(map);
+      } catch (err) {
+        // Decorative only — never let it block the intro.
+      }
+      try {
+        addBaliTownLabels(map);
       } catch (err) {
         // Decorative only — never let it block the intro.
       }

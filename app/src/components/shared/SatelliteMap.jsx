@@ -3,6 +3,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { mapboxgl } from '../../lib/mapbox';
 import { baliLightPreset } from '../../intro/daynight';
 import { BALI, EXPLORE_ZOOM } from '../../intro/geo';
+import { addBaliTownLabels } from '../../intro/baliTowns';
 
 function buildMarkerEl(villa) {
   const isStay = villa.verdict === 'stay';
@@ -96,6 +97,11 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
         map.setConfigProperty('basemap', 'showRoadLabels', true);
       } catch (err) {
         // Non-fatal — older style revisions may not support config properties.
+      }
+      try {
+        addBaliTownLabels(map);
+      } catch (err) {
+        // Decorative only — never let it block the map.
       }
     });
 
