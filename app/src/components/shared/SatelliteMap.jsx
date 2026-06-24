@@ -77,27 +77,29 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
       dragRotate: false,
       touchPitch: false,
       attributionControl: true,
+      // Set basemap config (label visibility, lighting) here, at
+      // construction time, instead of via map.setConfigProperty() inside a
+      // 'style.load' handler. setConfigProperty throws "Style import not
+      // found: basemap" if called before the style's basemap import has
+      // fully resolved (mapbox-gl-js#12841) — and that call used to be
+      // wrapped in try/catch, so on the live site the error was silently
+      // swallowed every time, which is exactly why the satellite photo was
+      // showing with zero place/POI/road labels: just a satellite photo,
+      // no names, no roads, nothing. Passing config directly here is
+      // Mapbox's own documented fix — it applies from the first rendered
+      // frame, with no event-timing race to lose.
+      config: {
+        basemap: {
+          lightPreset: baliLightPreset(),
+          showPlaceLabels: true,
+          showPointOfInterestLabels: true,
+          showRoadLabels: true,
+        },
+      },
     });
     mapRef.current = map;
 
     map.on('style.load', () => {
-      try {
-        map.setConfigProperty('basemap', 'lightPreset', baliLightPreset());
-      } catch (err) {
-        // Non-fatal — older style revisions may not support config properties.
-      }
-      try {
-        // Standard Satellite ships these label layers (place names, POIs —
-        // restaurants, temples, beaches, landmarks — and road labels) but
-        // doesn't always turn them on by default the way the plain
-        // Standard style does. Without them this is just a satellite
-        // photo; with them it reads as an actual functional map.
-        map.setConfigProperty('basemap', 'showPlaceLabels', true);
-        map.setConfigProperty('basemap', 'showPointOfInterestLabels', true);
-        map.setConfigProperty('basemap', 'showRoadLabels', true);
-      } catch (err) {
-        // Non-fatal — older style revisions may not support config properties.
-      }
       try {
         addBaliTownLabels(map);
       } catch (err) {

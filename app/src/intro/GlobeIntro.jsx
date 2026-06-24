@@ -302,6 +302,26 @@ export function GlobeIntro({ onComplete }) {
         pitch: 0,
         interactive: false,
         attributionControl: true, // required by Mapbox's terms
+        // Set basemap config (label visibility, lighting) HERE, at
+        // construction time, rather than via map.setConfigProperty() inside
+        // a 'style.load' handler. The latter is a known source of a
+        // silent failure: calling setConfigProperty before the style's
+        // 'basemap' import has fully resolved throws "Style import not
+        // found: basemap" (mapbox-gl-js#12841) — and our style.load
+        // handler wrapped that call in try/catch, so on the live site the
+        // error was being swallowed every time, leaving every label off
+        // with no visible error at all. Passing config directly in the
+        // style/constructor is Mapbox's own documented fix: the basemap
+        // renders with these already applied from the very first frame,
+        // no event-timing race possible.
+        config: {
+          basemap: {
+            lightPreset: baliLightPreset(),
+            showPlaceLabels: true,
+            showPointOfInterestLabels: true,
+            showRoadLabels: true,
+          },
+        },
       });
     } catch (err) {
       setFailed(true);
@@ -494,16 +514,9 @@ export function GlobeIntro({ onComplete }) {
     }, 1200);
 
     map.on('style.load', () => {
-      try {
-        map.setConfigProperty('basemap', 'lightPreset', baliLightPreset());
-        // Matches SatelliteMap's label config so there's no pop-in of place/
-        // POI/road labels right at the crossfade hand-off into the real map.
-        map.setConfigProperty('basemap', 'showPlaceLabels', true);
-        map.setConfigProperty('basemap', 'showPointOfInterestLabels', true);
-        map.setConfigProperty('basemap', 'showRoadLabels', true);
-      } catch (err) {
-        // Older style revisions may not support config properties — non-fatal.
-      }
+      // Basemap config (lightPreset, label visibility) is now set in the
+      // Map constructor's `config` option above — not here — so there's
+      // nothing left to do for that on every style.load.
       // Order matters: each layer below renders on top of the previous
       // one (no explicit 'before' needed since night/ice-caps share the
       // 'bottom' slot and are added after clouds) — so the night-dark
