@@ -3,7 +3,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { mapboxgl } from '../lib/mapbox';
 import { BALI, EXPLORE_ZOOM } from './geo';
 import { baliLightPreset } from './daynight';
-import { antisolarPoint, hemisphereRing, angularDistanceDeg, MAJOR_CITIES } from './terminator';
+import { antisolarPoint, hemisphereRing, angularDistanceDeg, MAJOR_CITIES, scatterCityLights } from './terminator';
 
 // --- Timeline (ms) — ONE single overlapping flight, not two sequential
 // beats. Rotation, zoom, and pitch are all driven off the SAME elapsed-time
@@ -153,10 +153,15 @@ function addNightLayers(map) {
     paint: { 'fill-color': '#03060f', 'fill-opacity': NIGHT_EDGE_OPACITY },
   });
 
-  const nightCities = MAJOR_CITIES.filter(
-    ([, lon, lat]) => angularDistanceDeg(lon, lat, night.lon, night.lat) < 88,
+  // Each named city expands into itself plus a sprawl of dimmer satellite
+  // lights (see scatterCityLights) — so the night side reads as a real
+  // texture of many small lights clustered where people live, the way it
+  // looks out of a plane window at night, rather than ~60 isolated
+  // identical blobs.
+  const nightLights = scatterCityLights(MAJOR_CITIES).filter(
+    ([lon, lat]) => angularDistanceDeg(lon, lat, night.lon, night.lat) < 88,
   );
-  const cityFeatures = nightCities.map(([name, lon, lat, weight]) => ({
+  const cityFeatures = nightLights.map(([lon, lat, weight]) => ({
     type: 'Feature',
     properties: { weight },
     geometry: { type: 'Point', coordinates: [lon, lat] },
@@ -168,7 +173,12 @@ function addNightLayers(map) {
     source: 'city-lights',
     slot: 'bottom',
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['get', 'weight'], 1, 10, 3, 24],
+      // Extra low stop (0.25) covers the small satellite-sprawl lights
+      // from scatterCityLights — without it they'd interpolate off the
+      // bottom of the 1..3 range and all render at the same min radius,
+      // losing the size variation that makes the sprawl read as textured
+      // rather than a grid of identical dots.
+      'circle-radius': ['interpolate', ['linear'], ['get', 'weight'], 0.25, 3, 1, 10, 3, 24],
       'circle-color': '#ffcf6e',
       'circle-blur': 0.9,
       'circle-opacity': CITY_GLOW_OPACITY,
@@ -180,7 +190,7 @@ function addNightLayers(map) {
     source: 'city-lights',
     slot: 'bottom',
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['get', 'weight'], 1, 2.2, 3, 4.5],
+      'circle-radius': ['interpolate', ['linear'], ['get', 'weight'], 0.25, 1, 1, 2.2, 3, 4.5],
       'circle-color': '#fff6e0',
       'circle-blur': 0.15,
       'circle-opacity': CITY_CORE_OPACITY,

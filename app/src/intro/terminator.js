@@ -88,6 +88,37 @@ export function angularDistanceDeg(lon1, lat1, lon2, lat2) {
   return toDeg(2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
+/**
+ * Expands each named city into itself plus a small sprawl of dimmer
+ * "satellite" lights scattered around it — so the night side reads as a
+ * real texture of many small lights clustered where people actually live
+ * (the look of city lights out of a plane window), instead of ~60 isolated
+ * uniform blobs. Position is randomized per call (decorative only — a
+ * fresh scatter each time the intro plays is fine, even desirable), but
+ * count and spread are deterministic functions of each city's weight, so
+ * bigger metros reliably get a bigger, denser sprawl than small ones.
+ * Returns flat [lon, lat, weight] tuples (name dropped, not needed downstream).
+ */
+export function scatterCityLights(cities, satellitesPerCity = 14, radiusDeg = 1.6) {
+  const points = [];
+  cities.forEach(([, lon, lat, weight]) => {
+    points.push([lon, lat, weight]);
+    const count = Math.round(satellitesPerCity * (weight / 2));
+    for (let i = 0; i < count; i += 1) {
+      const angle = Math.random() * Math.PI * 2;
+      // sqrt(random) biases points toward the center, like real urban
+      // density tapering off from a downtown core rather than spreading
+      // evenly all the way out to the radius.
+      const dist = radiusDeg * Math.sqrt(Math.random());
+      const dLon = (dist * Math.cos(angle)) / Math.cos(toRad(lat));
+      const dLat = dist * Math.sin(angle);
+      const satWeight = 0.25 + Math.random() * 0.65; // smaller and dimmer than the city core itself
+      points.push([lon + dLon, lat + dLat, satWeight]);
+    }
+  });
+  return points;
+}
+
 // A spread of major world cities — enough to read as "city lights" without
 // needing a real night-lights raster source. weight scales the glow size.
 export const MAJOR_CITIES = [
