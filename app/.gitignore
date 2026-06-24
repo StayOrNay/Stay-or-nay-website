@@ -13,6 +13,13 @@ dist_old_*
 dist-ssr
 *.local
 
+# Local Supabase credentials — set the real values in Cloudflare Pages'
+# build-time environment variables instead (the anon key is safe to ship
+# client-side, but keeping it out of git keeps env-specific projects separate).
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Routes, Route, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { SavedProvider } from './context/SavedContext';
+import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { TabBar, Sidebar } from './components/shared';
 import { GlobeIntro } from './intro/GlobeIntro';
 import { useIsDesktop } from './hooks/useMediaQuery';
@@ -9,6 +11,13 @@ import { FeedScreen } from './screens/FeedScreen';
 import { SavedScreen } from './screens/SavedScreen';
 import { VillaDetailScreen } from './screens/VillaDetailScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
+import { SettingsScreen } from './screens/SettingsScreen';
+import { AccountScreen } from './screens/AccountScreen';
+import { LanguageScreen } from './screens/LanguageScreen';
+import { LegalScreen } from './screens/legal/LegalScreen';
+import { PrivacyPolicyScreen } from './screens/legal/PrivacyPolicyScreen';
+import { TermsScreen } from './screens/legal/TermsScreen';
+import { CookiePolicyScreen } from './screens/legal/CookiePolicyScreen';
 
 /**
  * Mobile-first app shell that becomes a real wide site at the desktop
@@ -58,16 +67,27 @@ function AppShell() {
 
 export default function App() {
   return (
-    <SavedProvider>
-      <Routes>
-        <Route element={<AppShell />}>
-          <Route path="/" element={<ExploreScreen />} />
-          <Route path="/feed" element={<FeedScreen />} />
-          <Route path="/saved" element={<SavedScreen />} />
-          <Route path="/you" element={<ProfileScreen />} />
-          <Route path="/villa/:id" element={<VillaDetailScreen />} />
-        </Route>
-      </Routes>
-    </SavedProvider>
+    <AuthProvider>
+      <LanguageProvider>
+      <SavedProvider>
+        <Routes>
+          <Route element={<AppShell />}>
+            <Route path="/" element={<ExploreScreen />} />
+            <Route path="/feed" element={<FeedScreen />} />
+            <Route path="/saved" element={<SavedScreen />} />
+            <Route path="/you" element={<ProfileScreen />} />
+            <Route path="/you/settings" element={<SettingsScreen />} />
+            <Route path="/you/account" element={<AccountScreen />} />
+            <Route path="/you/language" element={<LanguageScreen />} />
+            <Route path="/you/legal" element={<LegalScreen />} />
+            <Route path="/you/legal/privacy" element={<PrivacyPolicyScreen />} />
+            <Route path="/you/legal/terms" element={<TermsScreen />} />
+            <Route path="/you/legal/cookies" element={<CookiePolicyScreen />} />
+            <Route path="/villa/:id" element={<VillaDetailScreen />} />
+          </Route>
+        </Routes>
+      </SavedProvider>
+      </LanguageProvider>
+    </AuthProvider>
   );
 }

@@ -1,19 +1,28 @@
 import React from 'react';
-import { Compass, PenLine, Bell, Settings, ChevronRight } from 'lucide-react';
-import { Avatar, Tag } from '../components/core';
+import { useNavigate } from 'react-router-dom';
+import { Compass, PenLine, Bell, Settings, UserRound, Globe, ScrollText, ChevronRight } from 'lucide-react';
+import { Avatar, Tag, Button } from '../components/core';
 import { Header } from '../components/shared';
+import { useAuth } from '../context/AuthContext';
 
 const ROWS = [
   { Icon: Compass, label: 'Trips' },
   { Icon: PenLine, label: 'Your reviews' },
   { Icon: Bell, label: 'Verdict alerts' },
-  { Icon: Settings, label: 'Settings' },
+  { Icon: Settings, label: 'Settings', to: '/you/settings' },
+  { Icon: UserRound, label: 'Account', to: '/you/account' },
+  { Icon: Globe, label: 'Language', to: '/you/language' },
+  { Icon: ScrollText, label: 'Legal', to: '/you/legal' },
 ];
 
 /**
- * You — simple profile + settings list.
+ * You — profile header (reflects the signed-in account once auth is
+ * configured, or a sign-in prompt if not) + the settings list.
  */
 export function ProfileScreen() {
+  const navigate = useNavigate();
+  const { user, configured } = useAuth();
+
   return (
     <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
       <Header title="You" />
@@ -21,19 +30,38 @@ export function ProfileScreen() {
           shell is wide — a settings list stretched to 1400px reads worse
           than one left at a comfortable reading width. */}
       <div style={{ padding: 16, maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <Avatar name="Sam Okafor" size="lg" verified />
-          <div>
-            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--text-strong)' }}>Sam Okafor</div>
-            <div style={{ marginTop: 4 }}><Tag variant="outline" tone="stay">12 verdicts written</Tag></div>
+        {user ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <Avatar name={user.email} size="lg" verified={Boolean(user.email_confirmed_at)} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--text-strong)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user.email}
+              </div>
+              <div style={{ marginTop: 4 }}><Tag variant="outline" tone="stay">Signed in</Tag></div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <Avatar name="Guest" size="lg" />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--text-strong)' }}>Guest</div>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+                {configured ? 'Sign in to save your verdicts everywhere.' : 'Browsing without an account.'}
+              </div>
+            </div>
+            <Button variant="stay" size="sm" onClick={() => navigate('/you/account')}>Sign in</Button>
+          </div>
+        )}
         <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-          {ROWS.map(({ Icon, label }, i) => (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '15px 16px', borderTop: i ? '1px solid var(--border-soft)' : 'none', cursor: 'pointer' }}>
+          {ROWS.map(({ Icon, label, to }, i) => (
+            <div
+              key={label}
+              onClick={to ? () => navigate(to) : undefined}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '15px 16px', borderTop: i ? '1px solid var(--border-soft)' : 'none', cursor: to ? 'pointer' : 'default' }}
+            >
               <Icon size={20} color="var(--text-muted)" />
               <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 15, color: 'var(--text-strong)' }}>{label}</span>
-              <ChevronRight size={18} color="var(--text-faint)" />
+              {to && <ChevronRight size={18} color="var(--text-faint)" />}
             </div>
           ))}
         </div>
