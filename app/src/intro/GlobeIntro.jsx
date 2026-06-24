@@ -380,6 +380,11 @@ export function GlobeIntro({ onComplete }) {
     map.on('style.load', () => {
       try {
         map.setConfigProperty('basemap', 'lightPreset', baliLightPreset());
+        // Matches SatelliteMap's label config so there's no pop-in of place/
+        // POI/road labels right at the crossfade hand-off into the real map.
+        map.setConfigProperty('basemap', 'showPlaceLabels', true);
+        map.setConfigProperty('basemap', 'showPointOfInterestLabels', true);
+        map.setConfigProperty('basemap', 'showRoadLabels', true);
       } catch (err) {
         // Older style revisions may not support config properties — non-fatal.
       }

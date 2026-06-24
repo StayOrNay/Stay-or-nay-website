@@ -85,6 +85,18 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
       } catch (err) {
         // Non-fatal — older style revisions may not support config properties.
       }
+      try {
+        // Standard Satellite ships these label layers (place names, POIs —
+        // restaurants, temples, beaches, landmarks — and road labels) but
+        // doesn't always turn them on by default the way the plain
+        // Standard style does. Without them this is just a satellite
+        // photo; with them it reads as an actual functional map.
+        map.setConfigProperty('basemap', 'showPlaceLabels', true);
+        map.setConfigProperty('basemap', 'showPointOfInterestLabels', true);
+        map.setConfigProperty('basemap', 'showRoadLabels', true);
+      } catch (err) {
+        // Non-fatal — older style revisions may not support config properties.
+      }
     });
 
     map.on('load', () => {

@@ -9,12 +9,19 @@
  *   z =  R * sin(phi) * sin(theta)
  */
 
-export const BALI = { lon: 115.19, lat: -8.4, label: 'Bali, Indonesia' };
+// Centroid of the actual villa pins (Uluwatu, Canggu, Ubud, Seminyak — see
+// data/villas.js), not an arbitrary point on the island. Landing the intro
+// and opening the Explore map anywhere else means the default view shows
+// an empty stretch of coastline with none of the real pins in frame.
+export const BALI = { lon: 115.1636, lat: -8.6686, label: 'Bali, Indonesia' };
 
 // Shared with the post-intro interactive map (SatelliteMap) so the globe
 // intro's landing camera and the live Explore map's initial camera are
 // exactly the same shot — no jump to a differently-framed "other map".
-export const EXPLORE_ZOOM = 10.3;
+// Tight enough to read as "landing in this neighborhood" while still
+// keeping every villa pin's bounding box (~19km x ~36km) comfortably on
+// screen.
+export const EXPLORE_ZOOM = 10.6;
 
 export function toRad(deg) {
   return (deg * Math.PI) / 180;

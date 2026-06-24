@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Navigation, X } from 'lucide-react';
-import { Input, IconButton, VerdictBadge, RatingStars, Tag, VillaCard } from '../components/core';
+import { Search, X } from 'lucide-react';
+import { Input, VerdictBadge, RatingStars, Tag, VillaCard } from '../components/core';
 import { SatelliteMap } from '../components/shared';
 import { villas } from '../data/villas';
 import { useSaved } from '../context/SavedContext';
@@ -77,13 +77,6 @@ export function ExploreScreen() {
             </div>
           </>
         )}
-
-        {/* Locate FAB — recenters the satellite map on Bali */}
-        <div style={{ position: 'absolute', right: 14, bottom: !isDesktop && sel ? 250 : 24, zIndex: 8, transition: 'bottom var(--dur-base) var(--ease-out)' }}>
-          <IconButton variant="brand" size="lg" ariaLabel="Recenter on Bali" onClick={() => mapRef.current && mapRef.current.recenter()}>
-            <Navigation size={20} />
-          </IconButton>
-        </div>
 
         {/* Bottom-sheet preview — mobile only; desktop shows the same info in the side list */}
         {!isDesktop && sel && (
