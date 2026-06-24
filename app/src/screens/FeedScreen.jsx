@@ -1,22 +1,30 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, ChevronsUp } from 'lucide-react';
-import { VerdictBadge, RatingStars, Tag } from '../components/core';
+import { VerdictBadge, RatingStars, Tag, VillaCard } from '../components/core';
 import { villas } from '../data/villas';
 import { useSaved } from '../context/SavedContext';
+import { useIsDesktop } from '../hooks/useMediaQuery';
 
 /**
- * Feed — TikTok-style full-screen vertical feed. Swipe (or scroll) up/down to
- * move between villas, one full-bleed verdict per screen.
+ * Feed — TikTok-style full-screen vertical feed on mobile, where a tall
+ * narrow screen is exactly the canvas that format wants. On desktop a
+ * single full-bleed column stretched across 1400px of width wouldn't gain
+ * anything from the extra space (and a giant hero image is a worse use of
+ * it than just browsing more verdicts at once) — so above the desktop
+ * breakpoint this becomes a responsive card grid instead, the same "use
+ * the width" idea as Explore's side list and Saved's grid.
  */
 export function FeedScreen() {
   const navigate = useNavigate();
+  const isDesktop = useIsDesktop();
   const { saved, toggleSave } = useSaved();
   const containerRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showHint, setShowHint] = useState(true);
 
   useEffect(() => {
+    if (isDesktop) return undefined;
     const el = containerRef.current;
     if (!el) return undefined;
     let raf = null;
@@ -31,7 +39,36 @@ export function FeedScreen() {
     };
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [isDesktop]);
+
+  if (isDesktop) {
+    return (
+      <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
+        <div style={{ padding: '24px 28px 8px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+          {villas.length} verdicts
+        </div>
+        <div
+          style={{
+            padding: '12px 28px 32px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+            gap: 20,
+          }}
+        >
+          {villas.map((v) => (
+            <VillaCard
+              key={v.id}
+              name={v.name} location={v.location} coords={v.coords} image={v.image}
+              verdict={v.verdict} score={v.score} rating={v.rating}
+              price={v.price} currency={v.currency} tags={v.tags}
+              saved={saved.has(v.id)} onToggleSave={() => toggleSave(v.id)}
+              onClick={() => navigate(`/villa/${v.id}`)}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

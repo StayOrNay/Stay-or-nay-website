@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { SavedProvider } from './context/SavedContext';
-import { TabBar } from './components/shared';
+import { TabBar, Sidebar } from './components/shared';
 import { GlobeIntro } from './intro/GlobeIntro';
+import { useIsDesktop } from './hooks/useMediaQuery';
 import { ExploreScreen } from './screens/ExploreScreen';
 import { FeedScreen } from './screens/FeedScreen';
 import { SavedScreen } from './screens/SavedScreen';
@@ -10,9 +11,12 @@ import { VillaDetailScreen } from './screens/VillaDetailScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 
 /**
- * Mobile-first app shell: edge-to-edge column capped at --screen-max,
- * centered on wider viewports. Bottom tab bar shows on the four main tabs
- * and hides on the full-screen villa detail view.
+ * Mobile-first app shell that becomes a real wide site at the desktop
+ * breakpoint (see useIsDesktop / .app-shell in base.css): below it, an
+ * edge-to-edge column capped at --screen-max with a bottom tab bar; at or
+ * above it, the phone-card framing drops away and a left sidebar nav
+ * replaces the bottom bar, since a fixed bottom bar on a 1400px-wide
+ * screen reads as an unconverted mobile habit rather than a website.
  *
  * Every fresh load plays the spinning-globe-lands-on-Bali intro first
  * (skippable, and skipped automatically under prefers-reduced-motion),
@@ -20,15 +24,17 @@ import { ProfileScreen } from './screens/ProfileScreen';
  */
 function AppShell() {
   const location = useLocation();
+  const isDesktop = useIsDesktop();
   const [introDone, setIntroDone] = useState(false);
-  const showTabs = introDone && !location.pathname.startsWith('/villa/');
+  const showNav = introDone && !location.pathname.startsWith('/villa/');
 
   return (
-    <div className="app-shell">
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+    <div className="app-shell" style={{ flexDirection: isDesktop ? 'row' : 'column' }}>
+      {isDesktop && showNav && <Sidebar />}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minWidth: 0 }}>
         {introDone ? <Outlet /> : <GlobeIntro onComplete={() => setIntroDone(true)} />}
       </div>
-      {showTabs && <TabBar />}
+      {!isDesktop && showNav && <TabBar />}
     </div>
   );
 }

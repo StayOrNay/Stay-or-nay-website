@@ -17,7 +17,10 @@ export function ProfileScreen() {
   return (
     <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
       <Header title="You" />
-      <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 18 }}>
+      {/* Capped + centered rather than stretched edge-to-edge once the
+          shell is wide — a settings list stretched to 1400px reads worse
+          than one left at a comfortable reading width. */}
+      <div style={{ padding: 16, maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <Avatar name="Sam Okafor" size="lg" verified />
           <div>

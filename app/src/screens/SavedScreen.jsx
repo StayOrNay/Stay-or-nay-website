@@ -29,10 +29,14 @@ export function SavedScreen() {
           <Button variant="stay" onClick={() => navigate('/')} iconLeft={<MapIcon size={18} />}>Explore the map</Button>
         </div>
       ) : (
-        <div style={{ padding: '14px 14px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+        <div style={{ padding: '14px 14px 24px' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 16 }}>
             {savedVillas.length} on your shortlist
           </div>
+          {/* CSS grid (not a JS breakpoint) — naturally reflows from one
+              column on a phone-width canvas to several once the shell
+              widens past the desktop breakpoint, no media query needed. */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
           {savedVillas.map((v) => (
             <VillaCard
               key={v.id}
@@ -42,6 +46,7 @@ export function SavedScreen() {
               saved={true} onToggleSave={() => toggleSave(v.id)} onClick={() => navigate(`/villa/${v.id}`)}
             />
           ))}
+          </div>
         </div>
       )}
     </div>

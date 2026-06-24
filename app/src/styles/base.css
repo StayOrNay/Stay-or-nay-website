@@ -105,3 +105,26 @@ img {
     border: 1px solid var(--border-soft);
   }
 }
+
+/* --- Desktop: drop the "phone in a card" framing ----------------------- */
+/* Past this width the product should read as a real website, not a phone
+   mockup centered on a desk backdrop — the canvas widens edge to edge, the
+   card chrome (radius/shadow/border/height cap) goes away, and App.jsx
+   swaps the bottom TabBar for a left Sidebar (see useIsDesktop /
+   DESKTOP_QUERY in useMediaQuery.js, which must stay in sync with this
+   breakpoint value). */
+@media (min-width: 960px) {
+  body {
+    padding: 0;
+  }
+  .app-shell {
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    max-width: none;
+    width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+  }
+}
