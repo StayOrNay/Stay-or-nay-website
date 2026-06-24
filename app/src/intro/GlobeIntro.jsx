@@ -89,8 +89,15 @@ function gibsCloudUrl() {
 
 const NIGHT_CORE_OPACITY = 0.6;
 const NIGHT_EDGE_OPACITY = 0.28;
-const CITY_GLOW_OPACITY = 0.35;
-const CITY_CORE_OPACITY = 0.9;
+// Pushed brighter + bigger than the first pass — at the zoomed-out spin
+// view a city is only a handful of screen pixels, so a glow that reads as
+// "a sparse smudge of city lights" at that scale needs real opacity/size
+// headroom, not the same numbers you'd use once zoomed into a single
+// region. CITY_TWINKLE_AMP (see tick()) layers a slow per-frame shimmer on
+// top of these base values so the lights read as alive, not a static decal.
+const CITY_GLOW_OPACITY = 0.6;
+const CITY_CORE_OPACITY = 1;
+const CITY_TWINKLE_AMP = 0.22; // ± swing applied only to the city layers, on top of the base opacities above
 
 const CLOUD_OPACITY = 0.45;
 // Clouds fade out as the camera's zoom crosses this range — fully gone
@@ -161,9 +168,9 @@ function addNightLayers(map) {
     source: 'city-lights',
     slot: 'bottom',
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['get', 'weight'], 1, 6, 3, 16],
-      'circle-color': '#ffd98a',
-      'circle-blur': 1,
+      'circle-radius': ['interpolate', ['linear'], ['get', 'weight'], 1, 10, 3, 24],
+      'circle-color': '#ffcf6e',
+      'circle-blur': 0.9,
       'circle-opacity': CITY_GLOW_OPACITY,
     },
   });
@@ -173,20 +180,25 @@ function addNightLayers(map) {
     source: 'city-lights',
     slot: 'bottom',
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['get', 'weight'], 1, 1.4, 3, 3],
+      'circle-radius': ['interpolate', ['linear'], ['get', 'weight'], 1, 2.2, 3, 4.5],
       'circle-color': '#fff6e0',
-      'circle-blur': 0.2,
+      'circle-blur': 0.15,
       'circle-opacity': CITY_CORE_OPACITY,
     },
   });
 }
 
-function setNightOpacity(map, factor) {
+// `twinkle` is a slow ±CITY_TWINKLE_AMP sine wave the tick loop feeds in
+// every frame (see runFlight) — applied only to the two city-light layers,
+// never to the night-dark fill, so the hemisphere shading stays rock
+// steady while the lights themselves read as gently alive rather than a
+// flat, static decal.
+function setNightOpacity(map, factor, twinkle = 1) {
   try {
     map.setPaintProperty('night-core', 'fill-opacity', NIGHT_CORE_OPACITY * factor);
     map.setPaintProperty('night-edge', 'fill-opacity', NIGHT_EDGE_OPACITY * factor);
-    map.setPaintProperty('city-glow', 'circle-opacity', CITY_GLOW_OPACITY * factor);
-    map.setPaintProperty('city-core', 'circle-opacity', CITY_CORE_OPACITY * factor);
+    map.setPaintProperty('city-glow', 'circle-opacity', CITY_GLOW_OPACITY * factor * twinkle);
+    map.setPaintProperty('city-core', 'circle-opacity', CITY_CORE_OPACITY * factor * twinkle);
   } catch (err) {
     // Layers may not exist yet (style still loading) or map may be torn
     // down — this overlay is decorative only, never let it throw.
@@ -433,9 +445,14 @@ export function GlobeIntro({ onComplete }) {
         // Fades out in step with the zoom-in (not a separate later beat),
         // so it's gone by the time the real, local lightPreset takes over.
         const nightFactor = 1 - zoomT;
+        // A slow, continuous shimmer — not tied to t (the flight's overall
+        // progress) but to raw elapsed ms, so it keeps gently pulsing at
+        // the same lazy rate regardless of where the spin/zoom easing
+        // currently is. 1 ± CITY_TWINKLE_AMP.
+        const twinkle = 1 + CITY_TWINKLE_AMP * Math.sin(elapsed / 260);
 
         map.jumpTo({ center: [lng, BALI.lat], zoom, pitch, bearing: 0 });
-        setNightOpacity(map, nightFactor);
+        setNightOpacity(map, nightFactor, twinkle);
         // Driven by the actual zoom value (altitude), not by beat timing —
         // so clouds are reliably gone by the time the view is actually
         // close enough to read as "street level", regardless of how the
