@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { Input, VerdictBadge, RatingStars, Tag, VillaCard } from '../components/core';
 import { SatelliteMap } from '../components/shared';
-import { villas } from '../data/villas';
+import { useVillasWithReviews } from '../hooks/useVillasWithReviews';
 import { useSaved } from '../context/SavedContext';
 import { useIsDesktop } from '../hooks/useMediaQuery';
 import { reverseGeocode } from '../lib/mapbox';
@@ -19,6 +19,7 @@ import { reverseGeocode } from '../lib/mapbox';
 export function ExploreScreen() {
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
+  const villas = useVillasWithReviews();
   const [selected, setSelected] = useState(null);
   const [locationLabel, setLocationLabel] = useState('Bali, Indonesia');
   const mapRef = useRef(null);

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, ChevronsUp } from 'lucide-react';
 import { VerdictBadge, RatingStars, Tag, VillaCard } from '../components/core';
-import { villas } from '../data/villas';
+import { useVillasWithReviews } from '../hooks/useVillasWithReviews';
 import { useSaved } from '../context/SavedContext';
 import { useIsDesktop } from '../hooks/useMediaQuery';
 
@@ -18,6 +18,7 @@ import { useIsDesktop } from '../hooks/useMediaQuery';
 export function FeedScreen() {
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
+  const villas = useVillasWithReviews();
   const { saved, toggleSave } = useSaved();
   const containerRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(0);

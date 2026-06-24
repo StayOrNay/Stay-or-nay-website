@@ -1,13 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PenLine, Bell, Settings, UserRound, Globe, ScrollText, ChevronRight } from 'lucide-react';
+import { PenLine, Bell, Settings, UserRound, Globe, ScrollText, ChevronRight, ShieldCheck } from 'lucide-react';
 import { Avatar, Tag, Button } from '../components/core';
 import { Header } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
+import { isAdmin } from '../lib/admin';
 
-const ROWS = [
-  { Icon: PenLine, label: 'Your reviews' },
-  { Icon: Bell, label: 'Verdict alerts' },
+const BASE_ROWS = [
+  { Icon: PenLine, label: 'Your reviews', to: '/you/reviews' },
+  { Icon: Bell, label: 'Verdict alerts', to: '/you/alerts' },
   { Icon: Settings, label: 'Settings', to: '/you/settings' },
   { Icon: UserRound, label: 'Account', to: '/you/account' },
   { Icon: Globe, label: 'Language', to: '/you/language' },
@@ -16,11 +17,16 @@ const ROWS = [
 
 /**
  * You — profile header (reflects the signed-in account once auth is
- * configured, or a sign-in prompt if not) + the settings list.
+ * configured, or a sign-in prompt if not) + the settings list. Signed-in
+ * users who match lib/admin.js's allowlist get an extra "Moderate reviews"
+ * row — that's the only way the moderation queue is reachable from the UI.
  */
 export function ProfileScreen() {
   const navigate = useNavigate();
   const { user, configured } = useAuth();
+  const ROWS = isAdmin(user)
+    ? [...BASE_ROWS, { Icon: ShieldCheck, label: 'Moderate reviews', to: '/you/moderate' }]
+    : BASE_ROWS;
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>

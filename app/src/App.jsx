@@ -18,6 +18,10 @@ import { LegalScreen } from './screens/legal/LegalScreen';
 import { PrivacyPolicyScreen } from './screens/legal/PrivacyPolicyScreen';
 import { TermsScreen } from './screens/legal/TermsScreen';
 import { CookiePolicyScreen } from './screens/legal/CookiePolicyScreen';
+import { MyReviewsScreen } from './screens/MyReviewsScreen';
+import { VerdictAlertsScreen } from './screens/VerdictAlertsScreen';
+import { WriteReviewScreen } from './screens/WriteReviewScreen';
+import { ModerationScreen } from './screens/ModerationScreen';
 
 /**
  * Mobile-first app shell that becomes a real wide site at the desktop
@@ -83,6 +87,11 @@ export default function App() {
             <Route path="/you/legal/privacy" element={<PrivacyPolicyScreen />} />
             <Route path="/you/legal/terms" element={<TermsScreen />} />
             <Route path="/you/legal/cookies" element={<CookiePolicyScreen />} />
+            <Route path="/you/reviews" element={<MyReviewsScreen />} />
+            <Route path="/you/alerts" element={<VerdictAlertsScreen />} />
+            <Route path="/you/moderate" element={<ModerationScreen />} />
+            <Route path="/write-review" element={<WriteReviewScreen />} />
+            <Route path="/write-review/:id" element={<WriteReviewScreen />} />
             <Route path="/villa/:id" element={<VillaDetailScreen />} />
           </Route>
         </Routes>

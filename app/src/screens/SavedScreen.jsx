@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Heart, Map as MapIcon } from 'lucide-react';
 import { VillaCard, Button } from '../components/core';
 import { Header } from '../components/shared';
-import { villas } from '../data/villas';
+import { useVillasWithReviews } from '../hooks/useVillasWithReviews';
 import { useSaved } from '../context/SavedContext';
 
 /**
@@ -11,6 +11,7 @@ import { useSaved } from '../context/SavedContext';
  */
 export function SavedScreen() {
   const navigate = useNavigate();
+  const villas = useVillasWithReviews();
   const { saved, toggleSave } = useSaved();
   const savedVillas = villas.filter((v) => saved.has(v.id));
 

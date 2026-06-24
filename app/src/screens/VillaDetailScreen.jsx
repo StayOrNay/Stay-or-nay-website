@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Share, Heart, MapPin as LocationIcon } from 'lucide-react';
+import { ChevronLeft, Share, Heart, MapPin as LocationIcon, PenLine } from 'lucide-react';
 import { VerdictBadge, RatingStars, Tag, Avatar, Button, IconButton } from '../components/core';
-import { villas } from '../data/villas';
 import { useSaved } from '../context/SavedContext';
 import { useIsDesktop } from '../hooks/useMediaQuery';
+import { useVillaWithReviews } from '../hooks/useVillasWithReviews';
+import { fetchApprovedReviewsForVilla } from '../lib/reviews';
+import { MAX_TOTAL } from '../lib/reviewScore';
 
 /**
  * Villa detail — hero aerial, big verdict, reviewer block, amenities,
@@ -19,7 +21,19 @@ export function VillaDetailScreen() {
   const { id } = useParams();
   const isDesktop = useIsDesktop();
   const { saved, toggleSave } = useSaved();
-  const villa = villas.find((v) => v.id === id);
+  const villa = useVillaWithReviews(id);
+  const [realReviews, setRealReviews] = useState([]);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    fetchApprovedReviewsForVilla(id).then(({ data }) => {
+      if (!cancelled) setRealReviews(data || []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   if (!villa) {
     return (
@@ -101,6 +115,38 @@ export function VillaDetailScreen() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {villa.tags.map((t, i) => <Tag key={i} tone={isStay ? 'stay' : 'neutral'}>{t}</Tag>)}
         </div>
+      </div>
+
+      {/* real, verified-stayer reviews */}
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+            — Reviews {villa.reviewCount ? `(${villa.reviewCount})` : ''}
+          </div>
+          <Button variant="ghost" size="sm" iconLeft={<PenLine size={15} />} onClick={() => navigate(`/write-review/${villa.id}`)}>
+            Write a review
+          </Button>
+        </div>
+        {realReviews.length === 0 ? (
+          <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--text-faint)' }}>
+            No approved reviews yet — be the first to write one.
+          </p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {realReviews.map((r) => (
+              <div key={r.id} style={{ background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Tag tone={r.verdict === 'stay' ? 'stay' : 'nay'}>{r.total} / {MAX_TOTAL}</Tag>
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-faint)' }}>
+                    {new Date(r.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+                {r.headline && <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14.5, color: 'var(--text-strong)' }}>"{r.headline}"</p>}
+                {r.body && <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-body)', lineHeight: 1.55 }}>{r.body}</p>}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
