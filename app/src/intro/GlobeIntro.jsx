@@ -4,7 +4,6 @@ import { mapboxgl } from '../lib/mapbox';
 import { BALI, EXPLORE_ZOOM } from './geo';
 import { baliLightPreset } from './daynight';
 import { antisolarPoint, hemisphereRing, angularDistanceDeg, MAJOR_CITIES } from './terminator';
-import { addBaliTownLabels } from './baliTowns';
 
 // --- Timeline (ms) — ONE single overlapping flight, not two sequential
 // beats. Rotation, zoom, and pitch are all driven off the SAME elapsed-time
@@ -531,11 +530,6 @@ export function GlobeIntro({ onComplete }) {
       }
       try {
         addNightLayers(map);
-      } catch (err) {
-        // Decorative only — never let it block the intro.
-      }
-      try {
-        addBaliTownLabels(map);
       } catch (err) {
         // Decorative only — never let it block the intro.
       }

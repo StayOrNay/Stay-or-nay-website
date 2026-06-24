@@ -3,7 +3,6 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { mapboxgl } from '../../lib/mapbox';
 import { baliLightPreset } from '../../intro/daynight';
 import { BALI, EXPLORE_ZOOM } from '../../intro/geo';
-import { addBaliTownLabels } from '../../intro/baliTowns';
 
 function buildMarkerEl(villa) {
   const isStay = villa.verdict === 'stay';
@@ -103,14 +102,6 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
       },
     });
     mapRef.current = map;
-
-    map.on('style.load', () => {
-      try {
-        addBaliTownLabels(map);
-      } catch (err) {
-        // Decorative only — never let it block the map.
-      }
-    });
 
     map.on('load', () => {
       villas.forEach((v) => {
