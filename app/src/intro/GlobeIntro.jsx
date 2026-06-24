@@ -36,23 +36,24 @@ const PITCH_RISE_AT = 0.12; // fraction of the ZOOM phase pitch starts rising in
 const PITCH_FLAT_BY = 0.85; // fraction by which pitch is back to flat (2D) on landing
 
 // One continuous spin curve, not two separate-feeling ones: holds at a
-// constant MAX velocity for the first SPIN_FAST_MS (so the opening second
-// reads as "already spinning, really fast" with zero ramp-up), then a
-// single smooth ease-out deceleration down to a dead stop by the time it
-// reaches Bali. A plain easeOutQuint was tried first, but its velocity
-// decays so aggressively right from t=0 that across a 720°
-// (two-revolution) spin the back half crawled — reading as two distinct
-// spin "events" rather than one deceleration arc. This piecewise curve
-// fixes that without changing SPIN_LNG_DELTA: a flat fast plateau, then
-// one decay, with the raw (pre-normalization) velocity matching exactly
-// at the seam (both sides evaluate to slope 1 there) — only the invisible
-// second derivative (acceleration) kinks, not the motion itself.
+// constant MAX velocity for the first SPIN_FAST_MS, then a single smooth
+// ease-out deceleration down to a dead stop by the time it reaches Bali.
+// SPIN_FAST_SHARE is the actual knob for "how fast does the first second
+// feel" — it's the fraction of the FULL 720° spin that gets covered
+// within that first flat second (0.8 = 80% of the whole spin happens in
+// the first of 3.5s, the remaining 20% eases out over the other 2.5s).
+// The decel curve's exponent is derived from that share rather than
+// fixed, so raising the share automatically raises the flat-phase speed
+// while keeping the velocity exactly matched at the seam (no kick) and
+// still landing at zero velocity at t=1 (matches the zoom phase's start).
 const SPIN_FAST_T = SPIN_FAST_MS / SPIN_MS;
-const SPIN_EASE_NORM = SPIN_FAST_T + (1 - SPIN_FAST_T) / 3;
+const SPIN_FAST_SHARE = 0.8;
+const SPIN_DECEL_EXP = ((1 - SPIN_FAST_T) * SPIN_FAST_SHARE) / (SPIN_FAST_T * (1 - SPIN_FAST_SHARE));
+const SPIN_EASE_NORM = SPIN_FAST_T + (1 - SPIN_FAST_T) / SPIN_DECEL_EXP;
 function spinEase(t) {
   if (t <= SPIN_FAST_T) return t / SPIN_EASE_NORM;
   const u = (t - SPIN_FAST_T) / (1 - SPIN_FAST_T);
-  const pos = SPIN_FAST_T + ((1 - SPIN_FAST_T) / 3) * (1 - (1 - u) ** 3);
+  const pos = SPIN_FAST_T + ((1 - SPIN_FAST_T) / SPIN_DECEL_EXP) * (1 - (1 - u) ** SPIN_DECEL_EXP);
   return pos / SPIN_EASE_NORM;
 }
 

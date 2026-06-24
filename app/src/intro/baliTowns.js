@@ -72,9 +72,23 @@ export function addBaliTownLabels(map) {
     slot: 'top',
     layout: {
       'text-field': ['get', 'name'],
+      // Explicit rather than relying on the style-spec default applying
+      // itself — addLayer() at runtime doesn't always inherit that
+      // default the way a font declared in a parsed style JSON does, and
+      // an unset/unresolved text-font renders no glyphs at all with no
+      // thrown error. Both names are in Mapbox's standard, always-on
+      // glyph set (not custom/account-specific), so this isn't gated on
+      // anything Standard Satellite specifically ships.
+      'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
       'text-size': 13,
       'text-anchor': 'center',
-      'text-allow-overlap': false,
+      // Was false — on a Standard Satellite map with place/POI/road
+      // labels also turned on, these compete with the basemap's own
+      // labels for the same screen space; allow-overlap keeps ours
+      // showing even if it loses that collision priority instead of
+      // silently never rendering.
+      'text-allow-overlap': true,
+      'text-ignore-placement': true,
       'text-padding': 4,
     },
     paint: {
