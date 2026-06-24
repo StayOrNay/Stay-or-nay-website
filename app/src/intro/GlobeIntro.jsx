@@ -470,13 +470,24 @@ export function GlobeIntro({ onComplete }) {
     // Safety net: if the container is somehow still collapsed after a short
     // grace period (shouldn't happen, but better than the intro hanging
     // forever), start anyway rather than leave the splash frozen.
+    //
+    // Must bail out immediately if flightStarted is already true. This used
+    // to unconditionally reset flightStarted = false here and call
+    // startFlightWhenReady() again — which, since the container almost
+    // always already has real dimensions well before 1200ms, just started
+    // a SECOND, fully independent runFlight() loop on top of the one
+    // already mid-animation. Two concurrent rAF loops both calling jumpTo
+    // every frame is exactly what made the intro look like "it spins once,
+    // cuts, and spins again": at the 1200ms mark the camera would snap back
+    // to START_CENTER as the new loop's t=0 frame overwrote the original
+    // loop's in-progress position, then replay the whole spin from
+    // scratch. This was the actual bug behind every "two spins" report —
+    // not the easing curve, which is why repeated curve rewrites never
+    // fixed it.
     const flightFallbackId = window.setTimeout(() => {
-      flightStarted = false;
-      startFlightWhenReady();
-      if (!flightStarted) {
-        flightStarted = true;
-        runFlight();
-      }
+      if (flightStarted) return;
+      flightStarted = true;
+      runFlight();
     }, 1200);
 
     map.on('style.load', () => {
