@@ -1,12 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Compass, PenLine, Bell, Settings, UserRound, Globe, ScrollText, ChevronRight } from 'lucide-react';
+import { PenLine, Bell, Settings, UserRound, Globe, ScrollText, ChevronRight } from 'lucide-react';
 import { Avatar, Tag, Button } from '../components/core';
 import { Header } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
 
 const ROWS = [
-  { Icon: Compass, label: 'Trips' },
   { Icon: PenLine, label: 'Your reviews' },
   { Icon: Bell, label: 'Verdict alerts' },
   { Icon: Settings, label: 'Settings', to: '/you/settings' },
