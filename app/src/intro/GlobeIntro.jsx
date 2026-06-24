@@ -4,33 +4,48 @@ import { mapboxgl } from '../lib/mapbox';
 import { BALI, formatCoord } from './geo';
 import { baliLightPreset } from './daynight';
 
-// --- Timeline (ms) — ONE continuous eased flight, no delay and no phase
-// boundaries at all: a single curve carries center/zoom from the spin's
-// starting point all the way to landing on Bali. No phases means nothing
-// for a seam to happen between — this is what makes it smooth. ------------
-const FLIGHT_MS = 3100;
+// --- Timeline (ms) — back to three explicit beats, per feedback: a held
+// pre-roll on the full globe, THEN a couple of seconds where the whole
+// Earth is visible and visibly spinning, THEN a zoom-in that lands on
+// Bali. The spin and zoom phases are joined at a single shared point (the
+// spin always ends exactly on Bali's longitude/latitude, so the zoom phase
+// starts from precisely where the spin left off) — there's still no seam
+// because position never jumps between phases, only zoom/pitch change.
+const PRE_DELAY_MS = 900; // hold on the spinning globe before motion starts
+const SPIN_MS = 2600; // full-Earth-view spin — "see the whole globe" for 2-3s
+const ZOOM_MS = 1500; // zoom in from full globe to landing on Bali
 const LABEL_DELAY_MS = 350;
 const FADE_MS = 500;
 
-const SPIN_ZOOM = 1.5;
-const SPIN_LNG_DELTA = 1080; // three full revolutions — a lot faster, unmistakably spinning
-const START_CENTER = [BALI.lon - SPIN_LNG_DELTA, 12];
+const SPIN_ZOOM = 1.5; // low zoom so the whole globe is on screen while it spins
+const SPIN_LNG_DELTA = 720; // exactly two full revolutions (multiple of 360°)
+// Spin happens at Bali's latitude the whole time, starting two full turns
+// east of Bali's longitude — so when the spin finishes, the center is
+// already sitting exactly on Bali, and the zoom phase only has to animate
+// zoom/pitch (never position), which is what keeps the hand-off seamless.
+const START_CENTER = [BALI.lon - SPIN_LNG_DELTA, BALI.lat];
 const ISLAND_ZOOM = 7.6;
 
 const PITCH_PEAK = 48;
-const PITCH_RISE_AT = 0.18; // fraction of FLIGHT_MS pitch starts rising into 3D
-const PITCH_FLAT_BY = 0.82; // fraction by which pitch is back to flat (2D)
+const PITCH_RISE_AT = 0.12; // fraction of the ZOOM phase pitch starts rising into 3D
+const PITCH_FLAT_BY = 0.85; // fraction by which pitch is back to flat (2D) on landing
 
-// Ease-out: maximum velocity right at the start (the fast spin), smoothly
-// decelerating all the way into the landing — one curve, no hand-off.
+// Smooth accelerate-then-decelerate — used for the spin so it visibly winds
+// up to speed and winds back down, rather than spinning at a constant rate.
+function easeInOutSine(t) {
+  return (1 - Math.cos(Math.PI * t)) / 2;
+}
+
+// Ease-out: maximum velocity right at the start of the zoom, smoothly
+// decelerating all the way into the landing.
 function easeOutQuint(t) {
   return 1 - Math.pow(1 - t, 5);
 }
 
 // 0 -> rises -> peaks -> falls -> 0, confined to [PITCH_RISE_AT, PITCH_FLAT_BY]
-// and flat outside it. Driven off raw (linear) time, not the eased position
-// progress, so the tilt reads as a smooth, independent temporal arc: flat
-// while spinning, 3D while approaching, flat (2D) again once landed.
+// and flat outside it. Driven off the zoom phase's raw (linear) time, not
+// its eased progress, so the tilt reads as its own smooth temporal arc: 3D
+// while approaching, flat (2D) again once landed.
 function pitchProgress(t) {
   if (t <= PITCH_RISE_AT || t >= PITCH_FLAT_BY) return 0;
   const local = (t - PITCH_RISE_AT) / (PITCH_FLAT_BY - PITCH_RISE_AT);
@@ -46,15 +61,18 @@ function gibsCloudUrl() {
 /**
  * Cinematic globe splash: real photoreal satellite imagery via Mapbox's
  * Standard Satellite style, native `globe` projection, real local-time
- * day/night lighting. The whole sequence is one continuous, hand-driven
- * flight (a single requestAnimationFrame loop calling jumpTo every frame,
- * never separate Mapbox animations stitched together) — no delay, no
- * phases, no seams: one ease-out curve carries center/zoom/bearing from
- * the fast spinning start all the way to landing on Bali, while pitch
- * rises into a 3D tilt mid-flight and flattens back to 2D as it lands.
- * Config properties (lightPreset) are set on 'style.load' per Mapbox's
- * docs. A light NASA GIBS cloud pass sits on top as a bonus layer — its
- * failure never blocks the intro.
+ * day/night lighting. Driven entirely by a single hand-rolled
+ * requestAnimationFrame loop calling jumpTo every frame (never separate
+ * Mapbox animations stitched together), the sequence holds on the full
+ * globe (PRE_DELAY_MS), spins it a couple of full revolutions while the
+ * whole Earth stays on screen (SPIN_MS), then zooms in to land on Bali
+ * (ZOOM_MS) with pitch rising into a 3D tilt and flattening back to 2D on
+ * landing. The spin always finishes exactly on Bali's lon/lat, so the
+ * zoom phase only ever animates zoom/pitch — never position — which is
+ * what keeps the hand-off between phases seamless. Config properties
+ * (lightPreset) are set on 'style.load' per Mapbox's docs. A light NASA
+ * GIBS cloud pass sits on top as a bonus layer — its failure never blocks
+ * the intro.
  */
 export function GlobeIntro({ onComplete }) {
   const containerRef = useRef(null);
@@ -149,38 +167,59 @@ export function GlobeIntro({ onComplete }) {
       }
     };
 
-    // One continuous, hand-rolled flight (a single rAF loop calling jumpTo
-    // every frame) — never two separate Mapbox animations stitched
-    // together, so there's nothing for a seam to happen between. Position,
-    // zoom and bearing all ride the same eased curve from start to finish;
-    // pitch rises into 3D and flattens back to 2D on its own independent
-    // (but still continuous) arc layered on top.
+    // Three beats, but still just ONE hand-rolled rAF loop calling jumpTo
+    // every frame — never separate Mapbox animations stitched together, so
+    // there's still nothing for a visual seam to happen between. Which beat
+    // is active is purely a function of elapsed time; position only ever
+    // moves during the spin (always finishing exactly on Bali), so the
+    // zoom beat picking up from there never has to jump anywhere.
+    const TOTAL_MS = PRE_DELAY_MS + SPIN_MS + ZOOM_MS;
+
     const runFlight = () => {
       // Anchor elapsed time to the FIRST rendered frame, not to the instant
       // this function was called. On mobile, the gap between "map
       // constructed" and "browser actually paints a frame" can be a full
       // second or more (slower JS engines, WebGL/shader compilation, style
       // parsing) — if startTime were captured here, that gap would eat
-      // straight into FLIGHT_MS before the loop ever ticks once. Anchoring
-      // to the first tick's own timestamp means the full flight duration is
-      // always available no matter how slow the device was to get going.
+      // straight into the timeline before the loop ever ticks once.
+      // Anchoring to the first tick's own timestamp means the full
+      // duration is always available no matter how slow the device was to
+      // get going.
       let startTime = null;
 
       const tick = (now) => {
         if (skipRef.current) return;
         if (startTime === null) startTime = now;
         const elapsed = now - startTime;
-        const tRaw = Math.min(elapsed / FLIGHT_MS, 1);
-        const t = easeOutQuint(tRaw);
 
-        const lng = START_CENTER[0] + (BALI.lon - START_CENTER[0]) * t;
-        const lat = START_CENTER[1] + (BALI.lat - START_CENTER[1]) * t;
-        const zoom = SPIN_ZOOM + (ISLAND_ZOOM - SPIN_ZOOM) * t;
-        const pitch = PITCH_PEAK * pitchProgress(tRaw);
+        let lng = START_CENTER[0];
+        let zoom = SPIN_ZOOM;
+        let pitch = 0;
 
-        map.jumpTo({ center: [lng, lat], zoom, pitch, bearing: 0 });
+        if (elapsed < PRE_DELAY_MS) {
+          // Held on the full globe, already spinning-in-place visually via
+          // the style's own rotation cue — camera itself doesn't move yet.
+          lng = START_CENTER[0];
+        } else if (elapsed < PRE_DELAY_MS + SPIN_MS) {
+          // Beat 1: spin the whole way to Bali's longitude while staying
+          // zoomed out far enough to see the entire globe.
+          const spinT = easeInOutSine(Math.min((elapsed - PRE_DELAY_MS) / SPIN_MS, 1));
+          lng = START_CENTER[0] + (BALI.lon - START_CENTER[0]) * spinT;
+          zoom = SPIN_ZOOM;
+          pitch = 0;
+        } else {
+          // Beat 2: position is already exactly on Bali — only zoom and
+          // pitch animate from here, landing on the island.
+          const zoomTRaw = Math.min((elapsed - PRE_DELAY_MS - SPIN_MS) / ZOOM_MS, 1);
+          const zoomT = easeOutQuint(zoomTRaw);
+          lng = BALI.lon;
+          zoom = SPIN_ZOOM + (ISLAND_ZOOM - SPIN_ZOOM) * zoomT;
+          pitch = PITCH_PEAK * pitchProgress(zoomTRaw);
+        }
 
-        if (tRaw < 1) {
+        map.jumpTo({ center: [lng, BALI.lat], zoom, pitch, bearing: 0 });
+
+        if (elapsed < TOTAL_MS) {
           rafId = requestAnimationFrame(tick);
           return;
         }
