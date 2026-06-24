@@ -1,11 +1,12 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Map, Layers, Heart, PenLine, User } from 'lucide-react';
+import { Map, Layers, Heart, PenLine, Star, User } from 'lucide-react';
 
 const TABS = [
   { to: '/', label: 'Explore', Icon: Map },
   { to: '/feed', label: 'Feed', Icon: Layers },
   { to: '/saved', label: 'Saved', Icon: Heart },
+  { to: '/write-review', label: 'Write', Icon: Star },
   { to: '/request-review', label: 'Request', Icon: PenLine },
   { to: '/you', label: 'You', Icon: User },
 ];

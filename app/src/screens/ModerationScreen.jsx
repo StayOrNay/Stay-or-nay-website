@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Check, X, Image as ImageIcon } from 'lucide-react';
+import { ShieldCheck, Check, X, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
 import { Button, Tag } from '../components/core';
 import { Header } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
@@ -67,14 +67,20 @@ export function ModerationScreen() {
             </div>
             {reviews.map((r) => {
               const villa = villas.find((v) => v.id === r.villa_id);
+              const propertyName = r.property_name || (villa ? villa.name : null) || 'Untitled property';
               const busy = busyId === r.id;
               return (
                 <div key={r.id} style={{ background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
                     <div>
                       <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 17, color: 'var(--text-strong)' }}>
-                        {villa ? villa.name : r.villa_id}
+                        {propertyName}
                       </div>
+                      {r.property_link && (
+                        <a href={r.property_link} target="_blank" rel="noreferrer" style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-link)' }}>
+                          {r.property_link}
+                        </a>
+                      )}
                       <div style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-faint)', marginTop: 2 }}>
                         Submitted {new Date(r.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                       </div>
@@ -95,15 +101,33 @@ export function ModerationScreen() {
                     <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-body)', lineHeight: 1.55 }}>{r.body}</p>
                   )}
 
-                  {Array.isArray(r.media_urls) && r.media_urls.length > 0 && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                      {r.media_urls.map((url, i) => (
-                        <a key={i} href={url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-link)' }}>
-                          <ImageIcon size={14} /> Media {i + 1}
-                        </a>
-                      ))}
-                    </div>
-                  )}
+                  {Array.isArray(r.media_urls) && r.media_urls.length > 0 && (() => {
+                    // Older reviews (and any legacy seed data) stored plain
+                    // URL strings with no type; new ones store {url, type}
+                    // so photo/video counts can be told apart and checked
+                    // against the 5-photo/2-video minimum at a glance.
+                    const items = r.media_urls.map((m) => (typeof m === 'string' ? { url: m, type: 'photo' } : m));
+                    const videoN = items.filter((m) => m.type === 'video').length;
+                    const photoN = items.length - videoN;
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <Tag variant="outline" iconLeft={<ImageIcon size={12} />}>{photoN} photo{photoN === 1 ? '' : 's'}</Tag>
+                          <Tag variant="outline" iconLeft={<VideoIcon size={12} />}>{videoN} video{videoN === 1 ? '' : 's'}</Tag>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {items.map((m, i) => {
+                            const Icon = m.type === 'video' ? VideoIcon : ImageIcon;
+                            return (
+                              <a key={i} href={m.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-link)' }}>
+                                <Icon size={14} /> {m.type === 'video' ? 'Video' : 'Photo'} {i + 1}
+                              </a>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
                     <Button variant="stay" size="sm" disabled={busy} iconLeft={<Check size={16} />} onClick={() => decide(r.id, 'approved')}>

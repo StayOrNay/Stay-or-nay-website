@@ -123,7 +123,7 @@ export function VillaDetailScreen() {
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
             — Reviews {villa.reviewCount ? `(${villa.reviewCount})` : ''}
           </div>
-          <Button variant="ghost" size="sm" iconLeft={<PenLine size={15} />} onClick={() => navigate(`/write-review/${villa.id}`)}>
+          <Button variant="ghost" size="sm" iconLeft={<PenLine size={15} />} onClick={() => navigate('/write-review', { state: { propertyName: villa.name } })}>
             Write a review
           </Button>
         </div>

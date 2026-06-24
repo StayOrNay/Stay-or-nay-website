@@ -93,7 +93,6 @@ export default function App() {
             <Route path="/you/alerts" element={<VerdictAlertsScreen />} />
             <Route path="/you/moderate" element={<ModerationScreen />} />
             <Route path="/write-review" element={<WriteReviewScreen />} />
-            <Route path="/write-review/:id" element={<WriteReviewScreen />} />
             <Route path="/request-review" element={<RequestReviewScreen />} />
             <Route path="/you/review-requests" element={<AdminReviewRequestsScreen />} />
             <Route path="/villa/:id" element={<VillaDetailScreen />} />

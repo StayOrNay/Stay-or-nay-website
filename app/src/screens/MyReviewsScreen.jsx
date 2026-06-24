@@ -66,6 +66,7 @@ export function MyReviewsScreen() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {reviews.map((r) => {
                   const villa = villas.find((v) => v.id === r.villa_id);
+                  const propertyName = r.property_name || (villa ? villa.name : null) || 'Untitled property';
                   const meta = STATUS_META[r.status] || STATUS_META.pending;
                   return (
                     <div
@@ -77,9 +78,15 @@ export function MyReviewsScreen() {
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--text-strong)' }}>
-                            {villa ? villa.name : r.villa_id}
-                          </div>
+                          {r.property_link ? (
+                            <a href={r.property_link} target="_blank" rel="noreferrer" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--text-strong)', textDecoration: 'none' }}>
+                              {propertyName}
+                            </a>
+                          ) : (
+                            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 16, color: 'var(--text-strong)' }}>
+                              {propertyName}
+                            </div>
+                          )}
                           <div style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-faint)', marginTop: 2 }}>
                             {new Date(r.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                           </div>

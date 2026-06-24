@@ -1,26 +1,41 @@
 import React, { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ImagePlus, X, Send, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ImagePlus, X, Send, AlertCircle, CheckCircle2, Link2, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
 import { Input, Button, VerdictBadge, Tag } from '../components/core';
 import { Header } from '../components/shared';
-import { villas } from '../data/villas';
 import { useAuth } from '../context/AuthContext';
-import { CATEGORIES, MAX_PER_CATEGORY, NAY_THRESHOLD, MAX_TOTAL, emptyScores, totalFromCategories, verdictFromTotal } from '../lib/reviewScore';
+import { CATEGORIES, MAX_PER_CATEGORY, NAY_THRESHOLD, MAX_TOTAL, MIN_PHOTOS, MIN_VIDEOS, emptyScores, totalFromCategories, verdictFromTotal } from '../lib/reviewScore';
 import { submitReview, uploadReviewMedia } from '../lib/reviews';
 
+function isVideo(file) {
+  return file.type.startsWith('video/');
+}
+function isPhoto(file) {
+  return file.type.startsWith('image/');
+}
+
 /**
- * Write a review — villa picker (or pre-selected via /write-review/:id),
- * five 0-10 category sliders that make up the real 50-point score, photo/
- * video upload, headline + body. Submits as 'pending' — it stays invisible
- * to everyone but the author until the site owner approves it in the
- * moderation queue.
+ * Write a review — you link + name whatever property you actually stayed
+ * at yourself (exactly like "Request a review"), not a pick from the
+ * site's small set of placeholder villas (data/villas.js — temporary demo
+ * content, going away once the real site is finished). Five 0-10 category
+ * sliders make up the real 50-point score, at least 5 photos + 2 videos
+ * are required, then headline + body. Submits as 'pending' — it stays
+ * invisible to everyone but the author until the site owner approves it.
  */
 export function WriteReviewScreen() {
   const navigate = useNavigate();
-  const { id: paramVillaId } = useParams();
+  const location = useLocation();
   const { configured, user } = useAuth();
 
-  const [villaId, setVillaId] = useState(paramVillaId || villas[0]?.id || '');
+  // VillaDetailScreen's "Write a review" button passes the villa's name
+  // along as a starting point (it has no link to prefill — none of the
+  // sample villas have one — so this is just a convenience, fully editable
+  // and not locked the way the old per-villa route used to be).
+  const prefillName = location.state?.propertyName || '';
+
+  const [propertyLink, setPropertyLink] = useState('');
+  const [propertyName, setPropertyName] = useState(prefillName);
   const [scores, setScores] = useState(emptyScores);
   const [headline, setHeadline] = useState('');
   const [body, setBody] = useState('');
@@ -31,7 +46,10 @@ export function WriteReviewScreen() {
 
   const total = useMemo(() => totalFromCategories(scores), [scores]);
   const verdict = useMemo(() => verdictFromTotal(total), [total]);
-  const villa = villas.find((v) => v.id === villaId);
+
+  const photoCount = useMemo(() => files.filter(isPhoto).length, [files]);
+  const videoCount = useMemo(() => files.filter(isVideo).length, [files]);
+  const mediaReady = photoCount >= MIN_PHOTOS && videoCount >= MIN_VIDEOS;
 
   const setScore = (key, value) => setScores((prev) => ({ ...prev, [key]: value }));
 
@@ -45,23 +63,29 @@ export function WriteReviewScreen() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!villaId) return;
     setError(null);
-    setSubmitting(true);
 
-    let mediaUrls = [];
-    if (files.length > 0) {
-      const { urls, error: uploadErr } = await uploadReviewMedia(files, user.id);
-      mediaUrls = urls;
-      if (uploadErr) {
-        setError(uploadErr.message);
-        setSubmitting(false);
-        return;
-      }
+    if (!mediaReady) {
+      setError(`You need at least ${MIN_PHOTOS} photos and ${MIN_VIDEOS} videos — you have ${photoCount} photo${photoCount === 1 ? '' : 's'} and ${videoCount} video${videoCount === 1 ? '' : 's'} so far.`);
+      return;
     }
 
+    setSubmitting(true);
+
+    const { urls, error: uploadErr } = await uploadReviewMedia(files, user.id);
+    if (uploadErr) {
+      setError(uploadErr.message);
+      setSubmitting(false);
+      return;
+    }
+    // uploadReviewMedia uploads in order and stops at the first failure, so
+    // urls[i] always corresponds to files[i] for every i < urls.length —
+    // safe to zip them back together to tag each URL as a photo or video.
+    const mediaUrls = urls.map((url, i) => ({ url, type: isVideo(files[i]) ? 'video' : 'photo' }));
+
     const { error: submitErr } = await submitReview({
-      villaId,
+      propertyLink,
+      propertyName,
       userId: user.id,
       scores,
       headline,
@@ -109,24 +133,22 @@ export function WriteReviewScreen() {
           </>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {/* Villa picker */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <label style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--text-body)' }}>Villa</label>
-              <select
-                value={villaId}
-                onChange={(e) => setVillaId(e.target.value)}
-                disabled={Boolean(paramVillaId)}
-                style={{
-                  height: 46, padding: '0 14px', borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--border-default)', background: 'var(--surface-card)',
-                  fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--text-strong)',
-                }}
-              >
-                {villas.map((v) => (
-                  <option key={v.id} value={v.id}>{v.name} — {v.location}</option>
-                ))}
-              </select>
-            </div>
+            <Input
+              label="Property link"
+              required
+              type="url"
+              placeholder="Booking.com, Airbnb, Vrbo, the villa's own site…"
+              iconLeft={<Link2 size={16} />}
+              value={propertyLink}
+              onChange={(e) => setPropertyLink(e.target.value)}
+            />
+            <Input
+              label="Property name"
+              required
+              placeholder="e.g. Villa Mawar, The Sanctuary Bali…"
+              value={propertyName}
+              onChange={(e) => setPropertyName(e.target.value)}
+            />
 
             {/* Live total/verdict preview */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 14 }}>
@@ -189,6 +211,17 @@ export function WriteReviewScreen() {
             {/* Media upload */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <label style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--text-body)' }}>Photos & videos</label>
+              <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-faint)' }}>
+                At least {MIN_PHOTOS} photos and {MIN_VIDEOS} videos are required.
+              </p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Tag tone={photoCount >= MIN_PHOTOS ? 'stay' : 'neutral'} iconLeft={<ImageIcon size={12} />}>
+                  {photoCount} / {MIN_PHOTOS} photos
+                </Tag>
+                <Tag tone={videoCount >= MIN_VIDEOS ? 'stay' : 'neutral'} iconLeft={<VideoIcon size={12} />}>
+                  {videoCount} / {MIN_VIDEOS} videos
+                </Tag>
+              </div>
               <label
                 htmlFor="review-media-input"
                 style={{

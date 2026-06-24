@@ -25,7 +25,14 @@
 
 create table if not exists public.reviews (
   id uuid primary key default gen_random_uuid(),
-  villa_id text not null,
+  -- Nullable: the only villas that ever populate this are the small set of
+  -- placeholder/sample villas in app/src/data/villas.js, which are going
+  -- away once the real site is finished. Every real review a visitor
+  -- writes is for an arbitrary property they link to themselves (see
+  -- property_link/property_name below), so it has no villa_id at all.
+  villa_id text,
+  property_link text,
+  property_name text,
   user_id uuid not null references auth.users(id) on delete cascade,
 
   -- Five categories, 0-10 each (see app/src/lib/reviewScore.js — this is

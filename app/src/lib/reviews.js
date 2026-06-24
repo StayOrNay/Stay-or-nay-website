@@ -41,15 +41,24 @@ export async function uploadReviewMedia(files, userId) {
 /**
  * Submits a new review as `pending` — it won't show anywhere public until
  * the site owner approves it via the moderation queue.
+ *
+ * Reviews are written against a property the visitor links + names
+ * themselves (propertyLink/propertyName) — exactly like "Request a
+ * review" — not against the small set of placeholder villas in
+ * data/villas.js, which are temporary demo content. villa_id is kept only
+ * for the legacy seed-villa reviews that already exist; new submissions
+ * always leave it null.
  */
-export async function submitReview({ villaId, userId, scores, headline, body, mediaUrls = [] }) {
+export async function submitReview({ propertyLink, propertyName, userId, scores, headline, body, mediaUrls = [] }) {
   if (!isSupabaseConfigured) return { data: null, error: NOT_CONFIGURED_ERROR };
   const total = totalFromCategories(scores);
   const verdict = verdictFromTotal(total);
   return supabase
     .from(TABLE)
     .insert({
-      villa_id: villaId,
+      villa_id: null,
+      property_link: propertyLink,
+      property_name: propertyName,
       user_id: userId,
       score_location: scores.location,
       score_value: scores.value,

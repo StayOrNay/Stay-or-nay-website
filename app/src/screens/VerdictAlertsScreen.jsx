@@ -62,15 +62,21 @@ export function VerdictAlertsScreen() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {alerts.map((r) => {
               const villa = villas.find((v) => v.id === r.villa_id);
+              const propertyName = r.property_name || (villa ? villa.name : null) || 'that property';
               const approved = r.status === 'approved';
+              const clickable = Boolean(villa || r.property_link);
+              const handleClick = () => {
+                if (villa) navigate(`/villa/${villa.id}`);
+                else if (r.property_link) window.open(r.property_link, '_blank', 'noopener');
+              };
               return (
                 <div
                   key={r.id}
-                  onClick={() => villa && navigate(`/villa/${villa.id}`)}
+                  onClick={clickable ? handleClick : undefined}
                   style={{
                     display: 'flex', gap: 12, alignItems: 'flex-start',
                     background: 'var(--surface-card)', border: '1px solid var(--border-soft)',
-                    borderRadius: 'var(--radius-lg)', padding: 14, cursor: villa ? 'pointer' : 'default',
+                    borderRadius: 'var(--radius-lg)', padding: 14, cursor: clickable ? 'pointer' : 'default',
                   }}
                 >
                   <span style={{ flex: 'none', color: approved ? 'var(--stay-600)' : 'var(--nay-600)', marginTop: 1 }}>
@@ -78,7 +84,7 @@ export function VerdictAlertsScreen() {
                   </span>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: 14.5, color: 'var(--text-strong)' }}>
-                      Your review of <strong>{villa ? villa.name : r.villa_id}</strong> was {approved ? 'approved' : 'rejected'}.
+                      Your review of <strong>{propertyName}</strong> was {approved ? 'approved' : 'rejected'}.
                     </div>
                     <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-faint)', marginTop: 3 }}>
                       {new Date(r.moderated_at || r.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
