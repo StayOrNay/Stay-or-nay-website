@@ -80,11 +80,10 @@ export function ExploreScreen() {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <Input search iconLeft={<Search size={18} />} placeholder="Search Bali…" />
-            {visibleVillas.length > 0 && (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-                {locationLabel} · {visibleVillas.length} verdict{visibleVillas.length === 1 ? '' : 's'}
-              </div>
-            )}
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+              {locationLabel}
+              {visibleVillas.length > 0 && ` · ${visibleVillas.length} verdict${visibleVillas.length === 1 ? '' : 's'}`}
+            </div>
           </div>
           {villas.map((v) => (
             <VillaCard
@@ -111,15 +110,14 @@ export function ExploreScreen() {
               </div>
             </div>
 
-            {/* Region label — only shown when at least one villa pin is
-                actually inside the current map frame; pan/zoom away from
-                all of them and it disappears, then comes back once a pin
-                is back on screen. */}
-            {visibleVillas.length > 0 && (
-              <div style={{ position: 'absolute', top: 70, left: 16, zIndex: 6, fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
-                {locationLabel} · {visibleVillas.length} verdict{visibleVillas.length === 1 ? '' : 's'}
-              </div>
-            )}
+            {/* Region label — always shown as you pan around; the verdict
+                count tacked onto it only appears once a villa pin is
+                actually inside the current map frame, and drops away again
+                when you pan/zoom away from all of them. */}
+            <div style={{ position: 'absolute', top: 70, left: 16, zIndex: 6, fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
+              {locationLabel}
+              {visibleVillas.length > 0 && ` · ${visibleVillas.length} verdict${visibleVillas.length === 1 ? '' : 's'}`}
+            </div>
           </>
         )}
 
