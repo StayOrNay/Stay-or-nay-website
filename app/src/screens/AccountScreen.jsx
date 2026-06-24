@@ -20,6 +20,11 @@ export function AccountScreen() {
   const { configured, user, loading, signIn, signUp, signOut, resetPassword, signInWithMagicLink } = useAuth();
   const [useMagicLink, setUseMagicLink] = useState(true);
   const [mode, setMode] = useState('signin'); // 'signin' | 'signup' — password mode only
+  // 'form' | 'check-email' — a dedicated full-screen state instead of a
+  // small inline notice, so it's unmissable that the next step is "go open
+  // your email," not a silent success state that looks like nothing
+  // happened.
+  const [view, setView] = useState('form');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -40,7 +45,7 @@ export function AccountScreen() {
       const { error: err } = await signInWithMagicLink(email);
       setSubmitting(false);
       if (err) setError(err.message);
-      else setNotice(`Link sent — check ${email} and tap it to finish signing in.`);
+      else setView('check-email');
       return;
     }
 
@@ -50,9 +55,19 @@ export function AccountScreen() {
     if (err) {
       setError(err.message);
     } else if (mode === 'signup') {
-      setNotice('Account created — check your email to confirm it, then log in.');
-      setMode('signin');
+      setView('check-email');
     }
+  };
+
+  // Re-sends whichever flow got the user to the "check your email" screen,
+  // without re-validating/resubmitting the form (the email — and password,
+  // for the signup case — are already known at this point).
+  const handleResend = async () => {
+    setSubmitting(true);
+    setError(null);
+    const { error: err } = useMagicLink ? await signInWithMagicLink(email) : await signUp(email, password);
+    setSubmitting(false);
+    if (err) setError(err.message);
   };
 
   const toggleMagicLink = () => {
@@ -122,6 +137,51 @@ export function AccountScreen() {
                   Sign-in isn't set up yet on this deploy. Everything else — exploring, saving,
                   reviewing — already works without an account.
                 </p>
+              </div>
+            </>
+          ) : view === 'check-email' ? (
+            <>
+              <div
+                style={{
+                  width: 60, height: 60, borderRadius: 'var(--radius-pill)',
+                  background: 'var(--brand-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <Mail size={26} color="var(--brand)" />
+              </div>
+              <h1 style={{ margin: '20px 0 8px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 23, color: 'var(--text-strong)', textAlign: 'center' }}>
+                Check your email
+              </h1>
+              <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.6 }}>
+                We sent a link to <strong style={{ color: 'var(--text-strong)' }}>{email}</strong>. Open it on
+                this device to {useMagicLink ? 'finish signing in' : 'confirm your account'} — you can close
+                this tab afterward.
+              </p>
+
+              {error && (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', color: 'var(--danger)', marginTop: 14, width: '100%' }}>
+                  <AlertCircle size={16} style={{ flex: 'none', marginTop: 2 }} />
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: 13 }}>{error}</span>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', marginTop: 26 }}>
+                <Button
+                  variant="neutral"
+                  block
+                  disabled={submitting}
+                  onClick={handleResend}
+                  style={{ borderRadius: 'var(--radius-pill)' }}
+                >
+                  {submitting ? 'Sending…' : "Didn't get it? Resend"}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => { setView('form'); clearStatus(); }}
+                  style={{ alignSelf: 'center', border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-muted)', padding: 0 }}
+                >
+                  Use a different email
+                </button>
               </div>
             </>
           ) : user ? (
