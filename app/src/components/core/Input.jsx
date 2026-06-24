@@ -8,6 +8,7 @@ export function Input({
   label = null,
   iconLeft = null,
   search = false,
+  pill = false,
   invalid = false,
   hint = null,
   id,
@@ -33,7 +34,7 @@ export function Input({
           padding: '0 14px',
           background: 'var(--surface-card)',
           border: `1px solid ${invalid ? 'var(--nay-600)' : focus ? 'var(--accent)' : 'var(--border-default)'}`,
-          borderRadius: search ? 'var(--radius-pill)' : 'var(--radius-sm)',
+          borderRadius: search || pill ? 'var(--radius-pill)' : 'var(--radius-sm)',
           boxShadow: focus ? 'var(--ring)' : 'var(--shadow-inset)',
           transition: 'border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out)',
         }}

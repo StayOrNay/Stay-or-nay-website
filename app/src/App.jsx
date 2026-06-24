@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Routes, Route, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Maximize2, Minimize2 } from 'lucide-react';
 import { SavedProvider } from './context/SavedContext';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
@@ -46,7 +47,19 @@ function AppShell() {
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
   const [introDone, setIntroDone] = useState(false);
+  // "Immersive" mode slides the sidebar/tab bar out of the way so the map
+  // fills the whole screen — only offered on the Explore ("/") screen,
+  // since that's the only place a full-bleed globe view makes sense.
+  const [immersive, setImmersive] = useState(false);
+  const isHome = location.pathname === '/';
   const showNav = introDone && !location.pathname.startsWith('/villa/');
+  const navCollapsed = immersive && isHome;
+
+  // Drop out of immersive mode the moment you leave Explore, so the nav
+  // is never silently missing on a screen where you didn't ask to hide it.
+  useEffect(() => {
+    if (!isHome) setImmersive(false);
+  }, [isHome]);
 
   // Clicking the wordmark takes you back to "the start" — the Bali
   // globe-landing intro, not just the Explore screen underneath it. Routing
@@ -61,12 +74,37 @@ function AppShell() {
 
   return (
     <div className="app-shell" style={{ flexDirection: isDesktop ? 'row' : 'column' }}>
-      {isDesktop && showNav && <Sidebar onLogoClick={replayIntro} />}
+      {isDesktop && showNav && (
+        <div style={{ width: navCollapsed ? 0 : 232, flex: 'none', overflow: 'hidden', transition: 'width var(--dur-slow) var(--ease-out)' }}>
+          <Sidebar onLogoClick={replayIntro} />
+        </div>
+      )}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minWidth: 0 }}>
         <Outlet />
         {!introDone && <GlobeIntro onComplete={() => setIntroDone(true)} />}
+        {showNav && isHome && (
+          <button
+            onClick={() => setImmersive((v) => !v)}
+            aria-label={immersive ? 'Show menu' : 'Hide menu — map only'}
+            title={immersive ? 'Show menu' : 'Hide menu — map only'}
+            style={{
+              position: 'absolute', top: 70, right: 16, zIndex: 40,
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 38, height: 38, borderRadius: 'var(--radius-pill)', border: 'none',
+              background: 'rgba(255,255,255,0.92)', boxShadow: 'var(--shadow-sm)',
+              color: 'var(--ink-800)', cursor: 'pointer',
+              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+            }}
+          >
+            {immersive ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
+          </button>
+        )}
       </div>
-      {!isDesktop && showNav && <TabBar />}
+      {!isDesktop && showNav && (
+        <div style={{ height: navCollapsed ? 0 : 64, flex: 'none', overflow: 'hidden', transition: 'height var(--dur-slow) var(--ease-out)' }}>
+          <TabBar />
+        </div>
+      )}
     </div>
   );
 }
