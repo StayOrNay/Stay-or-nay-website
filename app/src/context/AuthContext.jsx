@@ -60,6 +60,18 @@ export function AuthProvider({ children }) {
     return { error };
   };
 
+  // Passwordless: emails a one-click sign-in link. Supabase creates the
+  // account automatically on first use, so this single call covers both
+  // "sign up" and "sign in" — no separate magic-link signup step needed.
+  const signInWithMagicLink = async (email) => {
+    if (!isSupabaseConfigured) return { error: NOT_CONFIGURED_ERROR };
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin + '/you/account' },
+    });
+    return { error };
+  };
+
   const value = {
     configured: isSupabaseConfigured,
     user: session?.user ?? null,
@@ -69,6 +81,7 @@ export function AuthProvider({ children }) {
     signIn,
     signOut,
     resetPassword,
+    signInWithMagicLink,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, LogOut, CheckCircle2, AlertCircle, UserRound } from 'lucide-react';
+import { Mail, Lock, LogOut, CheckCircle2, AlertCircle, UserRound, Send } from 'lucide-react';
 import { Input, Button, Avatar, Tag } from '../components/core';
 import { Header } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
@@ -10,11 +10,17 @@ import { useAuth } from '../context/AuthContext';
  * sign-out when signed in. Backed by Supabase auth (see lib/supabase.js);
  * if the site owner hasn't added Supabase project keys yet, this shows a
  * plain explanatory notice instead of a broken form.
+ *
+ * Two ways to connect with email: the password form (sign in / create
+ * account), or a one-click magic link — type your email, get a link,
+ * tap it, you're in. The link path creates the account automatically on
+ * first use, so it covers both new and returning users with one button.
  */
 export function AccountScreen() {
   const navigate = useNavigate();
-  const { configured, user, loading, signIn, signUp, signOut, resetPassword } = useAuth();
+  const { configured, user, loading, signIn, signUp, signOut, resetPassword, signInWithMagicLink } = useAuth();
   const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
+  const [useMagicLink, setUseMagicLink] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -26,6 +32,15 @@ export function AccountScreen() {
     setError(null);
     setNotice(null);
     setSubmitting(true);
+
+    if (useMagicLink) {
+      const { error: err } = await signInWithMagicLink(email);
+      setSubmitting(false);
+      if (err) setError(err.message);
+      else setNotice(`Link sent — check ${email} and tap it to finish signing in.`);
+      return;
+    }
+
     const fn = mode === 'signin' ? signIn : signUp;
     const { error: err } = await fn(email, password);
     setSubmitting(false);
@@ -35,6 +50,12 @@ export function AccountScreen() {
       setNotice('Account created — check your email to confirm it, then sign in.');
       setMode('signin');
     }
+  };
+
+  const toggleMagicLink = () => {
+    setUseMagicLink((v) => !v);
+    setError(null);
+    setNotice(null);
   };
 
   const handleForgotPassword = async () => {
@@ -100,24 +121,26 @@ export function AccountScreen() {
           </>
         ) : (
           <>
-            <div style={{ display: 'flex', gap: 6, background: 'var(--surface-sunken)', borderRadius: 'var(--radius-md)', padding: 4 }}>
-              {['signin', 'signup'].map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => { setMode(m); setError(null); setNotice(null); }}
-                  style={{
-                    flex: 1, border: 'none', cursor: 'pointer', padding: '9px 0',
-                    borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 14,
-                    background: mode === m ? 'var(--surface-card)' : 'transparent',
-                    color: mode === m ? 'var(--text-strong)' : 'var(--text-muted)',
-                    boxShadow: mode === m ? 'var(--shadow-sm)' : 'none',
-                  }}
-                >
-                  {m === 'signin' ? 'Log in' : 'Create account'}
-                </button>
-              ))}
-            </div>
+            {!useMagicLink && (
+              <div style={{ display: 'flex', gap: 6, background: 'var(--surface-sunken)', borderRadius: 'var(--radius-md)', padding: 4 }}>
+                {['signin', 'signup'].map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => { setMode(m); setError(null); setNotice(null); }}
+                    style={{
+                      flex: 1, border: 'none', cursor: 'pointer', padding: '9px 0',
+                      borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 14,
+                      background: mode === m ? 'var(--surface-card)' : 'transparent',
+                      color: mode === m ? 'var(--text-strong)' : 'var(--text-muted)',
+                      boxShadow: mode === m ? 'var(--shadow-sm)' : 'none',
+                    }}
+                  >
+                    {m === 'signin' ? 'Log in' : 'Create account'}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <Input
@@ -129,18 +152,21 @@ export function AccountScreen() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-              <Input
-                label="Password"
-                type="password"
-                required
-                minLength={6}
-                iconLeft={<Lock size={18} />}
-                placeholder={mode === 'signup' ? 'At least 6 characters' : '••••••••'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
 
-              {mode === 'signin' && (
+              {!useMagicLink && (
+                <Input
+                  label="Password"
+                  type="password"
+                  required
+                  minLength={6}
+                  iconLeft={<Lock size={18} />}
+                  placeholder={mode === 'signup' ? 'At least 6 characters' : '••••••••'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              )}
+
+              {!useMagicLink && mode === 'signin' && (
                 <button
                   type="button"
                   onClick={handleForgotPassword}
@@ -163,9 +189,29 @@ export function AccountScreen() {
                 </div>
               )}
 
-              <Button type="submit" variant="stay" block disabled={submitting} iconLeft={<UserRound size={18} />}>
-                {submitting ? 'Please wait…' : mode === 'signin' ? 'Log in' : 'Create account'}
+              <Button
+                type="submit"
+                variant="stay"
+                block
+                disabled={submitting}
+                iconLeft={useMagicLink ? <Send size={18} /> : <UserRound size={18} />}
+              >
+                {submitting
+                  ? 'Please wait…'
+                  : useMagicLink
+                  ? 'Email me a sign-in link'
+                  : mode === 'signin'
+                  ? 'Log in'
+                  : 'Create account'}
               </Button>
+
+              <button
+                type="button"
+                onClick={toggleMagicLink}
+                style={{ alignSelf: 'center', border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600, color: 'var(--text-link)', padding: 0 }}
+              >
+                {useMagicLink ? 'Use a password instead' : 'Or connect with just an email link'}
+              </button>
             </form>
           </>
         )}
