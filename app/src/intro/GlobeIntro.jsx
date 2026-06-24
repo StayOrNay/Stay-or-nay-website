@@ -13,15 +13,21 @@ import { addBaliTownLabels } from './baliTowns';
 // phase only ever has to animate zoom/pitch — never position — which is
 // what keeps the hand-off between beats seamless rather than a jump.
 const PRE_DELAY_MS = 0; // no hold — motion starts on frame one
-const SPIN_MS = 3500; // one continuous spin beat, 3.5s — fast plateau then one decel
-const SPIN_FAST_MS = 1000; // first second of the spin holds at constant max velocity
+const SPIN_MS = 3000; // one continuous spin beat, 3s, fast and smooth start to finish
 const ZOOM_MS = 1500; // zoom in from full globe to landing on Bali
 const LABEL_DELAY_MS = 350;
 const FADE_MS = 500;
 
 const SPIN_ZOOM = 1.5; // low zoom so the whole globe is on screen while it spins
-const SPIN_LNG_DELTA = 720; // exactly two full revolutions (multiple of 360°)
-// Spin happens at Bali's latitude the whole time, starting two full turns
+// Exactly ONE revolution, not two. Two full laps (720°) was the actual
+// cause of repeated "it looks like two spins" reports across several
+// easing-curve rewrites — tuning the curve never fixed it because the
+// problem wasn't the curve, it was the camera visibly passing its own
+// starting meridian a second time mid-animation. A single lap only ever
+// crosses that meridian once, right at the very end where it's supposed
+// to land on Bali — there's nothing left to read as "a second spin".
+const SPIN_LNG_DELTA = 360;
+// Spin happens at Bali's latitude the whole time, starting one full turn
 // east of Bali's longitude — so when the spin finishes, the center is
 // already sitting exactly on Bali, and the zoom phase only has to animate
 // zoom/pitch (never position), which is what keeps the hand-off seamless.
@@ -35,26 +41,19 @@ const PITCH_PEAK = 48;
 const PITCH_RISE_AT = 0.12; // fraction of the ZOOM phase pitch starts rising into 3D
 const PITCH_FLAT_BY = 0.85; // fraction by which pitch is back to flat (2D) on landing
 
-// One continuous spin curve, not two separate-feeling ones: holds at a
-// constant MAX velocity for the first SPIN_FAST_MS, then a single smooth
-// ease-out deceleration down to a dead stop by the time it reaches Bali.
-// SPIN_FAST_SHARE is the actual knob for "how fast does the first second
-// feel" — it's the fraction of the FULL 720° spin that gets covered
-// within that first flat second (0.8 = 80% of the whole spin happens in
-// the first of 3.5s, the remaining 20% eases out over the other 2.5s).
-// The decel curve's exponent is derived from that share rather than
-// fixed, so raising the share automatically raises the flat-phase speed
-// while keeping the velocity exactly matched at the seam (no kick) and
-// still landing at zero velocity at t=1 (matches the zoom phase's start).
-const SPIN_FAST_T = SPIN_FAST_MS / SPIN_MS;
-const SPIN_FAST_SHARE = 0.8;
-const SPIN_DECEL_EXP = ((1 - SPIN_FAST_T) * SPIN_FAST_SHARE) / (SPIN_FAST_T * (1 - SPIN_FAST_SHARE));
-const SPIN_EASE_NORM = SPIN_FAST_T + (1 - SPIN_FAST_T) / SPIN_DECEL_EXP;
+// ONE smooth, fast, continuous spin — no flat plateau, no piecewise seam.
+// Two earlier attempts at a "hold at max speed, then decelerate" shape
+// both still read as "two spins"; the real cause turned out to be the
+// 720°/two-revolution distance above, not the curve shape. With a single
+// revolution, a plain high-power ease-out is enough: it's already moving
+// fast from frame one (steep initial slope), stays fast through most of
+// the rotation, and only eases down to a dead stop right at the very end
+// so the hand-off into the zoom phase (which starts at zero velocity) has
+// no kick. SPIN_EASE_POWER=3 keeps the deceleration tail short and snappy
+// rather than a long, draggy fade.
+const SPIN_EASE_POWER = 3;
 function spinEase(t) {
-  if (t <= SPIN_FAST_T) return t / SPIN_EASE_NORM;
-  const u = (t - SPIN_FAST_T) / (1 - SPIN_FAST_T);
-  const pos = SPIN_FAST_T + ((1 - SPIN_FAST_T) / SPIN_DECEL_EXP) * (1 - (1 - u) ** SPIN_DECEL_EXP);
-  return pos / SPIN_EASE_NORM;
+  return 1 - (1 - t) ** SPIN_EASE_POWER;
 }
 
 // S-curve for the ZOOM-IN: zero velocity at both ends. Its zero velocity
@@ -402,10 +401,11 @@ export function GlobeIntro({ onComplete }) {
           // only as a safety fallback for the very first frame.
           lng = START_CENTER[0];
         } else if (elapsed < PRE_DELAY_MS + SPIN_MS) {
-          // Beat 1: spin the whole way to Bali's longitude while staying
-          // zoomed out far enough to see the entire globe. spinEase means
-          // this is already moving at full speed on frame one, holding
-          // that speed for the first second before decelerating.
+          // Beat 1: spin one full revolution to Bali's longitude while
+          // staying zoomed out far enough to see the entire globe.
+          // spinEase is a single smooth ease-out — fast from frame one,
+          // no flat plateau, no seam — easing to a dead stop right at the
+          // hand-off into the zoom beat below.
           const spinT = spinEase(Math.min((elapsed - PRE_DELAY_MS) / SPIN_MS, 1));
           lng = START_CENTER[0] + (BALI.lon - START_CENTER[0]) * spinT;
           zoom = SPIN_ZOOM;
