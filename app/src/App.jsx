@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { SavedProvider } from './context/SavedContext';
@@ -47,13 +47,15 @@ function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
-  const [introDone, setIntroDone] = useState(false);
   // "Immersive" mode slides the sidebar/tab bar (and, on desktop, Explore's
   // own villa-list panel — see ExploreScreen) out of the way so the map
   // fills the whole screen — only offered on the Explore ("/") screen,
-  // since that's the only place a full-bleed globe view makes sense. The
-  // flag itself lives in ImmersiveContext, shared with ExploreScreen.
-  const { immersive, setImmersive } = useImmersive();
+  // since that's the only place a full-bleed globe view makes sense.
+  // `introDone` lives here too (not local state) because ExploreScreen's
+  // own slide-handle needs it: without it, that handle was rendering (and,
+  // thanks to its explicit z-index, painting over) the spinning-globe intro
+  // before the intro had even handed off to the real map.
+  const { immersive, setImmersive, introDone, setIntroDone } = useImmersive();
   const isHome = location.pathname === '/';
   const showNav = introDone && !location.pathname.startsWith('/villa/');
   const navCollapsed = immersive && isHome;

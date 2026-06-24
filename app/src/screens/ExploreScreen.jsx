@@ -20,7 +20,7 @@ import { reverseGeocode } from '../lib/mapbox';
 export function ExploreScreen() {
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
-  const { immersive, setImmersive } = useImmersive();
+  const { immersive, setImmersive, introDone } = useImmersive();
   const villas = useVillasWithReviews();
   const [selected, setSelected] = useState(null);
   const [locationLabel, setLocationLabel] = useState('Bali, Indonesia');
@@ -108,10 +108,16 @@ export function ExploreScreen() {
 
         {/* Map-only slide handle (desktop) — sits straddling the boundary
             between this side panel and the map, like a tab you pull, per
-            the user's reference screenshot. Mobile gets its own handle on
-            the tab-bar boundary, rendered in App.jsx since that's where
-            the tab bar lives. */}
-        {isDesktop && (
+            the user's reference screenshot. Rounded on both sides (not a
+            flat-one-side tab) since it's centered on that boundary rather
+            than flush against either edge — a one-sided radius looked
+            lopsided once it was actually straddling the line. Gated on
+            `introDone` so it doesn't render — and, thanks to its z-index,
+            paint over — the spinning-globe intro before the intro has
+            handed off to the real map. Mobile gets its own handle on the
+            tab-bar boundary, rendered in App.jsx since that's where the
+            tab bar lives. */}
+        {isDesktop && introDone && (
           <button
             onClick={() => setImmersive((v) => !v)}
             aria-label={immersive ? 'Show menu' : 'Hide menu — map only'}
@@ -120,7 +126,7 @@ export function ExploreScreen() {
               position: 'absolute', top: '50%', left: 0, zIndex: 40,
               transform: 'translate(-50%, -50%)',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: 26, height: 46, borderRadius: '0 999px 999px 0', border: 'none',
+              width: 32, height: 46, borderRadius: 'var(--radius-pill)', border: 'none',
               background: 'var(--surface-card)', boxShadow: 'var(--shadow-sm)',
               color: 'var(--text-muted)', cursor: 'pointer',
             }}
