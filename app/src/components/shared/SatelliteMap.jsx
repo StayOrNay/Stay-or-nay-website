@@ -127,11 +127,18 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
     // wherever the camera actually is, instead of being hardcoded — fires
     // once the map first settles (so the label is correct from the very
     // first frame, not just after the user's first pan) and again on every
-    // subsequent pan/zoom/fly that ends.
+    // subsequent pan/zoom/fly that ends. Bounds are reported alongside the
+    // center so the screen can count only the villas actually visible in
+    // the current frame, instead of every villa on the site.
     const reportCenter = () => {
       if (onMoveEndRef.current) {
         const c = map.getCenter();
-        onMoveEndRef.current({ lon: c.lng, lat: c.lat });
+        const b = map.getBounds();
+        onMoveEndRef.current({
+          lon: c.lng,
+          lat: c.lat,
+          bounds: { west: b.getWest(), east: b.getEast(), south: b.getSouth(), north: b.getNorth() },
+        });
       }
     };
     map.on('moveend', reportCenter);

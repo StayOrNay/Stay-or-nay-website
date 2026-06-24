@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X } from 'lucide-react';
 import { Input, VerdictBadge, RatingStars, Tag, VillaCard } from '../components/core';
@@ -22,6 +22,7 @@ export function ExploreScreen() {
   const villas = useVillasWithReviews();
   const [selected, setSelected] = useState(null);
   const [locationLabel, setLocationLabel] = useState('Bali, Indonesia');
+  const [mapBounds, setMapBounds] = useState(null);
   const mapRef = useRef(null);
   const geocodeTimerRef = useRef(null);
   const geocodeSeqRef = useRef(0);
@@ -29,11 +30,30 @@ export function ExploreScreen() {
 
   const sel = villas.find((v) => v.id === selected);
 
+  // Only the villas whose pin actually falls inside the map's current
+  // viewport — not every villa on the site. The "N verdicts" header is
+  // meant to describe what's on screen right now (zoom out, see more pins,
+  // bigger number; pan away from all of them, no number at all), not act
+  // as a site-wide tally.
+  const visibleVillas = useMemo(() => {
+    if (!mapBounds) return [];
+    return villas.filter(
+      (v) =>
+        typeof v.lon === 'number' &&
+        typeof v.lat === 'number' &&
+        v.lon >= mapBounds.west &&
+        v.lon <= mapBounds.east &&
+        v.lat >= mapBounds.south &&
+        v.lat <= mapBounds.north,
+    );
+  }, [villas, mapBounds]);
+
   // Re-geocodes the header label to wherever the map's camera actually
   // settles — debounced so a drag/zoom gesture doesn't fire a request per
   // frame, and guarded with a sequence number so a slow, stale request
   // can't overwrite the label after a newer pan has already resolved.
-  const handleMoveEnd = useCallback(({ lon, lat }) => {
+  const handleMoveEnd = useCallback(({ lon, lat, bounds }) => {
+    if (bounds) setMapBounds(bounds);
     if (geocodeTimerRef.current) clearTimeout(geocodeTimerRef.current);
     geocodeTimerRef.current = setTimeout(async () => {
       const seq = ++geocodeSeqRef.current;
@@ -60,9 +80,11 @@ export function ExploreScreen() {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <Input search iconLeft={<Search size={18} />} placeholder="Search Bali…" />
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-              {locationLabel} · {villas.length} verdicts
-            </div>
+            {visibleVillas.length > 0 && (
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+                {locationLabel} · {visibleVillas.length} verdict{visibleVillas.length === 1 ? '' : 's'}
+              </div>
+            )}
           </div>
           {villas.map((v) => (
             <VillaCard
@@ -89,10 +111,15 @@ export function ExploreScreen() {
               </div>
             </div>
 
-            {/* Region label */}
-            <div style={{ position: 'absolute', top: 70, left: 16, zIndex: 6, fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
-              {locationLabel} · {villas.length} verdicts
-            </div>
+            {/* Region label — only shown when at least one villa pin is
+                actually inside the current map frame; pan/zoom away from
+                all of them and it disappears, then comes back once a pin
+                is back on screen. */}
+            {visibleVillas.length > 0 && (
+              <div style={{ position: 'absolute', top: 70, left: 16, zIndex: 6, fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
+                {locationLabel} · {visibleVillas.length} verdict{visibleVillas.length === 1 ? '' : 's'}
+              </div>
+            )}
           </>
         )}
 
