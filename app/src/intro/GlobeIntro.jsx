@@ -93,14 +93,13 @@ export function GlobeIntro({ onComplete }) {
       if (onComplete) onComplete();
     };
 
-    const reduceMotion =
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    if (reduceMotion) {
-      finish();
-      return undefined;
-    }
+    // Deliberately NOT checking prefers-reduced-motion here. This used to
+    // skip straight to finish() whenever the OS-level "Reduce Motion" /
+    // "Remove animations" setting was on — which is exactly why the globe
+    // intro looked broken on mobile: the phone had that setting enabled,
+    // so the entire animation was silently bypassed every single time, no
+    // matter how the timing/sizing code was tuned. The intro is meant to
+    // always play; it's also short and skippable via the Skip button.
 
     let map;
     try {
