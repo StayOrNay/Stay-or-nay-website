@@ -1,12 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PenLine, Bell, Settings, UserRound, Globe, ScrollText, ChevronRight, ShieldCheck, ClipboardList, LogOut } from 'lucide-react';
+import { Heart, PenLine, Bell, Settings, UserRound, Globe, ScrollText, ChevronRight, ShieldCheck, ClipboardList, LogOut } from 'lucide-react';
 import { Avatar, Tag, Button } from '../components/core';
 import { Header } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
 import { isAdmin } from '../lib/admin';
 
 const BASE_ROWS = [
+  { Icon: Heart, label: 'Saved', to: '/saved' },
   { Icon: PenLine, label: 'Your reviews', to: '/you/reviews' },
   { Icon: Bell, label: 'Verdict alerts', to: '/you/alerts' },
   { Icon: Settings, label: 'Settings', to: '/you/settings' },
