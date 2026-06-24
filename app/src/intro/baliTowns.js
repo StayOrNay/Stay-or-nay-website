@@ -87,10 +87,8 @@ function placesToFeatureCollection(places) {
 }
 
 /**
- * Adds the towns/cities above as one text-label symbol layer, and the beach
- * clubs as a second, visually distinct one (smaller, amber-tinted, so they
- * read as points-of-interest rather than place names). Idempotent — safe to
- * call again on style reloads since it checks for the sources first.
+ * Adds the towns/cities above as a text-label symbol layer. Idempotent — safe
+ * to call again on style reloads since it checks for the source first.
  */
 export function addBaliTownLabels(map) {
   if (!map.getSource('bali-towns')) {
@@ -138,39 +136,7 @@ export function addBaliTownLabels(map) {
       },
     });
   }
-
-  if (!map.getSource('bali-beach-clubs')) {
-    map.addSource('bali-beach-clubs', { type: 'geojson', data: placesToFeatureCollection(BALI_BEACH_CLUBS) });
-
-    map.addLayer({
-      id: 'bali-beach-clubs-label',
-      type: 'symbol',
-      source: 'bali-beach-clubs',
-      slot: 'top',
-      layout: {
-        'text-field': ['get', 'name'],
-        'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-        // Smaller than town names — these are points of interest within a
-        // town, not the town itself, so they should read as a secondary tier.
-        'text-size': 11,
-        'text-anchor': 'center',
-        // Offset down slightly so a beach club label doesn't collide with a
-        // town label that happens to share the same general area (e.g.
-        // several Uluwatu clubs sit close to the "Uluwatu" town label).
-        'text-offset': [0, 0.9],
-        'text-allow-overlap': true,
-        'text-ignore-placement': true,
-        'text-padding': 2,
-      },
-      paint: {
-        // Amber accent (matches the site's "premium / hot right now" tone)
-        // rather than plain white, so beach clubs are visually distinct
-        // from city/town names at a glance.
-        'text-color': '#F2A93B',
-        'text-halo-color': 'rgba(3,4,10,0.85)',
-        'text-halo-width': 1.2,
-        'text-halo-blur': 0.3,
-      },
-    });
-  }
+  // Beach-club labels were tried (amber, smaller, offset below the town
+  // labels) but removed per explicit feedback — they read as visual clutter
+  // ("remove the yellow text") on top of an already label-dense map.
 }
