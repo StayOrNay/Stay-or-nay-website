@@ -1,10 +1,11 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, X } from 'lucide-react';
+import { Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input, VerdictBadge, RatingStars, Tag, VillaCard } from '../components/core';
 import { SatelliteMap } from '../components/shared';
 import { useVillasWithReviews } from '../hooks/useVillasWithReviews';
 import { useSaved } from '../context/SavedContext';
+import { useImmersive } from '../context/ImmersiveContext';
 import { useIsDesktop } from '../hooks/useMediaQuery';
 import { reverseGeocode } from '../lib/mapbox';
 
@@ -19,6 +20,7 @@ import { reverseGeocode } from '../lib/mapbox';
 export function ExploreScreen() {
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
+  const { immersive, setImmersive } = useImmersive();
   const villas = useVillasWithReviews();
   const [selected, setSelected] = useState(null);
   const [locationLabel, setLocationLabel] = useState('Bali, Indonesia');
@@ -65,41 +67,67 @@ export function ExploreScreen() {
   return (
     <div style={{ position: 'relative', flex: 1, overflow: 'hidden', background: 'var(--ink-800)', display: 'flex' }}>
       {isDesktop && (
+        // Width (not display) is what's animated, so collapsing this panel
+        // in immersive mode reads as a slide-shut rather than a pop — the
+        // inner column keeps its natural 332px width and gets progressively
+        // clipped by this wrapper's overflow:hidden as it shrinks to 0.
         <div
           style={{
             flex: 'none',
-            width: 360,
-            overflowY: 'auto',
+            width: immersive ? 0 : 360,
+            overflow: 'hidden',
             background: 'var(--surface-page)',
-            borderRight: '1px solid var(--border-soft)',
-            padding: '16px 14px 24px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 14,
+            borderRight: immersive ? 'none' : '1px solid var(--border-soft)',
+            transition: 'width var(--dur-slow) var(--ease-out)',
           }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Input search iconLeft={<Search size={18} />} placeholder="Search Bali…" />
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-              {locationLabel}
-              {visibleVillas.length > 0 && ` · ${visibleVillas.length} verdict${visibleVillas.length === 1 ? '' : 's'}`}
+          <div style={{ width: 332, height: '100%', overflowY: 'auto', padding: '16px 14px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Input search iconLeft={<Search size={18} />} placeholder="Search Bali…" />
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+                {locationLabel}
+                {visibleVillas.length > 0 && ` · ${visibleVillas.length} verdict${visibleVillas.length === 1 ? '' : 's'}`}
+              </div>
             </div>
+            {villas.map((v) => (
+              <VillaCard
+                key={v.id}
+                name={v.name} location={v.location} coords={v.coords} image={v.image}
+                verdict={v.verdict} score={v.score} rating={v.rating}
+                price={v.price} currency={v.currency} tags={v.tags}
+                onClick={() => navigate(`/villa/${v.id}`)}
+                style={v.id === selected ? { outline: '2px solid var(--brand)', outlineOffset: 2 } : {}}
+              />
+            ))}
           </div>
-          {villas.map((v) => (
-            <VillaCard
-              key={v.id}
-              name={v.name} location={v.location} coords={v.coords} image={v.image}
-              verdict={v.verdict} score={v.score} rating={v.rating}
-              price={v.price} currency={v.currency} tags={v.tags}
-              onClick={() => navigate(`/villa/${v.id}`)}
-              style={v.id === selected ? { outline: '2px solid var(--brand)', outlineOffset: 2 } : {}}
-            />
-          ))}
         </div>
       )}
 
       <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
         <SatelliteMap ref={mapRef} villas={villas} selectedId={selected} onSelect={setSelected} onMoveEnd={handleMoveEnd} />
+
+        {/* Map-only slide handle (desktop) — sits straddling the boundary
+            between this side panel and the map, like a tab you pull, per
+            the user's reference screenshot. Mobile gets its own handle on
+            the tab-bar boundary, rendered in App.jsx since that's where
+            the tab bar lives. */}
+        {isDesktop && (
+          <button
+            onClick={() => setImmersive((v) => !v)}
+            aria-label={immersive ? 'Show menu' : 'Hide menu — map only'}
+            title={immersive ? 'Show menu' : 'Hide menu — map only'}
+            style={{
+              position: 'absolute', top: '50%', left: 0, zIndex: 40,
+              transform: 'translate(-50%, -50%)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 26, height: 46, borderRadius: '0 999px 999px 0', border: 'none',
+              background: 'var(--surface-card)', boxShadow: 'var(--shadow-sm)',
+              color: 'var(--text-muted)', cursor: 'pointer',
+            }}
+          >
+            {immersive ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        )}
 
         {/* Search bar floating over the map (mobile only — desktop's lives in the side panel) */}
         {!isDesktop && (

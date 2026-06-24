@@ -8,8 +8,22 @@ function buildMarkerEl(villa) {
   const isStay = villa.verdict === 'stay';
   const tone = isStay ? '#14875A' : '#D9472E';
 
+  // `wrap` is handed straight to `new mapboxgl.Marker({ element: wrap })`,
+  // which means Mapbox owns `wrap.style.transform` exclusively — it writes
+  // a translate() to that property on every render to keep the marker
+  // pinned to its lngLat. The selected/active scale effect used to be
+  // applied directly to `wrap.style.transform` too, which clobbered
+  // Mapbox's positioning transform and sent every marker to the map's
+  // untranslated origin (top-left corner) until the next pan/zoom forced
+  // Mapbox to reassert it. `inner` exists purely so our hover/active
+  // styling has a transform property of its own to touch, never
+  // Mapbox's.
   const wrap = document.createElement('div');
-  wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform 160ms ease;';
+  wrap.style.cssText = 'cursor:pointer;';
+
+  const inner = document.createElement('div');
+  inner.style.cssText = 'display:flex;flex-direction:column;align-items:center;transition:transform 160ms ease;';
+  wrap.appendChild(inner);
 
   const label = document.createElement('div');
   label.style.cssText =
@@ -28,11 +42,11 @@ function buildMarkerEl(villa) {
   const tail = document.createElement('div');
   tail.style.cssText = `width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid ${tone};`;
 
-  wrap.appendChild(label);
-  wrap.appendChild(badge);
-  wrap.appendChild(tail);
+  inner.appendChild(label);
+  inner.appendChild(badge);
+  inner.appendChild(tail);
 
-  return { wrap, badge };
+  return { wrap, inner, badge };
 }
 
 /**
@@ -106,7 +120,7 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
     map.on('load', () => {
       villas.forEach((v) => {
         if (typeof v.lon !== 'number' || typeof v.lat !== 'number') return;
-        const { wrap, badge } = buildMarkerEl(v);
+        const { wrap, inner, badge } = buildMarkerEl(v);
         wrap.addEventListener('click', (e) => {
           e.stopPropagation();
           if (onSelectRef.current) onSelectRef.current(v.id);
@@ -114,7 +128,7 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
         const marker = new mapboxgl.Marker({ element: wrap, anchor: 'bottom' })
           .setLngLat([v.lon, v.lat])
           .addTo(map);
-        markersRef.current[v.id] = { marker, wrap, badge };
+        markersRef.current[v.id] = { marker, wrap, inner, badge };
       });
     });
 
@@ -157,9 +171,9 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
   }, []);
 
   useEffect(() => {
-    Object.entries(markersRef.current).forEach(([id, { wrap, badge }]) => {
+    Object.entries(markersRef.current).forEach(([id, { inner, badge }]) => {
       const active = id === selectedId;
-      wrap.style.transform = active ? 'scale(1.12)' : 'scale(1)';
+      inner.style.transform = active ? 'scale(1.12)' : 'scale(1)';
       badge.style.borderColor = active ? '#fff' : 'transparent';
     });
   }, [selectedId]);

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Maximize2, Minimize2 } from 'lucide-react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import { SavedProvider } from './context/SavedContext';
 import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
+import { ImmersiveProvider, useImmersive } from './context/ImmersiveContext';
 import { TabBar, Sidebar } from './components/shared';
 import { GlobeIntro } from './intro/GlobeIntro';
 import { useIsDesktop } from './hooks/useMediaQuery';
@@ -47,10 +48,12 @@ function AppShell() {
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
   const [introDone, setIntroDone] = useState(false);
-  // "Immersive" mode slides the sidebar/tab bar out of the way so the map
+  // "Immersive" mode slides the sidebar/tab bar (and, on desktop, Explore's
+  // own villa-list panel — see ExploreScreen) out of the way so the map
   // fills the whole screen — only offered on the Explore ("/") screen,
-  // since that's the only place a full-bleed globe view makes sense.
-  const [immersive, setImmersive] = useState(false);
+  // since that's the only place a full-bleed globe view makes sense. The
+  // flag itself lives in ImmersiveContext, shared with ExploreScreen.
+  const { immersive, setImmersive } = useImmersive();
   const isHome = location.pathname === '/';
   const showNav = introDone && !location.pathname.startsWith('/villa/');
   const navCollapsed = immersive && isHome;
@@ -82,21 +85,28 @@ function AppShell() {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minWidth: 0 }}>
         <Outlet />
         {!introDone && <GlobeIntro onComplete={() => setIntroDone(true)} />}
-        {showNav && isHome && (
+
+        {/* Mobile slide handle — sits right on the boundary between the map
+            and the tab bar below it, so it reads as a tab you pull rather
+            than a button floating in empty space. The desktop equivalent
+            lives inside ExploreScreen, on the boundary of its side panel,
+            since that's a second piece of chrome this same toggle has to
+            collapse there. */}
+        {!isDesktop && showNav && isHome && (
           <button
             onClick={() => setImmersive((v) => !v)}
             aria-label={immersive ? 'Show menu' : 'Hide menu — map only'}
             title={immersive ? 'Show menu' : 'Hide menu — map only'}
             style={{
-              position: 'absolute', top: 70, right: 16, zIndex: 40,
+              position: 'absolute', bottom: 0, left: '50%', zIndex: 40,
+              transform: 'translate(-50%, 50%)',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: 38, height: 38, borderRadius: 'var(--radius-pill)', border: 'none',
-              background: 'rgba(255,255,255,0.92)', boxShadow: 'var(--shadow-sm)',
-              color: 'var(--ink-800)', cursor: 'pointer',
-              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+              width: 44, height: 26, borderRadius: '999px 999px 0 0', border: 'none',
+              background: 'var(--surface-card)', boxShadow: 'var(--shadow-sm)',
+              color: 'var(--text-muted)', cursor: 'pointer',
             }}
           >
-            {immersive ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
+            {immersive ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
         )}
       </div>
@@ -114,6 +124,7 @@ export default function App() {
     <AuthProvider>
       <LanguageProvider>
       <SavedProvider>
+      <ImmersiveProvider>
         <Routes>
           <Route element={<AppShell />}>
             <Route path="/" element={<ExploreScreen />} />
@@ -136,6 +147,7 @@ export default function App() {
             <Route path="/villa/:id" element={<VillaDetailScreen />} />
           </Route>
         </Routes>
+      </ImmersiveProvider>
       </SavedProvider>
       </LanguageProvider>
     </AuthProvider>
