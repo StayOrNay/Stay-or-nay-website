@@ -22,6 +22,8 @@ import { MyReviewsScreen } from './screens/MyReviewsScreen';
 import { VerdictAlertsScreen } from './screens/VerdictAlertsScreen';
 import { WriteReviewScreen } from './screens/WriteReviewScreen';
 import { ModerationScreen } from './screens/ModerationScreen';
+import { RequestReviewScreen } from './screens/RequestReviewScreen';
+import { AdminReviewRequestsScreen } from './screens/AdminReviewRequestsScreen';
 
 /**
  * Mobile-first app shell that becomes a real wide site at the desktop
@@ -92,6 +94,8 @@ export default function App() {
             <Route path="/you/moderate" element={<ModerationScreen />} />
             <Route path="/write-review" element={<WriteReviewScreen />} />
             <Route path="/write-review/:id" element={<WriteReviewScreen />} />
+            <Route path="/request-review" element={<RequestReviewScreen />} />
+            <Route path="/you/review-requests" element={<AdminReviewRequestsScreen />} />
             <Route path="/villa/:id" element={<VillaDetailScreen />} />
           </Route>
         </Routes>

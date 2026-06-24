@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PenLine, Bell, Settings, UserRound, Globe, ScrollText, ChevronRight, ShieldCheck } from 'lucide-react';
+import { PenLine, Bell, Settings, UserRound, Globe, ScrollText, ChevronRight, ShieldCheck, ClipboardList } from 'lucide-react';
 import { Avatar, Tag, Button } from '../components/core';
 import { Header } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
@@ -25,7 +25,11 @@ export function ProfileScreen() {
   const navigate = useNavigate();
   const { user, configured } = useAuth();
   const ROWS = isAdmin(user)
-    ? [...BASE_ROWS, { Icon: ShieldCheck, label: 'Moderate reviews', to: '/you/moderate' }]
+    ? [
+        ...BASE_ROWS,
+        { Icon: ShieldCheck, label: 'Moderate reviews', to: '/you/moderate' },
+        { Icon: ClipboardList, label: 'Review requests', to: '/you/review-requests' },
+      ]
     : BASE_ROWS;
 
   return (
