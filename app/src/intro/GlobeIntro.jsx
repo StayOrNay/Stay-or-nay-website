@@ -45,30 +45,31 @@ const PITCH_PEAK = 48;
 const PITCH_RISE_AT = 0.68; // fraction of the WHOLE flight pitch starts rising into 3D
 const PITCH_FLAT_BY = 0.97; // fraction of the WHOLE flight pitch is back to flat (2D) on landing
 
-// Rotation: builds speed rather than already being at max on frame one —
-// "faster and faster, turbo" — ramping up through the first half, hitting
-// peak speed around the midpoint, then decelerating to a dead stop exactly
-// at t=1 (zero velocity at the very end, so there's still no kick into the
-// zoom). Cubic ease-in-out rather than quintic so the opening isn't dead
-// still — it's already moving by the first few frames, just still building.
+// Rotation: maximum velocity right on frame one — "spin faster" — then a
+// long, continuous deceleration the rest of the way ("...and then slow
+// down") down to a dead stop exactly at t=1. Quintic ease-out rather than
+// the previous build-up curve: 1-(1-t)^5 front-loads almost all of the
+// angular speed into the opening of the flight, so the spin itself reads
+// as fast immediately rather than ramping up to it, while the back half
+// reads as a clear, gradual slow-down rather than still accelerating.
 function spinEase(t) {
-  return t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
+  return 1 - (1 - t) ** 5;
 }
 
 function smoothstep(t) {
   return t * t * (3 - 2 * t); // zero velocity at both t=0 and t=1
 }
 
-// Zoom: near-zero for most of the flight (camera stays pulled back while
-// the rotation is doing its thing), then ramps in toward the end. Squaring
-// smoothstep pushes the rise later without breaking its zero-velocity
-// endpoints — (smoothstep(t))^2 is still exactly 0 at t=0 and still has
-// zero slope at t=1, it just gets there later, so the bulk of "zooming
-// into Bali" overlaps with the tail of the rotation slowing down rather
-// than waiting for the rotation to fully stop first.
+// Zoom: held near-zero across most of the flight — including through the
+// slow-down — and only really ramps in during the final stretch, so
+// "zoom into Bali" plays as the next beat after the spin has visibly
+// slowed, not something happening throughout. Cubing smoothstep (vs.
+// squaring before) pushes the rise even later while keeping the same
+// zero-velocity endpoints: (smoothstep(t))^3 is still exactly 0 at t=0 and
+// still has zero slope at t=1, it just stays flatter for longer first.
 function zoomEase(t) {
   const s = smoothstep(t);
-  return s * s;
+  return s * s * s;
 }
 
 // 0 -> rises -> peaks -> falls -> 0, confined to [PITCH_RISE_AT, PITCH_FLAT_BY]
