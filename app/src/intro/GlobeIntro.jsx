@@ -19,7 +19,7 @@ import { addBaliTownLabels } from './baliTowns';
 // last bit of "slowing down" and the start of "zooming into Bali" happen
 // at the same time, as one continuous motion.
 const PRE_DELAY_MS = 0; // no hold — motion starts on frame one
-const FLIGHT_MS = 4500; // total duration of the single spin->zoom flight
+const FLIGHT_MS = 5500; // a second longer than before, to give the turbo ramp-up room to build
 const LABEL_DELAY_MS = 350;
 const FADE_MS = 500;
 
@@ -45,12 +45,14 @@ const PITCH_PEAK = 48;
 const PITCH_RISE_AT = 0.68; // fraction of the WHOLE flight pitch starts rising into 3D
 const PITCH_FLAT_BY = 0.97; // fraction of the WHOLE flight pitch is back to flat (2D) on landing
 
-// Rotation: fast from frame one, continuously decelerating, dead stop
-// exactly at t=1 (zero velocity at the very end — no kick on landing).
-// Power 3 keeps it snappy rather than a long draggy fade.
-const SPIN_EASE_POWER = 3;
+// Rotation: builds speed rather than already being at max on frame one —
+// "faster and faster, turbo" — ramping up through the first half, hitting
+// peak speed around the midpoint, then decelerating to a dead stop exactly
+// at t=1 (zero velocity at the very end, so there's still no kick into the
+// zoom). Cubic ease-in-out rather than quintic so the opening isn't dead
+// still — it's already moving by the first few frames, just still building.
 function spinEase(t) {
-  return 1 - (1 - t) ** SPIN_EASE_POWER;
+  return t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
 }
 
 function smoothstep(t) {
