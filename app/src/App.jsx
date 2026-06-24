@@ -19,8 +19,12 @@ import { ProfileScreen } from './screens/ProfileScreen';
  * screen reads as an unconverted mobile habit rather than a website.
  *
  * Every fresh load plays the spinning-globe-lands-on-Bali intro first
- * (skippable, and skipped automatically under prefers-reduced-motion),
- * then reveals the actual routed screen underneath.
+ * (skippable). The routed screen underneath (Outlet) is mounted from the
+ * very start, not after the intro finishes — so the real Explore map is
+ * already loaded and sitting at the exact camera the intro lands on by
+ * the time the intro's own fade-out reveals it. That overlap is what
+ * makes the hand-off a single continuous shot instead of a cut to a
+ * second, freshly-mounting map.
  */
 function AppShell() {
   const location = useLocation();
@@ -32,7 +36,8 @@ function AppShell() {
     <div className="app-shell" style={{ flexDirection: isDesktop ? 'row' : 'column' }}>
       {isDesktop && showNav && <Sidebar />}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minWidth: 0 }}>
-        {introDone ? <Outlet /> : <GlobeIntro onComplete={() => setIntroDone(true)} />}
+        <Outlet />
+        {!introDone && <GlobeIntro onComplete={() => setIntroDone(true)} />}
       </div>
       {!isDesktop && showNav && <TabBar />}
     </div>

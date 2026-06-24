@@ -2,6 +2,7 @@ import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { mapboxgl } from '../../lib/mapbox';
 import { baliLightPreset } from '../../intro/daynight';
+import { BALI, EXPLORE_ZOOM } from '../../intro/geo';
 
 function buildMarkerEl(villa) {
   const isStay = villa.verdict === 'stay';
@@ -40,7 +41,10 @@ function buildMarkerEl(villa) {
  * small name label always visible, tap to open the villa's review.
  */
 export const SatelliteMap = forwardRef(function SatelliteMap(
-  { villas, selectedId, onSelect, center = [115.17, -8.65], zoom = 10.3 },
+  // Same center/zoom the globe intro lands its zoom-in on (see GlobeIntro's
+  // ISLAND_ZOOM/BALI) — kept as one shared shot rather than two maps with
+  // slightly different framing.
+  { villas, selectedId, onSelect, center = [BALI.lon, BALI.lat], zoom = EXPLORE_ZOOM },
   ref,
 ) {
   const containerRef = useRef(null);
@@ -66,6 +70,7 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: 'mapbox://styles/mapbox/standard-satellite',
+      projection: 'globe', // matches the intro's projection exactly, for a seamless handoff
       center,
       zoom,
       dragRotate: false,

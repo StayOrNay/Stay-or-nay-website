@@ -11,6 +11,11 @@
 
 export const BALI = { lon: 115.19, lat: -8.4, label: 'Bali, Indonesia' };
 
+// Shared with the post-intro interactive map (SatelliteMap) so the globe
+// intro's landing camera and the live Explore map's initial camera are
+// exactly the same shot — no jump to a differently-framed "other map".
+export const EXPLORE_ZOOM = 10.3;
+
 export function toRad(deg) {
   return (deg * Math.PI) / 180;
 }
