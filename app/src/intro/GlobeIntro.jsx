@@ -6,15 +6,20 @@ import { baliLightPreset } from './daynight';
 import { antisolarPoint, hemisphereRing, angularDistanceDeg, MAJOR_CITIES } from './terminator';
 import { addBaliTownLabels } from './baliTowns';
 
-// --- Timeline (ms) — two explicit beats: the globe is already spinning
-// fast on the very first rendered frame (no static hold before motion
-// starts), then it decelerates into a zoom-in that lands on Bali. The
-// spin always ends exactly on Bali's longitude/latitude, so the zoom
-// phase only ever has to animate zoom/pitch — never position — which is
-// what keeps the hand-off between beats seamless rather than a jump.
+// --- Timeline (ms) — ONE single overlapping flight, not two sequential
+// beats. Rotation, zoom, and pitch are all driven off the SAME elapsed-time
+// fraction (t, 0..1) across the whole FLIGHT_MS duration, rather than
+// "spin fully stops, THEN zoom starts." Splitting those into a rotation
+// phase followed by a separate zoom phase — even with matched velocities
+// at the seam — still read as "two spins": a full rotation visibly comes
+// to a stop, then a beat later something else (the zoom) starts, and that
+// stop-then-go always reads as two separate motions no matter how smooth
+// each one is on its own. Overlapping them removes the stop: the rotation
+// is still decelerating while the zoom-in is already ramping up, so the
+// last bit of "slowing down" and the start of "zooming into Bali" happen
+// at the same time, as one continuous motion.
 const PRE_DELAY_MS = 0; // no hold — motion starts on frame one
-const SPIN_MS = 3000; // one continuous spin beat, 3s, fast and smooth start to finish
-const ZOOM_MS = 1500; // zoom in from full globe to landing on Bali
+const FLIGHT_MS = 4500; // total duration of the single spin->zoom flight
 const LABEL_DELAY_MS = 350;
 const FADE_MS = 500;
 
@@ -27,10 +32,9 @@ const SPIN_ZOOM = 1.5; // low zoom so the whole globe is on screen while it spin
 // crosses that meridian once, right at the very end where it's supposed
 // to land on Bali — there's nothing left to read as "a second spin".
 const SPIN_LNG_DELTA = 360;
-// Spin happens at Bali's latitude the whole time, starting one full turn
-// east of Bali's longitude — so when the spin finishes, the center is
-// already sitting exactly on Bali, and the zoom phase only has to animate
-// zoom/pitch (never position), which is what keeps the hand-off seamless.
+// Rotation happens at Bali's latitude the whole time, starting one full
+// turn east of Bali's longitude, so it lands exactly on Bali by t=1 — the
+// same instant the zoom-in and pitch also finish, with nothing left over.
 const START_CENTER = [BALI.lon - SPIN_LNG_DELTA, BALI.lat];
 // Lands at the exact same center/zoom the live Explore map opens with
 // (see SatelliteMap) — one continuous shot into the real, interactive map
@@ -38,37 +42,37 @@ const START_CENTER = [BALI.lon - SPIN_LNG_DELTA, BALI.lat];
 const ISLAND_ZOOM = EXPLORE_ZOOM;
 
 const PITCH_PEAK = 48;
-const PITCH_RISE_AT = 0.12; // fraction of the ZOOM phase pitch starts rising into 3D
-const PITCH_FLAT_BY = 0.85; // fraction by which pitch is back to flat (2D) on landing
+const PITCH_RISE_AT = 0.68; // fraction of the WHOLE flight pitch starts rising into 3D
+const PITCH_FLAT_BY = 0.97; // fraction of the WHOLE flight pitch is back to flat (2D) on landing
 
-// ONE smooth, fast, continuous spin — no flat plateau, no piecewise seam.
-// Two earlier attempts at a "hold at max speed, then decelerate" shape
-// both still read as "two spins"; the real cause turned out to be the
-// 720°/two-revolution distance above, not the curve shape. With a single
-// revolution, a plain high-power ease-out is enough: it's already moving
-// fast from frame one (steep initial slope), stays fast through most of
-// the rotation, and only eases down to a dead stop right at the very end
-// so the hand-off into the zoom phase (which starts at zero velocity) has
-// no kick. SPIN_EASE_POWER=3 keeps the deceleration tail short and snappy
-// rather than a long, draggy fade.
+// Rotation: fast from frame one, continuously decelerating, dead stop
+// exactly at t=1 (zero velocity at the very end — no kick on landing).
+// Power 3 keeps it snappy rather than a long draggy fade.
 const SPIN_EASE_POWER = 3;
 function spinEase(t) {
   return 1 - (1 - t) ** SPIN_EASE_POWER;
 }
 
-// S-curve for the ZOOM-IN: zero velocity at both ends. Its zero velocity
-// at t=0 matches the spin's zero velocity at t=1 (spinEase above ends at
-// a dead stop too) — so position, zoom, and pitch all have matching
-// (zero) velocity right at the spin/zoom hand-off, which is what removes
-// the "kick" that made the two beats read as separate shots instead of one.
-function easeInOutQuint(t) {
-  return t < 0.5 ? 16 * t ** 5 : 1 - ((-2 * t + 2) ** 5) / 2;
+function smoothstep(t) {
+  return t * t * (3 - 2 * t); // zero velocity at both t=0 and t=1
+}
+
+// Zoom: near-zero for most of the flight (camera stays pulled back while
+// the rotation is doing its thing), then ramps in toward the end. Squaring
+// smoothstep pushes the rise later without breaking its zero-velocity
+// endpoints — (smoothstep(t))^2 is still exactly 0 at t=0 and still has
+// zero slope at t=1, it just gets there later, so the bulk of "zooming
+// into Bali" overlaps with the tail of the rotation slowing down rather
+// than waiting for the rotation to fully stop first.
+function zoomEase(t) {
+  const s = smoothstep(t);
+  return s * s;
 }
 
 // 0 -> rises -> peaks -> falls -> 0, confined to [PITCH_RISE_AT, PITCH_FLAT_BY]
-// and flat outside it. Driven off the zoom phase's raw (linear) time, not
-// its eased progress, so the tilt reads as its own smooth temporal arc: 3D
-// while approaching, flat (2D) again once landed.
+// and flat outside it — the 3D tilt only kicks in during the back portion
+// of the flight where the zoom-in is actually happening, and is flat
+// (2D) again by landing.
 function pitchProgress(t) {
   if (t <= PITCH_RISE_AT || t >= PITCH_FLAT_BY) return 0;
   const local = (t - PITCH_RISE_AT) / (PITCH_FLAT_BY - PITCH_RISE_AT);
@@ -246,16 +250,16 @@ function addIceCaps(map) {
  * day/night terminator with a scatter of city lights on the night side,
  * and real local-time lighting once landed. Driven entirely by a single
  * hand-rolled requestAnimationFrame loop calling jumpTo every frame (never
- * separate Mapbox animations stitched together), the sequence is already
- * spinning at full speed on the very first frame (no static hold), spins
- * it a couple of full revolutions while decelerating and the whole Earth
- * stays on screen (SPIN_MS), then zooms in to land on Bali (ZOOM_MS) — at
- * the exact center/zoom/projection the live Explore
- * map opens with, so the shot continues straight into the real app rather
- * than cutting to a second, differently-framed map. Config properties
- * (lightPreset) are set on 'style.load' per Mapbox's docs. A light NASA
- * GIBS cloud pass sits on top as a bonus layer — its failure never blocks
- * the intro.
+ * separate Mapbox animations stitched together), this is ONE overlapping
+ * flight, not a rotation beat followed by a zoom beat: the globe spins one
+ * full revolution starting at full speed on the very first frame, and
+ * while that rotation is still decelerating the camera is already zooming
+ * in toward Bali (FLIGHT_MS total) — landing at the exact center/zoom/
+ * projection the live Explore map opens with, so the shot continues
+ * straight into the real app rather than cutting to a second,
+ * differently-framed map. Config properties (lightPreset) are set on
+ * 'style.load' per Mapbox's docs. A light NASA GIBS cloud pass sits on top
+ * as a bonus layer — its failure never blocks the intro.
  */
 export function GlobeIntro({ onComplete }) {
   const containerRef = useRef(null);
@@ -366,13 +370,12 @@ export function GlobeIntro({ onComplete }) {
       }
     };
 
-    // Three beats, but still just ONE hand-rolled rAF loop calling jumpTo
-    // every frame — never separate Mapbox animations stitched together, so
-    // there's still nothing for a visual seam to happen between. Which beat
-    // is active is purely a function of elapsed time; position only ever
-    // moves during the spin (always finishing exactly on Bali), so the
-    // zoom beat picking up from there never has to jump anywhere.
-    const TOTAL_MS = PRE_DELAY_MS + SPIN_MS + ZOOM_MS;
+    // ONE hand-rolled rAF loop calling jumpTo every frame — never separate
+    // Mapbox animations stitched together, and no internal phase
+    // branching either: rotation, zoom, and pitch are all just functions
+    // of the same elapsed-time fraction t, running simultaneously for the
+    // whole flight rather than one finishing before the next starts.
+    const TOTAL_MS = PRE_DELAY_MS + FLIGHT_MS;
 
     const runFlight = () => {
       // Anchor elapsed time to the FIRST rendered frame, not to the instant
@@ -391,37 +394,23 @@ export function GlobeIntro({ onComplete }) {
         if (startTime === null) startTime = now;
         const elapsed = now - startTime;
 
-        let lng = START_CENTER[0];
-        let zoom = SPIN_ZOOM;
-        let pitch = 0;
-        let nightFactor = 1;
+        // Single shared time fraction — rotation, zoom, and pitch all read
+        // off this same t every frame, simultaneously, for the entire
+        // flight. There is no point where one of these is "done" and
+        // another "starts": spinEase is still easing lng toward Bali while
+        // zoomEase is already pulling the camera in, which is what makes
+        // the deceleration and the zoom-in feel like one continuous motion
+        // instead of a stop followed by a separate second movement.
+        const t = Math.min(Math.max((elapsed - PRE_DELAY_MS) / FLIGHT_MS, 0), 1);
+        const spinT = spinEase(t);
+        const zoomT = zoomEase(t);
 
-        if (elapsed < PRE_DELAY_MS) {
-          // PRE_DELAY_MS is 0 — this branch is effectively unreachable, kept
-          // only as a safety fallback for the very first frame.
-          lng = START_CENTER[0];
-        } else if (elapsed < PRE_DELAY_MS + SPIN_MS) {
-          // Beat 1: spin one full revolution to Bali's longitude while
-          // staying zoomed out far enough to see the entire globe.
-          // spinEase is a single smooth ease-out — fast from frame one,
-          // no flat plateau, no seam — easing to a dead stop right at the
-          // hand-off into the zoom beat below.
-          const spinT = spinEase(Math.min((elapsed - PRE_DELAY_MS) / SPIN_MS, 1));
-          lng = START_CENTER[0] + (BALI.lon - START_CENTER[0]) * spinT;
-          zoom = SPIN_ZOOM;
-          pitch = 0;
-        } else {
-          // Beat 2: position is already exactly on Bali — only zoom and
-          // pitch animate from here, landing on the island. The night
-          // overlay fades out across this same beat so it's gone by the
-          // time the real, local lightPreset takes over down on Bali.
-          const zoomTRaw = Math.min((elapsed - PRE_DELAY_MS - SPIN_MS) / ZOOM_MS, 1);
-          const zoomT = easeInOutQuint(zoomTRaw);
-          lng = BALI.lon;
-          zoom = SPIN_ZOOM + (ISLAND_ZOOM - SPIN_ZOOM) * zoomT;
-          pitch = PITCH_PEAK * pitchProgress(zoomTRaw);
-          nightFactor = 1 - zoomT;
-        }
+        const lng = START_CENTER[0] + (BALI.lon - START_CENTER[0]) * spinT;
+        const zoom = SPIN_ZOOM + (ISLAND_ZOOM - SPIN_ZOOM) * zoomT;
+        const pitch = PITCH_PEAK * pitchProgress(t);
+        // Fades out in step with the zoom-in (not a separate later beat),
+        // so it's gone by the time the real, local lightPreset takes over.
+        const nightFactor = 1 - zoomT;
 
         map.jumpTo({ center: [lng, BALI.lat], zoom, pitch, bearing: 0 });
         setNightOpacity(map, nightFactor);
