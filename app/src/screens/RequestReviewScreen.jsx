@@ -16,9 +16,7 @@ const STATUS_META = {
 /**
  * "Request a review" — ask the StayOrNay team to go (or arrange for
  * someone to go) honestly review a property before you book or while
- * you're staying there. No payment happens on the site: budgetOffer is
- * just a text field so the requester can say what they're offering, and
- * any money is arranged directly with Alexander off-platform.
+ * you're staying there. Free for the requester — no payment, no fee.
  */
 export function RequestReviewScreen() {
   const navigate = useNavigate();
@@ -29,7 +27,6 @@ export function RequestReviewScreen() {
   const [location, setLocation] = useState('');
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
-  const [budgetOffer, setBudgetOffer] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -66,7 +63,6 @@ export function RequestReviewScreen() {
       location,
       checkIn,
       checkOut,
-      budgetOffer,
       notes,
     });
     setSubmitting(false);
@@ -79,7 +75,6 @@ export function RequestReviewScreen() {
     setLocation('');
     setCheckIn('');
     setCheckOut('');
-    setBudgetOffer('');
     setNotes('');
     setDone(true);
   };
@@ -89,7 +84,7 @@ export function RequestReviewScreen() {
       <Header title="Request a review" onBack={() => navigate(-1)} />
       <div style={{ padding: 16, maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 48 }}>
         <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>
-          Booked (or thinking about booking) somewhere and want an honest review before or during your stay? Send us the link and we'll go — or arrange for someone to. Any payment for the trip is worked out directly with us, not through the site.
+          Booked (or thinking about booking) somewhere and want an honest review before or during your stay? Send us the link and we'll go — or arrange for someone to. It's free.
         </p>
 
         {!configured ? (
@@ -151,13 +146,6 @@ export function RequestReviewScreen() {
                 onChange={(e) => setCheckOut(e.target.value)}
               />
             </div>
-            <Input
-              label="What are you offering? (optional)"
-              placeholder="e.g. covering the night's cost, or a flat fee"
-              hint="No payment happens on the site — this is just so we know what you have in mind before we follow up."
-              value={budgetOffer}
-              onChange={(e) => setBudgetOffer(e.target.value)}
-            />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <label style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--text-body)' }}>Anything else we should know?</label>
               <textarea

@@ -95,7 +95,6 @@ export function AdminReviewRequestsScreen() {
                     {(r.check_in || r.check_out) && (
                       <span>Stay: {r.check_in || '?'} → {r.check_out || '?'}</span>
                     )}
-                    {r.budget_offer && <span>Offering: {r.budget_offer}</span>}
                   </div>
 
                   {r.notes && (

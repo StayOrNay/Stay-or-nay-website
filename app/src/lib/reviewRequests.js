@@ -2,9 +2,8 @@ import { supabase, isSupabaseConfigured } from './supabase';
 
 // Data layer for "Request a review" — a signed-in user asks the StayOrNay
 // team to (personally, for now — see lib/admin.js) go review a property
-// they're booking or considering, instead of writing it themselves. No
-// payment is processed here; budget_offer is just a text field, and any
-// money changes hands off-platform between the requester and Alexander.
+// they're booking or considering, instead of writing it themselves. Free
+// for the requester — no payment is collected or processed anywhere.
 //
 // Backing table: `review_requests` (see
 // ../../supabase/review_requests_schema.sql for the SQL that creates it and
@@ -17,7 +16,7 @@ const NOT_CONFIGURED_ERROR = {
 };
 
 /** Submits a new request as 'open'. */
-export async function submitReviewRequest({ userId, propertyLink, propertyName, location, checkIn, checkOut, budgetOffer, notes }) {
+export async function submitReviewRequest({ userId, propertyLink, propertyName, location, checkIn, checkOut, notes }) {
   if (!isSupabaseConfigured) return { data: null, error: NOT_CONFIGURED_ERROR };
   return supabase
     .from(TABLE)
@@ -28,7 +27,6 @@ export async function submitReviewRequest({ userId, propertyLink, propertyName, 
       location: location || null,
       check_in: checkIn || null,
       check_out: checkOut || null,
-      budget_offer: budgetOffer || null,
       notes: notes || null,
       status: 'open',
     })
