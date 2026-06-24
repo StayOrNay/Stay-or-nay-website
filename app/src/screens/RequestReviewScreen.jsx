@@ -13,6 +13,75 @@ const STATUS_META = {
   declined: { label: 'Declined', tone: 'nay', Icon: XCircle },
 };
 
+// Native <input type="date"> renders its calendar/format using the
+// device's OS-level locale, not this site's html lang="en" — that's why
+// it can show up as European-style dd/mm/yyyy on a browser/OS set to a
+// non-US locale even though every other part of the site is in English.
+// A plain Month/Day/Year set of <select> dropdowns sidesteps that
+// entirely: the month names are hardcoded English strings we render
+// ourselves, so the field reads in English no matter the visitor's
+// device settings.
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+function isoToParts(iso) {
+  if (!iso) return { y: '', m: '', d: '' };
+  const [y, m, d] = iso.split('-');
+  return { y: y || '', m: m || '', d: d || '' };
+}
+
+function partsToIso(y, m, d) {
+  if (!y || !m || !d) return '';
+  return `${y}-${m}-${d}`;
+}
+
+function DateSelect({ label, value, onChange }) {
+  const { y, m, d } = isoToParts(value);
+  const thisYear = new Date().getFullYear();
+  const years = [thisYear, thisYear + 1, thisYear + 2];
+  const days = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+
+  const selectStyle = {
+    flex: 1,
+    height: 46,
+    padding: '0 10px',
+    borderRadius: 'var(--radius-sm)',
+    border: '1px solid var(--border-default)',
+    background: 'var(--surface-card)',
+    fontFamily: 'var(--font-body)',
+    fontSize: 14,
+    color: 'var(--text-strong)',
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+      <label style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--text-body)' }}>{label}</label>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <select style={{ ...selectStyle, flex: 1.6 }} value={m} onChange={(e) => onChange(partsToIso(y, e.target.value, d))}>
+          <option value="">Month</option>
+          {MONTH_NAMES.map((name, i) => (
+            <option key={name} value={String(i + 1).padStart(2, '0')}>{name}</option>
+          ))}
+        </select>
+        <select style={selectStyle} value={d} onChange={(e) => onChange(partsToIso(y, m, e.target.value))}>
+          <option value="">Day</option>
+          {days.map((dd) => (
+            <option key={dd} value={dd}>{dd}</option>
+          ))}
+        </select>
+        <select style={selectStyle} value={y} onChange={(e) => onChange(partsToIso(e.target.value, m, d))}>
+          <option value="">Year</option>
+          {years.map((yy) => (
+            <option key={yy} value={String(yy)}>{yy}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
+
 /**
  * "Request a review" — ask the StayOrNay team to go (or arrange for
  * someone to go) honestly review a property before you book or while
@@ -119,8 +188,9 @@ export function RequestReviewScreen() {
               onChange={(e) => setPropertyLink(e.target.value)}
             />
             <Input
-              label="Property name (optional)"
-              placeholder="If the listing title isn't obvious"
+              label="Property name"
+              required
+              placeholder="e.g. Villa Mawar, The Sanctuary Bali…"
               value={propertyName}
               onChange={(e) => setPropertyName(e.target.value)}
             />
@@ -131,20 +201,8 @@ export function RequestReviewScreen() {
               onChange={(e) => setLocation(e.target.value)}
             />
             <div style={{ display: 'flex', gap: 12 }}>
-              <Input
-                label="Check-in"
-                type="date"
-                style={{ flex: 1 }}
-                value={checkIn}
-                onChange={(e) => setCheckIn(e.target.value)}
-              />
-              <Input
-                label="Check-out"
-                type="date"
-                style={{ flex: 1 }}
-                value={checkOut}
-                onChange={(e) => setCheckOut(e.target.value)}
-              />
+              <DateSelect label="Check-in (optional)" value={checkIn} onChange={setCheckIn} />
+              <DateSelect label="Check-out (optional)" value={checkOut} onChange={setCheckOut} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <label style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--text-body)' }}>Anything else we should know?</label>

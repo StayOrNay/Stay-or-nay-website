@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PenLine, Bell, Settings, UserRound, Globe, ScrollText, ChevronRight, ShieldCheck, ClipboardList } from 'lucide-react';
+import { PenLine, Bell, Settings, UserRound, Globe, ScrollText, ChevronRight, ShieldCheck, ClipboardList, LogOut } from 'lucide-react';
 import { Avatar, Tag, Button } from '../components/core';
 import { Header } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
@@ -23,7 +23,7 @@ const BASE_ROWS = [
  */
 export function ProfileScreen() {
   const navigate = useNavigate();
-  const { user, configured } = useAuth();
+  const { user, configured, signOut } = useAuth();
   const ROWS = isAdmin(user)
     ? [
         ...BASE_ROWS,
@@ -31,6 +31,11 @@ export function ProfileScreen() {
         { Icon: ClipboardList, label: 'Review requests', to: '/you/review-requests' },
       ]
     : BASE_ROWS;
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/you');
+  };
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
@@ -74,6 +79,11 @@ export function ProfileScreen() {
             </div>
           ))}
         </div>
+        {user && (
+          <Button variant="neutral" block iconLeft={<LogOut size={18} />} onClick={handleSignOut}>
+            Sign out
+          </Button>
+        )}
       </div>
     </div>
   );
