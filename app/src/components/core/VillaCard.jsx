@@ -1,6 +1,5 @@
 import React from 'react';
 import { VerdictBadge } from './VerdictBadge';
-import { RatingStars } from './RatingStars';
 import { Tag } from './Tag';
 import { IconButton } from './IconButton';
 
@@ -17,7 +16,6 @@ export function VillaCard({
   verdict = 'stay',
   score = null,
   scoreOutOf = null,
-  rating = null,
   price = null,
   currency = '€',
   tags = [],
@@ -47,8 +45,8 @@ export function VillaCard({
       }}
       {...rest}
     >
-      {/* Aerial thumbnail */}
-      <div style={{ position: 'relative', height: 168, background: 'var(--paper-200)' }}>
+      {/* Thumbnail — portrait (leans to the 9:16 vertical the videos use) */}
+      <div style={{ position: 'relative', aspectRatio: '3 / 4', background: 'var(--paper-200)' }}>
         {image && (
           <img src={image} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         )}
@@ -74,7 +72,6 @@ export function VillaCard({
           <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, letterSpacing: '-0.015em', color: 'var(--text-strong)' }}>
             {name}
           </h3>
-          {rating != null && <RatingStars value={rating} size={14} showValue />}
         </div>
 
         {(location || coords) && (

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, ChevronsUp } from 'lucide-react';
-import { VerdictBadge, RatingStars, Tag, VillaCard } from '../components/core';
+import { VerdictBadge, Tag, VillaCard } from '../components/core';
 import { useVillasWithReviews } from '../hooks/useVillasWithReviews';
 import { useSaved } from '../context/SavedContext';
 import { useIsDesktop } from '../hooks/useMediaQuery';
@@ -230,7 +230,6 @@ function FeedSlide({ villa, active, saved, onToggleSave, onOpen }) {
           {villa.location}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <RatingStars value={villa.rating} size={14} showValue style={{ color: '#fff' }} />
           <Tag variant="outline" tone="sun" style={{ borderColor: 'rgba(255,255,255,0.5)', color: '#fff' }}>
             {villa.currency}{villa.price} / night
           </Tag>

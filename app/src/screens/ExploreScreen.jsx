@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X, ChevronLeft, ChevronRight, SlidersHorizontal, RotateCcw, Check } from 'lucide-react';
-import { Input, VerdictBadge, RatingStars, Tag, VillaCard } from '../components/core';
+import { Input, VerdictBadge, Tag, VillaCard } from '../components/core';
 import { SatelliteMap } from '../components/shared';
 import { useVillasWithReviews } from '../hooks/useVillasWithReviews';
 import { useSaved } from '../context/SavedContext';
@@ -104,7 +104,7 @@ export function ExploreScreen() {
               <VillaCard
                 key={v.id}
                 name={v.name} location={v.location} coords={v.coords} image={v.image}
-                verdict={v.verdict} score={v.score} scoreOutOf={v.scoreOutOf} rating={v.rating}
+                verdict={v.verdict} score={v.score} scoreOutOf={v.scoreOutOf}
                 price={v.price} currency={v.currency} tags={v.tags}
                 onClick={() => navigate(`/villa/${v.id}`)}
                 style={v.id === selected ? { outline: '2px solid var(--brand)', outlineOffset: 2 } : {}}
@@ -191,8 +191,7 @@ export function ExploreScreen() {
                 </div>
                 <h3 style={{ margin: '6px 0 2px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, letterSpacing: '-0.015em', color: 'var(--text-strong)' }}>{sel.name}</h3>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-muted)' }}>{sel.location}</div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 7 }}>
-                  <RatingStars value={sel.rating} size={14} showValue />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: 7 }}>
                   <Tag variant="outline" tone="sun">{sel.currency}{sel.price} / night</Tag>
                 </div>
               </div>
