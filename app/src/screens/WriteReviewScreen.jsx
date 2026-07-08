@@ -4,6 +4,7 @@ import { ImagePlus, X, Send, AlertCircle, CheckCircle2, Link2, Image as ImageIco
 import { Input, Button, VerdictBadge, Tag } from '../components/core';
 import { Header, LocationPicker } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import { CATEGORIES, MAX_PER_CATEGORY, NAY_THRESHOLD, MAX_TOTAL, MIN_PHOTOS, MIN_VIDEOS, MIN_BODY_CHARS, emptyScores, totalFromCategories, verdictFromTotal } from '../lib/reviewScore';
 import { submitReview, uploadReviewMedia } from '../lib/reviews';
 import { prepareMediaForUpload, MAX_UPLOAD_BYTES } from '../lib/compressMedia';
@@ -36,6 +37,7 @@ export function WriteReviewScreen() {
   // and not locked the way the old per-villa route used to be).
   const prefillName = location.state?.propertyName || '';
 
+  const [name, setName] = useState(user?.user_metadata?.display_name || user?.user_metadata?.name || '');
   const [propertyLink, setPropertyLink] = useState('');
   const [propertyName, setPropertyName] = useState(prefillName);
   const [area, setArea] = useState('');
@@ -103,6 +105,11 @@ export function WriteReviewScreen() {
     e.preventDefault();
     setError(null);
 
+    if (!name.trim()) {
+      setError('Add your name so people can see who wrote this review.');
+      return;
+    }
+
     if (body.trim().length < MIN_BODY_CHARS) {
       setError(`Add a bit more to your write-up — at least ${MIN_BODY_CHARS} characters so it's genuinely useful (you have ${body.trim().length}).`);
       return;
@@ -128,6 +135,13 @@ export function WriteReviewScreen() {
 
     setSubmitting(true);
 
+    // Remember the reviewer's name on their account so it's prefilled next
+    // time (best-effort — a failure here shouldn't block the review).
+    const cleanName = name.trim();
+    if (cleanName && cleanName !== (user?.user_metadata?.display_name || '')) {
+      try { await supabase.auth.updateUser({ data: { display_name: cleanName } }); } catch { /* non-fatal */ }
+    }
+
     const { urls, error: uploadErr } = await uploadReviewMedia(files, user.id);
     if (uploadErr) {
       setError(uploadErr.message);
@@ -148,6 +162,7 @@ export function WriteReviewScreen() {
       propertyLink,
       propertyName,
       userId: user.id,
+      reviewerName: cleanName,
       scores,
       headline,
       body,
@@ -200,6 +215,13 @@ export function WriteReviewScreen() {
           </>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <Input
+              label="Your name"
+              required
+              placeholder="First name is fine — e.g. Benjamin"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
             <Input
               label="Property link"
               required

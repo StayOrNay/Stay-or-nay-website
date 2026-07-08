@@ -49,7 +49,7 @@ export async function uploadReviewMedia(files, userId) {
  * for the legacy seed-villa reviews that already exist; new submissions
  * always leave it null.
  */
-export async function submitReview({ propertyLink, propertyName, userId, scores, headline, body, mediaUrls = [], beds = null, pricePaid = null, currency = '$', area = null, lat = null, lon = null }) {
+export async function submitReview({ propertyLink, propertyName, userId, reviewerName = null, scores, headline, body, mediaUrls = [], beds = null, pricePaid = null, currency = '$', area = null, lat = null, lon = null }) {
   if (!isSupabaseConfigured) return { data: null, error: NOT_CONFIGURED_ERROR };
   const total = totalFromCategories(scores);
   const verdict = verdictFromTotal(total);
@@ -60,6 +60,7 @@ export async function submitReview({ propertyLink, propertyName, userId, scores,
       property_link: propertyLink,
       property_name: propertyName,
       user_id: userId,
+      reviewer_name: reviewerName,
       score_location: scores.location,
       score_value: scores.value,
       score_cleanliness: scores.cleanliness,

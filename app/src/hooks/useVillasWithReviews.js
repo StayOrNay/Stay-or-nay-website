@@ -53,7 +53,7 @@ function reviewToListing(r) {
     currency: r.currency || '$',
     beds: r.beds ?? null,
     tags,
-    reviewer: 'Verified stayer',
+    reviewer: r.reviewer_name || 'A guest',
     verified: true,
     headline: r.headline || '',
     body: r.body || '',

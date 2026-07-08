@@ -59,7 +59,7 @@ export function VillaDetailScreen() {
   const hero = (
     <div style={{ position: 'relative', height: isDesktop ? '100%' : 'auto', display: 'flex', flexDirection: 'column', background: 'var(--paper-200)' }}>
       {/* main viewer */}
-      <div style={{ position: 'relative', flex: isDesktop ? '1 1 auto' : 'none', minHeight: 0, height: isDesktop ? 'auto' : 280, background: '#000' }}>
+      <div style={{ position: 'relative', flex: isDesktop ? '1 1 auto' : 'none', minHeight: 0, height: isDesktop ? 'auto' : 380, background: '#000' }}>
         {active.type === 'video' ? (
           <video key={active.url} src={active.url} controls playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', background: '#000' }} />
         ) : (
@@ -75,10 +75,6 @@ export function VillaDetailScreen() {
               <Heart size={19} fill={isSaved ? 'currentColor' : 'none'} />
             </IconButton>
           </div>
-        </div>
-        {/* big verdict bottom-left */}
-        <div style={{ position: 'absolute', left: 16, bottom: 16 }}>
-          <VerdictBadge verdict={villa.verdict} score={villa.score} outOf={villa.scoreOutOf} size="lg" />
         </div>
         {/* coords bottom-right */}
         {villa.coords && (
@@ -136,25 +132,13 @@ export function VillaDetailScreen() {
         {villa.price != null && <Tag variant="outline" tone="sun">{villa.currency}{villa.price} / night</Tag>}
       </div>
 
-      {/* reviewer verdict block */}
-      <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 16, boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar name={villa.reviewer} verified={villa.verified} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 14, color: 'var(--text-strong)' }}>{villa.reviewer}</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>Verified stayer</div>
-          </div>
-          <RatingStars value={villa.rating} size={16} showValue />
-        </div>
-        <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 17, lineHeight: 1.4, color: 'var(--text-strong)' }}>
-          "{villa.headline}"
-        </p>
-        <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 15, lineHeight: 1.6, color: 'var(--text-body)' }}>
-          {villa.body}
-        </p>
+      {/* verdict badge + rating — moved off the photo so the media reads cleaner */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+        <VerdictBadge verdict={villa.verdict} score={villa.score} outOf={villa.scoreOutOf} size="lg" />
+        {villa.rating != null && <RatingStars value={villa.rating} size={18} showValue />}
       </div>
 
-      {/* score breakdown — the five categories that make up the /50 total */}
+      {/* score breakdown FIRST — the five categories that make up the /50 total */}
       {villa.categories && (
         <div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
@@ -180,6 +164,23 @@ export function VillaDetailScreen() {
           </div>
         </div>
       )}
+
+      {/* the review itself — comes AFTER the score breakdown */}
+      <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 16, boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Avatar name={villa.reviewer} verified={villa.verified} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 14, color: 'var(--text-strong)' }}>{villa.reviewer}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>Verified stayer</div>
+          </div>
+        </div>
+        <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 17, lineHeight: 1.4, color: 'var(--text-strong)' }}>
+          "{villa.headline}"
+        </p>
+        <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 15, lineHeight: 1.6, color: 'var(--text-body)' }}>
+          {villa.body}
+        </p>
+      </div>
 
       {/* amenities */}
       <div>
@@ -210,7 +211,10 @@ export function VillaDetailScreen() {
             {realReviews.map((r) => (
               <div key={r.id} style={{ background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Tag tone={r.verdict === 'stay' ? 'stay' : 'nay'}>{r.total} / {MAX_TOTAL}</Tag>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Tag tone={r.verdict === 'stay' ? 'stay' : 'nay'}>{r.total} / {MAX_TOTAL}</Tag>
+                    <span style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 13, color: 'var(--text-strong)' }}>{r.reviewer_name || 'A guest'}</span>
+                  </div>
                   <span style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-faint)' }}>
                     {new Date(r.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                   </span>
