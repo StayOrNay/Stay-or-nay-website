@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { mapboxgl } from '../../lib/mapbox';
 import { baliLightPreset } from '../../intro/daynight';
@@ -64,8 +64,11 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
+  const loadedRef = useRef(false);
   const onSelectRef = useRef(onSelect);
   const onMoveEndRef = useRef(onMoveEnd);
+  const villasRef = useRef(villas);
+  const selectedIdRef = useRef(selectedId);
 
   useEffect(() => {
     onSelectRef.current = onSelect;
@@ -74,6 +77,42 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
   useEffect(() => {
     onMoveEndRef.current = onMoveEnd;
   }, [onMoveEnd]);
+
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
+
+  // Rebuild the villa pins from the CURRENT list. Runs on map load AND every
+  // time the villa list changes — the reviews come from an async fetch, so the
+  // list is empty when the map first loads and only fills in a moment later;
+  // without re-syncing here, those late-arriving villas would never get a pin.
+  const syncMarkers = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !loadedRef.current) return;
+    Object.values(markersRef.current).forEach(({ marker }) => marker.remove());
+    markersRef.current = {};
+    (villasRef.current || []).forEach((v) => {
+      if (typeof v.lon !== 'number' || typeof v.lat !== 'number') return;
+      const { wrap, inner, badge } = buildMarkerEl(v);
+      wrap.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (onSelectRef.current) onSelectRef.current(v.id);
+      });
+      const marker = new mapboxgl.Marker({ element: wrap, anchor: 'bottom' })
+        .setLngLat([v.lon, v.lat])
+        .addTo(map);
+      markersRef.current[v.id] = { marker, wrap, inner, badge };
+      const active = v.id === selectedIdRef.current;
+      inner.style.transform = active ? 'scale(1.12)' : 'scale(1)';
+      badge.style.borderColor = active ? '#fff' : 'transparent';
+    });
+  }, []);
+
+  // Keep the pins in sync with the villa list (fixes late-loading reviews).
+  useEffect(() => {
+    villasRef.current = villas;
+    syncMarkers();
+  }, [villas, syncMarkers]);
 
   useImperativeHandle(ref, () => ({
     recenter() {
@@ -118,18 +157,8 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
     mapRef.current = map;
 
     map.on('load', () => {
-      villas.forEach((v) => {
-        if (typeof v.lon !== 'number' || typeof v.lat !== 'number') return;
-        const { wrap, inner, badge } = buildMarkerEl(v);
-        wrap.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (onSelectRef.current) onSelectRef.current(v.id);
-        });
-        const marker = new mapboxgl.Marker({ element: wrap, anchor: 'bottom' })
-          .setLngLat([v.lon, v.lat])
-          .addTo(map);
-        markersRef.current[v.id] = { marker, wrap, inner, badge };
-      });
+      loadedRef.current = true;
+      syncMarkers();
     });
 
     map.on('error', (e) => {
@@ -166,6 +195,7 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
       map.remove();
       mapRef.current = null;
       markersRef.current = {};
+      loadedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
