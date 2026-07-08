@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StayOrNay — Bali Filming Cheat Sheet</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Hanken+Grotesk:wght@500;600;700;800&family=Space+Mono:wght@700&display=swap');
+
+  :root{
+    --ink:#0C1714; --paper:#F7F2E8; --card:#FFFFFF;
+    --stay:#14875A; --stay-soft:#DFF4EA;
+    --nay:#D9472E; --nay-soft:#FDE8E2;
+    --sky:#2A77C4; --sun:#E08A1E; --sun-soft:#FCEFD4;
+    --muted:#5A6A60;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Hanken Grotesk',system-ui,sans-serif;
+    background:var(--paper); color:var(--ink);
+    padding:24px 16px; line-height:1.25;
+  }
+  .sheet{max-width:640px; margin:0 auto;}
+
+  /* Header */
+  .top{text-align:center; margin-bottom:22px;}
+  .brand{
+    font-family:'Bricolage Grotesque',sans-serif; font-weight:800;
+    font-size:34px; letter-spacing:-.02em;
+  }
+  .brand .stay-word{color:var(--stay);}
+  .brand .nay-word{color:var(--nay);}
+  .sub{
+    font-family:'Space Mono',monospace; font-weight:700;
+    font-size:13px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--muted); margin-top:6px;
+  }
+
+  /* Section title */
+  .section-title{
+    font-family:'Bricolage Grotesque',sans-serif; font-weight:800;
+    font-size:22px; margin:26px 0 12px; display:flex; align-items:center; gap:10px;
+  }
+  .pill{
+    font-family:'Space Mono',monospace; font-size:12px; font-weight:700;
+    color:#fff; padding:5px 12px; border-radius:999px; letter-spacing:.05em;
+  }
+  .pill.villa{background:var(--stay);}
+  .pill.extra{background:var(--sky);}
+
+  /* Shot cards */
+  .shot{
+    background:var(--card); border-radius:18px; padding:16px 18px;
+    display:flex; align-items:center; gap:16px; margin-bottom:12px;
+    box-shadow:0 2px 10px rgba(12,23,20,.07);
+    border-left:8px solid var(--stay);
+  }
+  .shot .num{
+    font-family:'Bricolage Grotesque',sans-serif; font-weight:800;
+    font-size:34px; color:var(--stay); min-width:38px; text-align:center; line-height:1;
+  }
+  .shot .emoji{font-size:30px; min-width:38px; text-align:center;}
+  .shot .body{flex:1;}
+  .shot .name{
+    font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:19px;
+  }
+  .shot .say{font-size:15px; font-weight:600; color:var(--muted); margin-top:3px;}
+  .shot .say b{color:var(--ink);}
+
+  /* verdict card highlight */
+  .shot.verdict{border-left-color:var(--sun);}
+  .shot.verdict .num{color:var(--sun);}
+
+  /* extra section cards */
+  .shot.x{border-left-color:var(--sky);}
+  .shot.x .num{color:var(--sky);}
+
+  /* every video checklist */
+  .rules{
+    background:var(--ink); color:var(--paper); border-radius:18px;
+    padding:18px 20px; margin-top:26px;
+  }
+  .rules h3{
+    font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:19px;
+    margin-bottom:12px; color:#fff;
+  }
+  .rules ul{list-style:none;}
+  .rules li{
+    font-size:16px; font-weight:600; padding:7px 0; display:flex; gap:12px; align-items:center;
+    border-bottom:1px solid rgba(255,255,255,.12);
+  }
+  .rules li:last-child{border-bottom:none;}
+  .rules li .tick{color:#3FBF8B; font-size:20px; min-width:22px;}
+
+  .footer{
+    text-align:center; margin-top:20px;
+    font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.06em;
+    color:var(--muted); text-transform:uppercase;
+  }
+
+  @media print{ body{background:#fff;} .shot{box-shadow:none; border:1px solid #ddd;} }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="top">
+    <div class="brand"><span class="stay-word">STAY</span> or <span class="nay-word">NAY</span></div>
+    <div class="sub">Bali Filming Cheat Sheet · One stay, one verdict</div>
+  </div>
+
+  <!-- MAIN: VILLA -->
+  <div class="section-title"><span class="pill villa">MAIN</span> 5 shots — every villa</div>
+
+  <div class="shot">
+    <div class="num">1</div><div class="emoji">🚪</div>
+    <div class="body">
+      <div class="name">The Arrival</div>
+      <div class="say">Walk up to the gate. Say: <b>"STAY or NAY? You've got 15 seconds."</b></div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="num">2</div><div class="emoji">🏊</div>
+    <div class="body">
+      <div class="name">The Wow</div>
+      <div class="say">Slow pan of the best bit — pool, view, the reveal.</div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="num">3</div><div class="emoji">🏠</div>
+    <div class="body">
+      <div class="name">The Quick Tour</div>
+      <div class="say">Fast cuts: bedroom, kitchen, bathroom.</div>
+    </div>
+  </div>
+
+  <div class="shot">
+    <div class="num">4</div><div class="emoji">⚠️</div>
+    <div class="body">
+      <div class="name">The Catch</div>
+      <div class="say">The honest downside. Say: <b>"Here's what they don't show you."</b></div>
+    </div>
+  </div>
+
+  <div class="shot verdict">
+    <div class="num">5</div><div class="emoji">✅</div>
+    <div class="body">
+      <div class="name">The Verdict</div>
+      <div class="say">You on camera: <b>STAY or NAY + score.</b> Say the price per night.</div>
+    </div>
+  </div>
+
+  <!-- EXTRA: FOOD & ACTIVITIES -->
+  <div class="section-title"><span class="pill extra">EXTRA</span> 3 shots — food &amp; activities</div>
+
+  <div class="shot x">
+    <div class="num">1</div><div class="emoji">📍</div>
+    <div class="body">
+      <div class="name">The Place</div>
+      <div class="say">Arrive. Say: <b>"Is this worth it? STAY or NAY."</b></div>
+    </div>
+  </div>
+
+  <div class="shot x">
+    <div class="num">2</div><div class="emoji">🍽️</div>
+    <div class="body">
+      <div class="name">The Thing</div>
+      <div class="say">Close-up of the food or activity. Make it look good.</div>
+    </div>
+  </div>
+
+  <div class="shot x">
+    <div class="num">3</div><div class="emoji">✅</div>
+    <div class="body">
+      <div class="name">The Verdict</div>
+      <div class="say">You on camera: <b>STAY or NAY + price + one honest line.</b></div>
+    </div>
+  </div>
+
+  <!-- EVERY VIDEO RULES -->
+  <div class="rules">
+    <h3>Every video — the 5 rules</h3>
+    <ul>
+      <li><span class="tick">✓</span> Hook in the first 1 second (text on screen)</li>
+      <li><span class="tick">✓</span> Save the STAY / NAY verdict for the END</li>
+      <li><span class="tick">✓</span> Always say the price</li>
+      <li><span class="tick">✓</span> Ask a question in the caption</li>
+      <li><span class="tick">✓</span> Add: "Full rankings on the site"</li>
+    </ul>
+  </div>
+
+  <div class="footer">Film 5 per villa · Keep it simple · Post the verdict</div>
+
+</div>
+</body>
+</html>

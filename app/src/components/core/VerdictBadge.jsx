@@ -8,6 +8,7 @@ import React from 'react';
 export function VerdictBadge({
   verdict = 'stay',
   score = null,
+  outOf = null,
   size = 'md',
   style = {},
   ...rest
@@ -53,7 +54,7 @@ export function VerdictBadge({
             borderRadius: 'var(--radius-pill)',
           }}
         >
-          {score}
+          {outOf != null ? `${score} / ${outOf}` : score}
         </span>
       )}
     </span>

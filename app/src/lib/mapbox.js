@@ -63,3 +63,33 @@ export async function reverseGeocode(lon, lat) {
     return null;
   }
 }
+
+/**
+ * Forward-geocodes a free-text place ("Uluwatu, Bali") into coordinates so a
+ * user-submitted review can be pinned on the Explore map. Returns
+ * { lon, lat, label } or null if nothing matches / the request fails — the
+ * caller saves the review either way, just without a map pin.
+ */
+export async function forwardGeocode(query) {
+  const q = (query || '').trim();
+  if (!q) return null;
+  const url =
+    'https://api.mapbox.com/search/geocode/v6/forward' +
+    `?q=${encodeURIComponent(q)}&access_token=${MAPBOX_TOKEN}&limit=1`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const feature = data?.features?.[0];
+    const coords = feature?.geometry?.coordinates;
+    if (!coords || coords.length < 2) return null;
+    const [lon, lat] = coords;
+    const props = feature.properties || {};
+    const name = props.name;
+    const country = props.context?.country?.name;
+    const label = name ? (country ? `${name}, ${country}` : name) : q;
+    return { lon, lat, label };
+  } catch {
+    return null;
+  }
+}

@@ -12,11 +12,31 @@
 // displayed — but that's only ever used for the aggregate villa-card score
 // in useVillasWithReviews, never for a single review's own total.
 export const CATEGORIES = [
-  { key: 'location', label: 'Location' },
-  { key: 'value', label: 'Value for money' },
-  { key: 'cleanliness', label: 'Cleanliness' },
-  { key: 'amenities', label: 'Amenities' },
-  { key: 'host', label: 'Host & service' },
+  {
+    key: 'location',
+    label: 'Location',
+    hint: 'How easy the place was to reach and get around from — nearby beaches, food and transport, plus how quiet or noisy it was.',
+  },
+  {
+    key: 'value',
+    label: 'Value for money',
+    hint: 'Whether the price felt fair for what you actually got.',
+  },
+  {
+    key: 'cleanliness',
+    label: 'Cleanliness',
+    hint: 'How clean and well-kept the place was on arrival and throughout your stay.',
+  },
+  {
+    key: 'amenities',
+    label: 'Amenities',
+    hint: 'What the place provides and how good it is — pool, kitchen, wifi, air-con and any extras.',
+  },
+  {
+    key: 'host',
+    label: 'Host & service',
+    hint: 'How responsive, helpful and welcoming the host or staff were.',
+  },
 ];
 
 export const MAX_PER_CATEGORY = 10;
@@ -26,8 +46,12 @@ export const NAY_THRESHOLD = 30; // total >= this is a "stay"; under 30 is a "na
 // Minimum media required to submit a review — also the site owner's
 // explicit instruction. Classified by each File's MIME type at upload
 // time (file.type.startsWith('image/') / 'video/').
-export const MIN_PHOTOS = 5;
-export const MIN_VIDEOS = 2;
+export const MIN_PHOTOS = 3;
+export const MIN_VIDEOS = 1;
+
+// A review's write-up must be at least this many characters — enough to be
+// a "solid description", not a one-word drive-by.
+export const MIN_BODY_CHARS = 60;
 
 export function emptyScores() {
   return CATEGORIES.reduce((acc, c) => ({ ...acc, [c.key]: 0 }), {});

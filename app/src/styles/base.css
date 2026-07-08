@@ -60,6 +60,17 @@ img {
   }
 }
 
+/* Small, generic tactile feedback for buttons (subtle press + hover). */
+.press {
+  transition: transform var(--dur-fast) var(--ease-out), filter var(--dur-base) var(--ease-out);
+}
+.press:hover {
+  filter: brightness(1.04);
+}
+.press:active {
+  transform: scale(0.97);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

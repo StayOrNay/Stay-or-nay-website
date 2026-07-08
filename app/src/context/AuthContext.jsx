@@ -36,7 +36,24 @@ export function AuthProvider({ children }) {
 
   const signUp = async (email, password) => {
     if (!isSupabaseConfigured) return { error: NOT_CONFIGURED_ERROR };
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: window.location.origin },
+    });
+    return { error };
+  };
+
+  // Google OAuth — one-tap sign-in. Requires the Google provider to be
+  // enabled in the Supabase dashboard (Authentication → Sign In / Providers)
+  // with a Google Cloud OAuth client ID + secret. redirectTo matches the
+  // project's Site URL so Supabase returns the user to the live app.
+  const signInWithGoogle = async () => {
+    if (!isSupabaseConfigured) return { error: NOT_CONFIGURED_ERROR };
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
     return { error };
   };
 
@@ -55,7 +72,7 @@ export function AuthProvider({ children }) {
   const resetPassword = async (email) => {
     if (!isSupabaseConfigured) return { error: NOT_CONFIGURED_ERROR };
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/you/account',
+      redirectTo: window.location.origin,
     });
     return { error };
   };
@@ -67,7 +84,7 @@ export function AuthProvider({ children }) {
     if (!isSupabaseConfigured) return { error: NOT_CONFIGURED_ERROR };
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.origin + '/you/account' },
+      options: { emailRedirectTo: window.location.origin },
     });
     return { error };
   };
@@ -80,6 +97,7 @@ export function AuthProvider({ children }) {
     signUp,
     signIn,
     signOut,
+    signInWithGoogle,
     resetPassword,
     signInWithMagicLink,
   };

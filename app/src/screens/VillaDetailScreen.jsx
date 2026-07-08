@@ -6,7 +6,7 @@ import { useSaved } from '../context/SavedContext';
 import { useIsDesktop } from '../hooks/useMediaQuery';
 import { useVillaWithReviews } from '../hooks/useVillasWithReviews';
 import { fetchApprovedReviewsForVilla } from '../lib/reviews';
-import { MAX_TOTAL } from '../lib/reviewScore';
+import { MAX_TOTAL, CATEGORIES } from '../lib/reviewScore';
 
 /**
  * Villa detail — hero aerial, big verdict, reviewer block, amenities,
@@ -23,6 +23,7 @@ export function VillaDetailScreen() {
   const { saved, toggleSave } = useSaved();
   const villa = useVillaWithReviews(id);
   const [realReviews, setRealReviews] = useState([]);
+  const [activeMedia, setActiveMedia] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -47,28 +48,73 @@ export function VillaDetailScreen() {
   const isStay = villa.verdict === 'stay';
   const isSaved = saved.has(villa.id);
 
+  // All of the reviewer's media — photos and video — for the gallery. Falls
+  // back to the single card image for older/legacy listings with no media.
+  const media = (Array.isArray(villa.mediaUrls) && villa.mediaUrls.length > 0)
+    ? villa.mediaUrls
+    : [{ url: villa.image, type: 'photo' }];
+  const activeIdx = Math.min(activeMedia, media.length - 1);
+  const active = media[activeIdx] || media[0];
+
   const hero = (
-    <div style={{ position: 'relative', height: isDesktop ? '100%' : 280 }}>
-      <img src={villa.image} alt={villa.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(12,23,20,0.30) 0%, transparent 30%, transparent 60%, rgba(12,23,20,0.55) 100%)' }} />
-      {/* top controls */}
-      <div style={{ position: 'absolute', top: 12, left: 12, right: 12, display: 'flex', justifyContent: 'space-between' }}>
-        <IconButton ariaLabel="Back" onClick={() => navigate(-1)}><ChevronLeft size={22} /></IconButton>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <IconButton ariaLabel="Share"><Share size={19} /></IconButton>
-          <IconButton ariaLabel="Save" active={isSaved} onClick={() => toggleSave(villa.id)}>
-            <Heart size={19} fill={isSaved ? 'currentColor' : 'none'} />
-          </IconButton>
+    <div style={{ position: 'relative', height: isDesktop ? '100%' : 'auto', display: 'flex', flexDirection: 'column', background: 'var(--paper-200)' }}>
+      {/* main viewer */}
+      <div style={{ position: 'relative', flex: isDesktop ? '1 1 auto' : 'none', minHeight: 0, height: isDesktop ? 'auto' : 280, background: '#000' }}>
+        {active.type === 'video' ? (
+          <video key={active.url} src={active.url} controls playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', background: '#000' }} />
+        ) : (
+          <img src={active.url} alt={villa.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        )}
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(12,23,20,0.30) 0%, transparent 26%, transparent 62%, rgba(12,23,20,0.55) 100%)' }} />
+        {/* top controls */}
+        <div style={{ position: 'absolute', top: 12, left: 12, right: 12, display: 'flex', justifyContent: 'space-between' }}>
+          <IconButton ariaLabel="Back" onClick={() => navigate(-1)}><ChevronLeft size={22} /></IconButton>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <IconButton ariaLabel="Share"><Share size={19} /></IconButton>
+            <IconButton ariaLabel="Save" active={isSaved} onClick={() => toggleSave(villa.id)}>
+              <Heart size={19} fill={isSaved ? 'currentColor' : 'none'} />
+            </IconButton>
+          </div>
         </div>
+        {/* big verdict bottom-left */}
+        <div style={{ position: 'absolute', left: 16, bottom: 16 }}>
+          <VerdictBadge verdict={villa.verdict} score={villa.score} outOf={villa.scoreOutOf} size="lg" />
+        </div>
+        {/* coords bottom-right */}
+        {villa.coords && (
+          <div style={{ position: 'absolute', right: 16, bottom: 20, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em', color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
+            {villa.coords}
+          </div>
+        )}
       </div>
-      {/* big verdict bottom-left */}
-      <div style={{ position: 'absolute', left: 16, bottom: 16 }}>
-        <VerdictBadge verdict={villa.verdict} score={villa.score} size="lg" />
-      </div>
-      {/* coords bottom-right */}
-      <div style={{ position: 'absolute', right: 16, bottom: 20, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em', color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
-        {villa.coords}
-      </div>
+      {/* thumbnail filmstrip */}
+      {media.length > 1 && (
+        <div style={{ flex: 'none', display: 'flex', gap: 8, padding: 10, overflowX: 'auto', background: 'var(--surface-card)', borderTop: '1px solid var(--border-soft)' }}>
+          {media.map((m, i) => {
+            const on = i === activeIdx;
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setActiveMedia(i)}
+                aria-label={`View ${m.type === 'video' ? 'video' : 'photo'} ${i + 1}`}
+                style={{ position: 'relative', flex: 'none', width: 72, height: 54, borderRadius: 8, overflow: 'hidden', padding: 0, cursor: 'pointer', background: '#000', border: on ? '2px solid var(--stay-600)' : '2px solid transparent', boxShadow: on ? 'var(--shadow-sm)' : 'none' }}
+              >
+                {m.type === 'video' ? (
+                  <>
+                    <video src={m.url} muted preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.28)' }}>
+                      <PlayIcon />
+                    </span>
+                  </>
+                ) : (
+                  <img src={m.url} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 
@@ -84,9 +130,10 @@ export function VillaDetailScreen() {
 
       {/* facts row */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <Tag variant="outline">Sleeps {villa.sleeps}</Tag>
-        <Tag variant="outline">{villa.beds} beds</Tag>
-        <Tag variant="outline">{villa.baths} baths</Tag>
+        {villa.beds != null && <Tag variant="outline">{villa.beds} bed{villa.beds === 1 ? '' : 's'}</Tag>}
+        {villa.sleeps != null && <Tag variant="outline">Sleeps {villa.sleeps}</Tag>}
+        {villa.baths != null && <Tag variant="outline">{villa.baths} baths</Tag>}
+        {villa.price != null && <Tag variant="outline" tone="sun">{villa.currency}{villa.price} / night</Tag>}
       </div>
 
       {/* reviewer verdict block */}
@@ -106,6 +153,33 @@ export function VillaDetailScreen() {
           {villa.body}
         </p>
       </div>
+
+      {/* score breakdown — the five categories that make up the /50 total */}
+      {villa.categories && (
+        <div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
+            — Score breakdown
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {CATEGORIES.map((c) => {
+              const val = Number(villa.categories[c.key]) || 0;
+              return (
+                <div key={c.key} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ width: 118, flex: 'none', fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--text-body)' }}>{c.label}</span>
+                  <div style={{ flex: 1, height: 8, borderRadius: 999, background: 'var(--paper-200)', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${(val / 10) * 100}%`, borderRadius: 999, background: isStay ? 'var(--stay-600)' : 'var(--nay-600)', transition: 'width var(--dur-base) var(--ease-out)' }} />
+                  </div>
+                  <span style={{ width: 42, flex: 'none', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 12.5, color: 'var(--text-strong)' }}>{val}/10</span>
+                </div>
+              );
+            })}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2, paddingTop: 10, borderTop: '1px solid var(--border-soft)' }}>
+              <span style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 14, color: 'var(--text-strong)' }}>Total</span>
+              <Tag tone={isStay ? 'stay' : 'nay'}>{villa.total} / {MAX_TOTAL} · {villa.verdict.toUpperCase()}</Tag>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* amenities */}
       <div>
@@ -129,7 +203,7 @@ export function VillaDetailScreen() {
         </div>
         {realReviews.length === 0 ? (
           <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--text-faint)' }}>
-            No approved reviews yet — be the first to write one.
+            This is one honest take. Stayed here too? Share your own Stay or Nay.
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -157,8 +231,14 @@ export function VillaDetailScreen() {
         <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, color: 'var(--text-strong)', lineHeight: 1 }}>{villa.currency}{villa.price}</div>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.03em' }}>per night</div>
       </div>
-      <Button variant={isStay ? 'stay' : 'neutral'} size="lg" block style={{ flex: 1 }}>
-        {isStay ? 'Check availability' : 'See it anyway'}
+      <Button
+        variant={isStay ? 'stay' : 'neutral'}
+        size="lg"
+        block
+        style={{ flex: 1 }}
+        onClick={() => { if (villa.propertyLink) window.open(villa.propertyLink, '_blank', 'noopener,noreferrer'); }}
+      >
+        {villa.propertyLink ? 'View the listing' : isStay ? 'Check availability' : 'See it anyway'}
       </Button>
     </div>
   );
@@ -183,5 +263,13 @@ export function VillaDetailScreen() {
       </div>
       {cta}
     </div>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.6))' }}>
+      <path d="M8 5v14l11-7z" />
+    </svg>
   );
 }

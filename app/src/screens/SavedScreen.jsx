@@ -42,7 +42,7 @@ export function SavedScreen() {
             <VillaCard
               key={v.id}
               name={v.name} location={v.location} coords={v.coords} image={v.image}
-              verdict={v.verdict} score={v.score} rating={v.rating}
+              verdict={v.verdict} score={v.score} scoreOutOf={v.scoreOutOf} rating={v.rating}
               price={v.price} currency={v.currency} tags={v.tags}
               saved={true} onToggleSave={() => toggleSave(v.id)} onClick={() => navigate(`/villa/${v.id}`)}
             />

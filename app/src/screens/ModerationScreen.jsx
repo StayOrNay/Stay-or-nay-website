@@ -116,14 +116,28 @@ export function ModerationScreen() {
                           <Tag variant="outline" iconLeft={<VideoIcon size={12} />}>{videoN} video{videoN === 1 ? '' : 's'}</Tag>
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                          {items.map((m, i) => {
-                            const Icon = m.type === 'video' ? VideoIcon : ImageIcon;
-                            return (
-                              <a key={i} href={m.url} target="_blank" rel="noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-link)' }}>
-                                <Icon size={14} /> {m.type === 'video' ? 'Video' : 'Photo'} {i + 1}
+                          {items.map((m, i) => (
+                            m.type === 'video' ? (
+                              // Playable right in the queue — no click-through needed.
+                              <video
+                                key={i}
+                                src={m.url}
+                                controls
+                                preload="metadata"
+                                style={{ width: 240, maxWidth: '100%', height: 150, objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-soft)', background: '#000' }}
+                              />
+                            ) : (
+                              // Thumbnail shown inline; click to open the full-size image.
+                              <a key={i} href={m.url} target="_blank" rel="noreferrer" title={`Open photo ${i + 1}`} style={{ display: 'block', lineHeight: 0 }}>
+                                <img
+                                  src={m.url}
+                                  alt={`Photo ${i + 1}`}
+                                  loading="lazy"
+                                  style={{ width: 150, height: 150, objectFit: 'cover', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-soft)', cursor: 'pointer', display: 'block' }}
+                                />
                               </a>
-                            );
-                          })}
+                            )
+                          ))}
                         </div>
                       </div>
                     );

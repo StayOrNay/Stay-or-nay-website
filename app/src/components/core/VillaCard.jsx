@@ -16,6 +16,7 @@ export function VillaCard({
   image = null,
   verdict = 'stay',
   score = null,
+  scoreOutOf = null,
   rating = null,
   price = null,
   currency = '€',
@@ -55,7 +56,7 @@ export function VillaCard({
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(12,23,20,0.18), transparent 38%)' }} />
         {/* verdict pinned top-left */}
         <div style={{ position: 'absolute', top: 12, left: 12 }}>
-          <VerdictBadge verdict={verdict} score={score} size="sm" />
+          <VerdictBadge verdict={verdict} score={score} outOf={scoreOutOf} size="sm" />
         </div>
         {/* save heart top-right */}
         {onToggleSave && (

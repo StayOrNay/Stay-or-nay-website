@@ -1,78 +1,10 @@
-// StayOrNay — sample villa data, all in Bali, Indonesia (the app's single
-// region of focus). Each villa carries a real lon/lat used to place it on
-// the satellite map, plus the legacy x/y percentage pin for any fallback
-// flat-map rendering.
-// All thumbnails reuse the brand's stylized aerial backdrop until real
-// aerial photography is available.
-import aerial from '../assets/map-terrain.svg';
-
-export const villas = [
-  {
-    id: 'aria',
-    name: 'Villa Aria',
-    location: 'Uluwatu, Bali',
-    coords: '8.8290° S, 115.0879° E',
-    lon: 115.0879, lat: -8.8290,
-    image: aerial,
-    verdict: 'stay', score: 87, rating: 4.5,
-    price: 420, currency: '$',
-    sleeps: 8, beds: 4, baths: 3,
-    tags: ['Infinity pool', 'Cliff view', 'Sleeps 8'],
-    pin: { x: 38, y: 42 },
-    reviewer: 'Mara Lindqvist',
-    verified: true,
-    headline: 'The pool is everything the listing promised — and then some.',
-    body: "You'll spend mornings on the terrace and evenings pretending the kitchen isn't a little dated. We'd come back, but pack earplugs: the scooters on the cliff road start at six.",
-  },
-  {
-    id: 'tramonto',
-    name: 'Casa Tramonto',
-    location: 'Canggu, Bali',
-    coords: '8.6478° S, 115.1385° E',
-    lon: 115.1385, lat: -8.6478,
-    image: aerial,
-    verdict: 'nay', score: 41, rating: 2.5,
-    price: 280, currency: '$',
-    sleeps: 6, beds: 3, baths: 2,
-    tags: ['Rice field view', 'Sleeps 6'],
-    pin: { x: 62, y: 30 },
-    reviewer: 'Tom Reyes',
-    verified: true,
-    headline: 'The photos lie about the road noise. Lovely rice fields, though.',
-    body: 'Stunning from the air, exhausting on the ground: the road out front floods at high tide and a generator runs all night. The view almost makes up for it. Almost.',
-  },
-  {
-    id: 'oliveto',
-    name: "L'Oliveto",
-    location: 'Ubud, Bali',
-    coords: '8.5069° S, 115.2625° E',
-    lon: 115.2625, lat: -8.5069,
-    image: aerial,
-    verdict: 'stay', score: 92, rating: 5,
-    price: 510, currency: '$',
-    sleeps: 10, beds: 5, baths: 4,
-    tags: ['Jungle pool', 'Chef kitchen', 'Sleeps 10'],
-    pin: { x: 48, y: 64 },
-    reviewer: 'Priya Khanna',
-    verified: true,
-    headline: "Best kitchen we've ever cooked in. We never wanted to leave.",
-    body: 'Quiet, generous, and exactly as advertised. The canopy keeps it cool at midday and the host left fresh fruit on the counter. Book it before everyone else finds it.',
-  },
-  {
-    id: 'mistral',
-    name: 'Mas Mistral',
-    location: 'Seminyak, Bali',
-    coords: '8.6905° S, 115.1656° E',
-    lon: 115.1656, lat: -8.6905,
-    image: aerial,
-    verdict: 'stay', score: 78, rating: 4,
-    price: 350, currency: '$',
-    sleeps: 6, beds: 3, baths: 2,
-    tags: ['Beach walk', 'Sleeps 6'],
-    pin: { x: 26, y: 56 },
-    reviewer: 'Léa Fontaine',
-    verified: false,
-    headline: 'Worth it for the sunsets alone — bring sandals for the sand.',
-    body: 'A proper Seminyak villa, two minutes from the beach path. Wifi drops during storms and the nearest warung is a walk, but that is rather the point.',
-  },
-];
+// StayOrNay — villa data.
+//
+// The demo/sample villas that used to live here (each carrying a made-up
+// "verified stayer" review) have been removed so the site shows ONLY real
+// reviews submitted by signed-in users and approved in moderation.
+//
+// This list is intentionally empty. The browse feed, map, explore and saved
+// screens all read from here, so they will show an empty state until real
+// content exists. Everything is built to handle an empty list gracefully.
+export const villas = [];

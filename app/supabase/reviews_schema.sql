@@ -33,6 +33,12 @@ create table if not exists public.reviews (
   villa_id text,
   property_link text,
   property_name text,
+
+  -- Property facts the reviewer reports for the stay they're rating.
+  beds integer,
+  price_paid numeric,             -- amount paid per night (in `currency`)
+  currency text not null default '$',
+
   user_id uuid not null references auth.users(id) on delete cascade,
 
   -- Five categories, 0-10 each (see app/src/lib/reviewScore.js — this is
