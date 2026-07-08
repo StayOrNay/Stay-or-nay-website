@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, PenLine, Bell, Settings, UserRound, Globe, ScrollText, ChevronRight, ShieldCheck, ClipboardList, LogOut } from 'lucide-react';
+import { Heart, PenLine, Bell, Settings, UserRound, Globe, ScrollText, ChevronRight, ShieldCheck, ClipboardList, MapPin, LogOut } from 'lucide-react';
 import { Avatar, Tag, Button } from '../components/core';
 import { Header } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
@@ -29,6 +29,7 @@ export function ProfileScreen() {
     ? [
         ...BASE_ROWS,
         { Icon: ShieldCheck, label: 'Moderate reviews', to: '/you/moderate' },
+        { Icon: MapPin, label: 'Edit published reviews', to: '/you/manage' },
         { Icon: ClipboardList, label: 'Review requests', to: '/you/review-requests' },
       ]
     : BASE_ROWS;

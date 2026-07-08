@@ -24,6 +24,7 @@ import { MyReviewsScreen } from './screens/MyReviewsScreen';
 import { VerdictAlertsScreen } from './screens/VerdictAlertsScreen';
 import { WriteReviewScreen } from './screens/WriteReviewScreen';
 import { ModerationScreen } from './screens/ModerationScreen';
+import { AdminEditReviewsScreen } from './screens/AdminEditReviewsScreen';
 import { RequestReviewScreen } from './screens/RequestReviewScreen';
 import { AdminReviewRequestsScreen } from './screens/AdminReviewRequestsScreen';
 
@@ -143,6 +144,7 @@ export default function App() {
             <Route path="/you/reviews" element={<MyReviewsScreen />} />
             <Route path="/you/alerts" element={<VerdictAlertsScreen />} />
             <Route path="/you/moderate" element={<ModerationScreen />} />
+            <Route path="/you/manage" element={<AdminEditReviewsScreen />} />
             <Route path="/write-review" element={<WriteReviewScreen />} />
             <Route path="/request-review" element={<RequestReviewScreen />} />
             <Route path="/you/review-requests" element={<AdminReviewRequestsScreen />} />

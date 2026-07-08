@@ -110,6 +110,17 @@ export async function fetchAllApprovedReviews() {
   return supabase.from(TABLE).select('*').eq('status', 'approved');
 }
 
+/**
+ * Admin edit of an already-published review — patch any of location
+ * (lat/lon/area), the write-up (headline/body) or the property name. Only the
+ * admin email can do this (enforced by the reviews_update_admin_only RLS
+ * policy, the same one moderation uses).
+ */
+export async function updateReview(id, patch) {
+  if (!isSupabaseConfigured) return { data: null, error: NOT_CONFIGURED_ERROR };
+  return supabase.from(TABLE).update(patch).eq('id', id).select().single();
+}
+
 /** The moderation queue — oldest pending review first. Admin-only via RLS. */
 export async function fetchPendingReviews() {
   if (!isSupabaseConfigured) return { data: [], error: null };
