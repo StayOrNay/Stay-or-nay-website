@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ImagePlus, X, Send, AlertCircle, CheckCircle2, Link2, Image as ImageIcon, Video as VideoIcon, Info, MapPin, Crosshair } from 'lucide-react';
 import { Input, Button, VerdictBadge, Tag } from '../components/core';
@@ -9,6 +9,7 @@ import { CATEGORIES, MAX_PER_CATEGORY, NAY_THRESHOLD, MAX_TOTAL, MIN_PHOTOS, MIN
 import { submitReview, uploadReviewMedia } from '../lib/reviews';
 import { prepareMediaForUpload, MAX_UPLOAD_BYTES } from '../lib/compressMedia';
 import { forwardGeocode } from '../lib/mapbox';
+import { locateFromListing } from '../lib/listingLocation';
 
 function isVideo(file) {
   return file.type.startsWith('video/');
@@ -43,6 +44,7 @@ export function WriteReviewScreen() {
   const [area, setArea] = useState('');
   const [coords, setCoords] = useState(null); // {lon, lat} once the reviewer places/geocodes the pin
   const [locating, setLocating] = useState(false);
+  const [linkStatus, setLinkStatus] = useState(null); // 'looking' | 'found' | 'none'
   const [beds, setBeds] = useState('');
   const [pricePaid, setPricePaid] = useState('');
   const [currency, setCurrency] = useState('$');
@@ -101,12 +103,37 @@ export function WriteReviewScreen() {
     if (geo) setCoords({ lon: geo.lon, lat: geo.lat });
   };
 
+  // Auto-read the villa's approximate location from the pasted booking link
+  // (Airbnb/Booking) and drop the map pin there as a starting point. Debounced
+  // so it doesn't fire on every keystroke. Best-effort: if the link can't be
+  // read (blocked, or a JS-only map), it silently does nothing and the reviewer
+  // just places the pin themselves.
+  useEffect(() => {
+    const url = propertyLink.trim();
+    if (!/airbnb\.|booking\.com/i.test(url)) { setLinkStatus(null); return undefined; }
+    let cancelled = false;
+    setLinkStatus('looking');
+    const t = setTimeout(async () => {
+      const loc = await locateFromListing(url);
+      if (cancelled) return;
+      if (loc) { setCoords(loc); setLinkStatus('found'); }
+      else setLinkStatus('none');
+    }, 800);
+    return () => { cancelled = true; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyLink]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
     if (!name.trim()) {
       setError('Add your name so people can see who wrote this review.');
+      return;
+    }
+
+    if (!coords) {
+      setError("Set the villa's location — paste the booking link (we'll try to find it) or drag the pin onto the exact spot on the map.");
       return;
     }
 
@@ -260,6 +287,15 @@ export function WriteReviewScreen() {
               <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-faint)' }}>
                 Drag the pin (or tap the map) to place the villa as precisely as you can.
               </p>
+              {linkStatus === 'looking' && (
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-muted)' }}>Reading the location from your booking link…</div>
+              )}
+              {linkStatus === 'found' && (
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--success)' }}>Found it from the listing — drag the pin to fine-tune the exact spot.</div>
+              )}
+              {linkStatus === 'none' && (
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-faint)' }}>Couldn't read the location from that link — place the pin yourself below.</div>
+              )}
               <div style={{ position: 'relative', height: 240, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-soft)' }}>
                 <LocationPicker
                   value={coords}
