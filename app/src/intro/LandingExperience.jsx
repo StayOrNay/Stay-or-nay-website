@@ -35,6 +35,11 @@ const CYCLE_MS = 6500;
 const TRAVEL_MS = 4200;
 const DIVE_MS = 7000;
 const FADE_MS = 650;
+// Opening beat: one full revolution, fast on frame one and decelerating to
+// a dead stop on Bali (same single-lap quintic as the old GlobeIntro — two
+// laps or a late ramp-up both read as "two spins", see GlobeIntro history).
+const OPEN_SPIN_MS = 2800;
+const OPEN_SPIN_DELTA = 360;
 
 function coordStr(d) {
   const la = `${Math.abs(d.lat).toFixed(4)}° ${d.lat < 0 ? 'S' : 'N'}`;
@@ -100,7 +105,9 @@ export function LandingExperience({ onComplete }) {
         container,
         style: 'mapbox://styles/mapbox/standard-satellite',
         projection: 'globe',
-        center: [DESTS[0].lng, DESTS[0].lat],
+        // Starts one full turn west of Bali — the opening spin below
+        // travels that lap and lands exactly on the first destination.
+        center: [DESTS[0].lng - OPEN_SPIN_DELTA, DESTS[0].lat],
         zoom: SHOWCASE_ZOOM,
         pitch: 0,
         bearing: 0,
@@ -138,6 +145,34 @@ export function LandingExperience({ onComplete }) {
     const marker = new mapboxgl.Marker({ element: markerEl })
       .setLngLat([DESTS[0].lng, DESTS[0].lat])
       .addTo(map);
+
+    // Opening spin: hand-rolled rAF jumpTo loop (one lap, quintic ease-out
+    // — max velocity on frame one, decelerating to a stop on Bali).
+    // Anchored to the first rendered frame so slow devices still get the
+    // full spin, and cancelled instantly if the visitor dives or skips.
+    let spinRafId = null;
+    const runOpeningSpin = () => {
+      let startTime = null;
+      const tick = (now) => {
+        if (divingRef.current || completedRef.current) return;
+        if (startTime === null) startTime = now;
+        const t = Math.min((now - startTime) / OPEN_SPIN_MS, 1);
+        const spinT = 1 - (1 - t) ** 5;
+        try {
+          map.jumpTo({
+            center: [DESTS[0].lng - OPEN_SPIN_DELTA * (1 - spinT), DESTS[0].lat],
+            zoom: SHOWCASE_ZOOM,
+            pitch: 0,
+            bearing: 0,
+          });
+        } catch (err) {
+          return; // map torn down mid-spin
+        }
+        if (t < 1) spinRafId = requestAnimationFrame(tick);
+      };
+      spinRafId = requestAnimationFrame(tick);
+    };
+    runOpeningSpin();
 
     const goToDest = (i) => {
       const d = DESTS[i];
@@ -188,6 +223,7 @@ export function LandingExperience({ onComplete }) {
 
     return () => {
       completedRef.current = true;
+      if (spinRafId) cancelAnimationFrame(spinRafId);
       if (cycleRef.current) clearInterval(cycleRef.current);
       resizeTimeouts.forEach((id) => clearTimeout(id));
       resizeObserver.disconnect();

@@ -80,7 +80,11 @@ function AppShell() {
 
   return (
     <div className="app-shell" style={{ flexDirection: isDesktop ? 'row' : 'column' }}>
-      {isDesktop && showNav && (
+      {/* On Explore ("/") the desktop nav is the floating glass dock inside
+          ExploreScreen (matching the landing's dark map chrome), so the
+          solid sidebar column only renders on the other, paper-light
+          screens. */}
+      {isDesktop && showNav && !isHome && (
         <div style={{ width: navCollapsed ? 0 : 232, flex: 'none', overflow: 'hidden', transition: 'width var(--dur-slow) var(--ease-out)' }}>
           <Sidebar onLogoClick={replayIntro} />
         </div>

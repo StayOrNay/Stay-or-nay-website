@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, X, ChevronLeft, ChevronRight, SlidersHorizontal, RotateCcw, Check } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { Search, X, ChevronLeft, ChevronRight, SlidersHorizontal, RotateCcw, Check, Map as MapIcon, Layers, PenLine, Star, User } from 'lucide-react';
 import { Input, VerdictBadge, Tag, VillaCard } from '../components/core';
 import { SatelliteMap } from '../components/shared';
 import { useVillasWithReviews } from '../hooks/useVillasWithReviews';
@@ -73,88 +73,71 @@ export function ExploreScreen() {
   }, []);
 
   return (
-    <div style={{ position: 'relative', flex: 1, overflow: 'hidden', background: 'var(--ink-800)', display: 'flex' }}>
-      {isDesktop && (
-        // Width (not display) is what's animated, so collapsing this panel
-        // in immersive mode reads as a slide-shut rather than a pop — the
-        // inner column keeps its natural 332px width and gets progressively
-        // clipped by this wrapper's overflow:hidden as it shrinks to 0.
-        <div
-          style={{
-            flex: 'none',
-            width: immersive ? 0 : 360,
-            overflow: 'hidden',
-            background: 'var(--surface-page)',
-            borderRight: immersive ? 'none' : '1px solid var(--border-soft)',
-            transition: 'width var(--dur-slow) var(--ease-out)',
-          }}
-        >
-          <div style={{ width: 332, height: '100%', overflowY: 'auto', padding: '16px 14px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <Input search iconLeft={<Search size={18} />} placeholder="Search Bali…" />
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-                  {locationLabel}
-                  {visibleVillas.length > 0 && ` · ${visibleVillas.length} verdict${visibleVillas.length === 1 ? '' : 's'}`}
-                </div>
-                <FiltersControl filters={filters} setFilters={setFilters} activeCount={activeFilterCount} align="right" />
-              </div>
-            </div>
-            {filteredVillas.map((v) => (
-              <VillaCard
-                key={v.id}
-                name={v.name} location={v.location} coords={v.coords} image={v.image}
-                verdict={v.verdict} score={v.score} scoreOutOf={v.scoreOutOf}
-                price={v.price} currency={v.currency} tags={v.tags}
-                onClick={() => navigate(`/villa/${v.id}`)}
-                style={v.id === selected ? { outline: '2px solid var(--brand)', outlineOffset: 2 } : {}}
-              />
-            ))}
-            {villas.length > 0 && filteredVillas.length === 0 && (
-              <NoMatches onReset={() => setFilters(DEFAULT_FILTERS)} />
-            )}
-          </div>
-        </div>
-      )}
-
+    <div className="explore-map" style={{ position: 'relative', flex: 1, overflow: 'hidden', background: 'var(--ink-800)', display: 'flex' }}>
       <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
         <SatelliteMap ref={mapRef} villas={filteredVillas} selectedId={selected} onSelect={setSelected} onMoveEnd={handleMoveEnd} />
 
-        {/* Map-only slide handle (desktop) — sits straddling the boundary
-            between this side panel and the map, like a tab you pull, per
-            the user's reference screenshot. Rounded on both sides (not a
-            flat-one-side tab) since it's centered on that boundary rather
-            than flush against either edge — a one-sided radius looked
-            lopsided once it was actually straddling the line. Gated on
-            `introDone` so it doesn't render — and, thanks to its z-index,
-            paint over — the spinning-globe intro before the intro has
-            handed off to the real map. Mobile gets its own handle on the
-            tab-bar boundary, rendered in App.jsx since that's where the
-            tab bar lives. */}
+        {/* Desktop chrome floats OVER the full-bleed map — "mission
+            control" glass, matching the landing the visitor just dove in
+            from — rather than solid paper columns beside it. Everything is
+            gated on introDone so nothing paints over the landing, and
+            enters with a short staggered assemble once the dive lands. */}
         {isDesktop && introDone && (
-          <button
-            onClick={() => setImmersive((v) => !v)}
-            aria-label={immersive ? 'Show menu' : 'Hide menu — map only'}
-            title={immersive ? 'Show menu' : 'Hide menu — map only'}
-            style={{
-              position: 'absolute', top: '50%', left: 0, zIndex: 40,
-              transform: 'translate(-50%, -50%)',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              width: 32, height: 46, borderRadius: 'var(--radius-pill)', border: 'none',
-              background: 'var(--surface-card)', boxShadow: 'var(--shadow-sm)',
-              color: 'var(--text-muted)', cursor: 'pointer',
-            }}
-          >
-            {immersive ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-          </button>
+          <>
+            <ExploreDock />
+
+            <div className={`glass-night theme-night explore-panel explore-enter-panel${immersive ? ' hidden-panel' : ''}`}>
+              <div className="explore-panel-scroll">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <Input search iconLeft={<Search size={18} />} placeholder="Search anywhere…" />
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                    <div className="explore-location-chip">
+                      <span className="live-dot" />
+                      <span className="label-text">
+                        {locationLabel}
+                        {visibleVillas.length > 0 && ` · ${visibleVillas.length} verdict${visibleVillas.length === 1 ? '' : 's'}`}
+                      </span>
+                    </div>
+                    <FiltersControl filters={filters} setFilters={setFilters} activeCount={activeFilterCount} align="right" />
+                  </div>
+                </div>
+                {filteredVillas.map((v, i) => (
+                  <div key={v.id} className="explore-enter-card" style={{ animationDelay: `${550 + Math.min(i, 6) * 90}ms` }}>
+                    <VillaCard
+                      name={v.name} location={v.location} coords={v.coords} image={v.image}
+                      verdict={v.verdict} score={v.score} scoreOutOf={v.scoreOutOf}
+                      price={v.price} currency={v.currency} tags={v.tags}
+                      onClick={() => navigate(`/villa/${v.id}`)}
+                      style={v.id === selected ? { outline: '2px solid var(--brand)', outlineOffset: 2 } : {}}
+                    />
+                  </div>
+                ))}
+                {villas.length > 0 && filteredVillas.length === 0 && (
+                  <NoMatches onReset={() => setFilters(DEFAULT_FILTERS)} />
+                )}
+              </div>
+            </div>
+
+            {/* Slide handle — rides the panel's outer edge; in immersive
+                mode it parks at the dock's edge so the map is all globe. */}
+            <button
+              onClick={() => setImmersive((v) => !v)}
+              aria-label={immersive ? 'Show villa list' : 'Hide villa list — map only'}
+              title={immersive ? 'Show villa list' : 'Hide villa list — map only'}
+              className="explore-handle"
+              style={{ left: immersive ? 84 : 460 }}
+            >
+              {immersive ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </button>
+          </>
         )}
 
         {/* Search bar floating over the map (mobile only — desktop's lives in the side panel) */}
         {!isDesktop && (
           <>
-            <div style={{ position: 'absolute', top: 12, left: 12, right: 12, zIndex: 10, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-              <div style={{ flex: 1 }}>
-                <Input search iconLeft={<Search size={18} />} placeholder="Search Bali…" />
+            <div className="theme-night explore-mobile-top">
+              <div>
+                <Input search iconLeft={<Search size={18} />} placeholder="Search anywhere…" />
               </div>
               <FiltersControl filters={filters} setFilters={setFilters} activeCount={activeFilterCount} align="right" compact />
             </div>
@@ -200,6 +183,49 @@ export function ExploreScreen() {
         )}
       </div>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * ExploreDock — the desktop nav on the map screen: a floating dark-glass
+ * rail matching the landing's chrome. Same five destinations as the
+ * paper Sidebar (which still serves every other screen); the logo pin
+ * replays the globe landing, same as the Sidebar wordmark does.
+ * ------------------------------------------------------------------ */
+
+const DOCK_ITEMS = [
+  { to: '/', label: 'Explore', Icon: MapIcon },
+  { to: '/feed', label: 'Feed', Icon: Layers },
+  { to: '/write-review', label: 'Write a review', Icon: Star },
+  { to: '/request-review', label: 'Request a review', Icon: PenLine },
+  { to: '/you', label: 'You', Icon: User },
+];
+
+function ExploreDock() {
+  const { setIntroDone } = useImmersive();
+  const navigate = useNavigate();
+  const replay = () => {
+    navigate('/');
+    setIntroDone(false);
+  };
+
+  return (
+    <nav className="glass-night explore-dock explore-enter-dock" aria-label="Main">
+      <button type="button" className="dock-logo" onClick={replay} aria-label="Replay the StayOrNay intro" title="StayOrNay — back to the globe">
+        <span className="pin-core" />
+      </button>
+      {DOCK_ITEMS.map(({ to, label, Icon }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={to === '/'}
+          className={({ isActive }) => `explore-dock-item${isActive ? ' active' : ''}`}
+        >
+          <Icon size={20} />
+          <span className="dock-tip">{label}</span>
+        </NavLink>
+      ))}
+    </nav>
   );
 }
 
