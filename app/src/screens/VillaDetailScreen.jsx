@@ -243,7 +243,7 @@ export function VillaDetailScreen() {
         style={{ flex: 1 }}
         onClick={() => { if (villa.propertyLink) window.open(villa.propertyLink, '_blank', 'noopener,noreferrer'); }}
       >
-        {villa.propertyLink ? 'View the listing' : isStay ? 'Check availability' : 'See it anyway'}
+        {villa.propertyLink ? 'Take me there' : isStay ? 'Check availability' : 'See it anyway'}
       </Button>
     </div>
   );
