@@ -6,7 +6,7 @@ import { AuthProvider } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ImmersiveProvider, useImmersive } from './context/ImmersiveContext';
 import { TabBar, Sidebar } from './components/shared';
-import { GlobeIntro } from './intro/GlobeIntro';
+import { LandingExperience } from './intro/LandingExperience';
 import { useIsDesktop } from './hooks/useMediaQuery';
 import { ExploreScreen } from './screens/ExploreScreen';
 import { FeedScreen } from './screens/FeedScreen';
@@ -87,7 +87,7 @@ function AppShell() {
       )}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minWidth: 0 }}>
         <Outlet />
-        {!introDone && <GlobeIntro onComplete={() => setIntroDone(true)} />}
+        {!introDone && <LandingExperience onComplete={() => setIntroDone(true)} />}
 
         {/* Mobile slide handle — sits right on the boundary between the map
             and the tab bar below it, so it reads as a tab you pull rather

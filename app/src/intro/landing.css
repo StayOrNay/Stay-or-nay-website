@@ -1,0 +1,327 @@
+/* ===========================================================================
+   StayOrNay — Landing Experience
+   The cinematic front door: satellite globe hero with a worldwide
+   destination showcase, scroll-driven verdict story, and an "Explore the
+   world" dive that hands off into the real map — one continuous shot.
+   =========================================================================== */
+
+.landing {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--ink-900);
+  opacity: 1;
+  transition: opacity 650ms var(--ease-in-out);
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.landing.fading { opacity: 0; pointer-events: none; }
+.landing::-webkit-scrollbar { width: 0; }
+
+/* progress bar */
+.landing-progress {
+  position: sticky; top: 0; left: 0; height: 3px; width: 100%; z-index: 100;
+  margin-bottom: -3px;
+}
+.landing-progress span {
+  display: block; height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--stay-600), var(--stay-400));
+}
+
+/* top bar */
+.landing-bar {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px clamp(16px, 4vw, 44px);
+}
+.landing-bar .landing-wordmark {
+  font-family: var(--font-display); font-weight: 800; font-size: 19px;
+  letter-spacing: -0.02em; color: var(--paper-050);
+  display: flex; align-items: center; gap: 8px;
+}
+.landing-bar .landing-wordmark .pin {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--stay-500); box-shadow: 0 0 0 4px rgba(26, 160, 107, 0.25);
+}
+.landing-skip {
+  font-family: var(--font-body); font-size: 13px; font-weight: 600;
+  color: var(--paper-100); background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 8px 16px; border-radius: var(--radius-pill, 999px); cursor: pointer;
+  transition: background 200ms, border-color 200ms;
+}
+.landing-skip:hover { background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.35); }
+
+/* ---------- hero ---------- */
+.landing-hero {
+  position: relative; height: 100vh; height: 100dvh; min-height: 560px;
+  overflow: hidden; background: #04080a;
+}
+.landing-globe { position: absolute; inset: 0; }
+.landing-hero:not(.diving) .landing-globe { pointer-events: none; }
+.landing-vignette {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background:
+    radial-gradient(120% 100% at 50% 45%, transparent 42%, rgba(4, 8, 10, 0.5) 100%),
+    linear-gradient(180deg, rgba(4, 8, 10, 0.5) 0%, transparent 24%, transparent 72%, rgba(4, 8, 10, 0.55) 100%);
+  transition: opacity 1200ms;
+}
+.landing-hero.diving .landing-vignette { opacity: 0; }
+
+.landing-hero-content {
+  position: absolute; inset: 0; z-index: 5; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 0 20px;
+  transition: opacity 800ms, transform 800ms;
+}
+.landing-hero.diving .landing-hero-content { opacity: 0; transform: scale(0.96); }
+
+.landing-kicker {
+  font-family: var(--font-mono); font-size: clamp(10px, 1.1vw, 12px);
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--stay-200);
+  margin-bottom: 16px;
+  opacity: 0; animation: landingRise 900ms 250ms var(--ease-out, cubic-bezier(0.2, 0.7, 0.2, 1)) forwards;
+}
+.landing-h1 {
+  font-family: var(--font-display); font-weight: 800; margin: 0;
+  font-size: clamp(54px, 10.5vw, 148px); line-height: 0.96; letter-spacing: -0.03em;
+  color: var(--paper-050); text-shadow: 0 4px 40px rgba(0, 0, 0, 0.5);
+}
+.landing-h1 .word { display: inline-block; overflow: hidden; vertical-align: bottom; }
+.landing-h1 .word span { display: inline-block; transform: translateY(110%); animation: landingWordUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.landing-h1 .w-stay span { color: var(--stay-400); animation-delay: 450ms; }
+.landing-h1 .w-or span { animation-delay: 580ms; }
+.landing-h1 .w-nay span { color: var(--nay-400); animation-delay: 700ms; }
+@keyframes landingWordUp { to { transform: translateY(0); } }
+@keyframes landingRise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+.landing-sub {
+  max-width: 480px; margin: 20px 0 0; font-size: clamp(15px, 1.5vw, 18px);
+  line-height: 1.55; color: rgba(251, 248, 241, 0.82);
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+  opacity: 0; animation: landingRise 900ms 950ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+.landing-chip {
+  margin-top: 26px; display: inline-flex; align-items: center; gap: 11px;
+  font-family: var(--font-mono); font-size: clamp(10px, 1.1vw, 12px); letter-spacing: 0.1em;
+  color: var(--paper-050); background: rgba(12, 23, 20, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 11px 18px; border-radius: 999px; backdrop-filter: blur(10px);
+  opacity: 0; animation: landingRise 900ms 1100ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+.landing-chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--stay-400); animation: landingBlink 1.6s infinite; }
+@keyframes landingBlink { 50% { opacity: 0.3; } }
+.landing-chip .dest-text { transition: opacity 450ms; white-space: nowrap; }
+.landing-chip .dest-text.swap { opacity: 0; }
+
+.landing-ctas {
+  display: flex; gap: 12px; margin-top: 32px; pointer-events: auto;
+  flex-wrap: wrap; justify-content: center;
+  opacity: 0; animation: landingRise 900ms 1250ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+.landing-btn {
+  font-family: var(--font-body); font-weight: 600; font-size: 15px;
+  padding: 15px 30px; border-radius: 999px; border: none; cursor: pointer;
+  transition: transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 300ms, background 200ms, border-color 200ms;
+}
+.landing-btn:active { transform: scale(0.97); }
+.landing-btn-primary { background: var(--stay-500); color: #fff; box-shadow: 0 10px 34px -8px rgba(26, 160, 107, 0.6); }
+.landing-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 44px -8px rgba(26, 160, 107, 0.7); }
+.landing-btn-ghost {
+  background: rgba(251, 248, 241, 0.08); color: var(--paper-050);
+  border: 1.5px solid rgba(251, 248, 241, 0.35); backdrop-filter: blur(8px);
+}
+.landing-btn-ghost:hover { border-color: var(--paper-050); transform: translateY(-2px); }
+.landing-btn-dark { background: var(--ink-900); color: var(--paper-050); }
+.landing-btn-big { font-size: 17px; padding: 20px 44px; }
+
+.landing-scrollhint {
+  position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 6;
+  pointer-events: none;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.14em;
+  color: rgba(251, 248, 241, 0.55); text-transform: uppercase;
+  display: flex; flex-direction: column; align-items: center; gap: 9px;
+  opacity: 0; animation: landingRise 1s 1900ms forwards;
+  transition: opacity 500ms;
+}
+.landing-hero.diving .landing-scrollhint { opacity: 0 !important; }
+.landing-scrollhint .line { width: 1px; height: 40px; background: rgba(251, 248, 241, 0.25); position: relative; overflow: hidden; }
+.landing-scrollhint .line::after {
+  content: ''; position: absolute; top: -50%; left: 0; width: 100%; height: 50%;
+  background: var(--stay-400); animation: landingDrip 1.8s ease-in-out infinite;
+}
+@keyframes landingDrip { 0% { top: -50%; } 100% { top: 110%; } }
+
+/* pulsing destination marker */
+.landing-pulse-marker { position: relative; width: 18px; height: 18px; }
+.landing-pulse-marker .core {
+  position: absolute; inset: 4px; border-radius: 50%;
+  background: var(--stay-400); box-shadow: 0 0 12px rgba(63, 191, 139, 0.9);
+}
+.landing-pulse-marker .ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 2px solid var(--stay-400); animation: landingMarkerPulse 1.8s ease-out infinite;
+}
+.landing-pulse-marker .ring2 { animation-delay: 0.9s; }
+@keyframes landingMarkerPulse { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2.6); opacity: 0; } }
+
+/* ---------- verdict scroll scene ---------- */
+.landing-verdict-scene { position: relative; height: 320vh; background: var(--paper-100); }
+.landing-verdict-sticky {
+  position: sticky; top: 0; height: 100vh; height: 100dvh; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.landing-contours { position: absolute; inset: 0; opacity: 0.5; }
+.landing-contours path {
+  fill: none; stroke: rgba(58, 71, 63, 0.25); stroke-width: 1;
+  stroke-dasharray: 2000; stroke-dashoffset: 2000;
+}
+.landing-verdict-heading { position: absolute; top: 10vh; left: 0; right: 0; text-align: center; z-index: 3; padding: 0 20px; }
+.landing-mono-tag {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em;
+  color: var(--stay-600); text-transform: uppercase;
+}
+.landing-verdict-heading h2 {
+  font-family: var(--font-display); font-weight: 800; margin: 10px 0 0;
+  font-size: clamp(28px, 4.4vw, 54px); color: var(--ink-900); letter-spacing: -0.02em;
+}
+.landing-vcard {
+  position: absolute; width: min(400px, 86vw); background: var(--paper-000);
+  border-radius: 24px; padding: 24px;
+  box-shadow: 0 40px 90px -24px rgba(12, 23, 20, 0.4);
+  will-change: transform, opacity; opacity: 0;
+}
+.landing-vcard .photo { height: 180px; border-radius: 16px; margin-bottom: 16px; position: relative; overflow: hidden; }
+.landing-vcard .photo .coord-stamp {
+  position: absolute; bottom: 10px; left: 12px;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.92); background: rgba(12, 23, 20, 0.45);
+  padding: 4px 8px; border-radius: 6px; backdrop-filter: blur(4px);
+}
+.landing-photo-a { background: linear-gradient(160deg, #2e7d6b 0%, #5baf8f 34%, #f2a93b 100%); }
+.landing-photo-a::before { content: ''; position: absolute; inset: 0; background: radial-gradient(80% 60% at 70% 20%, rgba(255, 255, 255, 0.35), transparent 60%); }
+.landing-photo-b { background: linear-gradient(200deg, #1e5c9e 0%, #3b8fd9 45%, #f7f2e8 120%); }
+.landing-photo-b::before { content: ''; position: absolute; inset: 0; background: radial-gradient(70% 50% at 30% 15%, rgba(255, 255, 255, 0.4), transparent 60%); }
+.landing-vcard h3 { font-family: var(--font-display); font-weight: 700; font-size: 21px; color: var(--ink-900); margin: 0; }
+.landing-vcard .meta { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; color: var(--ink-500); margin: 6px 0 10px; }
+.landing-vcard p { font-size: 14px; line-height: 1.55; color: var(--ink-600); margin: 0; }
+.landing-vcard .verified {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 13px;
+  font-size: 12px; font-weight: 600; color: var(--stay-700);
+  background: var(--stay-100); padding: 6px 12px; border-radius: 999px;
+}
+.landing-vcard .verified.nay { background: var(--nay-100); color: var(--nay-700); }
+.landing-stamp {
+  position: absolute; z-index: 5;
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(84px, 15vw, 200px); letter-spacing: -0.02em; line-height: 1;
+  padding: 0.05em 0.25em; border: 0.045em solid currentColor; border-radius: 0.12em;
+  will-change: transform, opacity; opacity: 0;
+}
+.landing-stamp.stay { color: var(--stay-600); text-shadow: 0 0 50px rgba(20, 135, 90, 0.25); }
+.landing-stamp.nay { color: var(--nay-500); text-shadow: 0 0 50px rgba(237, 90, 62, 0.25); }
+.landing-shockwave {
+  position: absolute; z-index: 4; width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid var(--stay-500); opacity: 0; will-change: transform, opacity;
+}
+.landing-shockwave.nay { border-color: var(--nay-500); }
+
+/* ---------- how it works ---------- */
+.landing-how { position: relative; padding: clamp(80px, 11vh, 150px) clamp(20px, 5vw, 60px); background: var(--paper-100); overflow: hidden; }
+.landing-section-head { position: relative; max-width: 1060px; margin: 0 auto clamp(40px, 5vw, 70px); }
+.landing-section-head h2 {
+  font-family: var(--font-display); font-weight: 800; margin: 12px 0 0;
+  font-size: clamp(30px, 4.8vw, 56px); letter-spacing: -0.025em;
+  color: var(--ink-900); line-height: 1.05;
+}
+.landing-section-head p { max-width: 520px; margin: 14px 0 0; font-size: 16px; line-height: 1.6; color: var(--ink-600); }
+.landing-steps {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: clamp(16px, 2.4vw, 28px); max-width: 1060px; margin: 0 auto; perspective: 1200px;
+}
+.landing-step {
+  position: relative; background: var(--paper-000); border-radius: 24px;
+  padding: 26px; box-shadow: 0 18px 50px -18px rgba(12, 23, 20, 0.22);
+  transform-style: preserve-3d; will-change: transform;
+  transition: box-shadow 350ms;
+  opacity: 0; transform: translateY(44px);
+}
+.landing-step.inview { animation: landingCardIn 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.landing-step:nth-child(2).inview { animation-delay: 120ms; }
+.landing-step:nth-child(3).inview { animation-delay: 240ms; }
+@keyframes landingCardIn { to { opacity: 1; transform: translateY(0); } }
+.landing-step:hover { box-shadow: 0 34px 80px -20px rgba(12, 23, 20, 0.32); }
+.landing-step .num {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
+  color: var(--stay-600); background: var(--stay-100);
+  display: inline-block; padding: 6px 12px; border-radius: 999px;
+}
+.landing-step h3 { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--ink-900); margin: 16px 0 0; }
+.landing-step p { font-size: 14.5px; line-height: 1.6; color: var(--ink-600); margin: 10px 0 0; }
+
+/* ---------- trust band ---------- */
+.landing-trust { background: var(--ink-900); padding: clamp(76px, 11vh, 140px) clamp(20px, 5vw, 60px); position: relative; overflow: hidden; }
+.landing-trust-grid {
+  max-width: 1060px; margin: 0 auto;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 36px;
+}
+.landing-trust .cell { text-align: center; }
+.landing-trust .big {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(40px, 5.6vw, 70px); color: var(--paper-050); letter-spacing: -0.02em;
+}
+.landing-trust .big.accent { color: var(--stay-400); }
+.landing-trust .label {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-400); margin-top: 10px;
+}
+.landing-trust .promise {
+  text-align: center; margin: clamp(36px, 5vh, 60px) auto 0; max-width: 620px;
+  font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.1em;
+  color: var(--ink-300); text-transform: uppercase; line-height: 1.8;
+}
+.landing-trust .promise b { color: var(--stay-400); }
+
+/* ---------- checks marquee ---------- */
+.landing-marquee-section { background: var(--paper-100); padding: clamp(60px, 9vh, 110px) 0; overflow: hidden; }
+.landing-marquee { display: flex; gap: 14px; width: max-content; will-change: transform; padding: 8px 0; }
+.landing-check {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.04em;
+  color: var(--ink-700); background: var(--paper-000);
+  border: 1px solid var(--ink-100); border-radius: 999px; padding: 13px 22px;
+  box-shadow: 0 6px 18px -10px rgba(12, 23, 20, 0.12);
+  white-space: nowrap;
+}
+.landing-check .mark { font-weight: 700; }
+.landing-check .mark.s { color: var(--stay-600); }
+.landing-check .mark.n { color: var(--nay-500); }
+
+/* ---------- final ---------- */
+.landing-final { position: relative; background: var(--paper-100); padding: clamp(90px, 14vh, 180px) 20px; text-align: center; overflow: hidden; }
+.landing-final h2 {
+  font-family: var(--font-display); font-weight: 800; margin: 0;
+  font-size: clamp(38px, 6.6vw, 90px); letter-spacing: -0.03em;
+  color: var(--ink-900); line-height: 1.02;
+}
+.landing-final h2 em { font-style: normal; color: var(--stay-600); }
+.landing-final p { margin: 20px auto 36px; max-width: 460px; font-size: 16px; line-height: 1.6; color: var(--ink-600); }
+.landing-footer {
+  background: var(--paper-100); border-top: 1px solid var(--ink-100);
+  padding: 24px 20px; text-align: center;
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.1em;
+  color: var(--ink-400); text-transform: uppercase;
+}
+
+/* reveal helper */
+.landing-reveal {
+  opacity: 0; transform: translateY(32px);
+  transition: opacity 900ms cubic-bezier(0.16, 1, 0.3, 1), transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.landing-reveal.inview { opacity: 1; transform: none; }
+
+/* Mapbox chrome kept subtle on the landing globe */
+.landing .mapboxgl-ctrl-logo, .landing .mapboxgl-ctrl-attrib { opacity: 0.35; }
