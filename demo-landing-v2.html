@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StayOrNay — Landing Demo v2 · The World Edition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.8.0/mapbox-gl.js"></script>
+<style>
+:root {
+  --ink-900:#0C1714; --ink-800:#15201C; --ink-700:#223029; --ink-600:#38473F;
+  --ink-500:#5A6A60; --ink-400:#8A988E; --ink-300:#B6C0B8; --ink-200:#D6DCD6; --ink-100:#E9ECE7;
+  --paper-000:#FFFFFF; --paper-050:#FBF8F1; --paper-100:#F7F2E8; --paper-200:#EFE8D8; --paper-300:#E4DAC4;
+  --stay-700:#0E6A47; --stay-600:#14875A; --stay-500:#1AA06B; --stay-400:#3FBF8B; --stay-200:#BDE9D5; --stay-100:#DFF4EA;
+  --nay-700:#B8341F; --nay-600:#D9472E; --nay-500:#ED5A3E; --nay-400:#F47E68; --nay-200:#FBD2C8; --nay-100:#FDE8E2;
+  --sky-600:#2A77C4; --sky-500:#3B8FD9; --sky-300:#9CCBEF;
+  --sun-600:#E08A1E; --sun-500:#F2A93B; --sun-300:#F8CE86;
+  --font-display:'Bricolage Grotesque','Hanken Grotesk',system-ui,sans-serif;
+  --font-body:'Hanken Grotesk',system-ui,sans-serif;
+  --font-mono:'Space Mono',ui-monospace,monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:var(--font-body); color:var(--ink-800); background:var(--ink-900); overflow-x:hidden; }
+::selection { background:var(--stay-200); color:var(--ink-900); }
+.mapboxgl-ctrl-logo, .mapboxgl-ctrl-attrib { opacity:.35; }
+
+/* film grain */
+.grain {
+  position:fixed; inset:-50%; width:200%; height:200%; pointer-events:none; z-index:9998; opacity:.045;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain 7s steps(10) infinite;
+}
+@keyframes grain {
+  0%,100%{transform:translate(0,0)} 10%{transform:translate(-3%,-2%)} 20%{transform:translate(2%,3%)}
+  30%{transform:translate(-4%,1%)} 40%{transform:translate(3%,-3%)} 50%{transform:translate(-2%,4%)}
+  60%{transform:translate(4%,2%)} 70%{transform:translate(-3%,-4%)} 80%{transform:translate(1%,3%)} 90%{transform:translate(-1%,-2%)}
+}
+
+/* progress */
+.progress { position:fixed; top:0; left:0; height:3px; width:100%; z-index:1000; }
+.progress span { display:block; height:100%; width:0%; background:linear-gradient(90deg,var(--stay-600),var(--stay-400)); }
+
+/* preloader */
+.preloader {
+  position:fixed; inset:0; z-index:2000; background:var(--ink-900);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+  transition:opacity .8s ease, visibility .8s;
+}
+.preloader.done { opacity:0; visibility:hidden; }
+.preloader .coords { font-family:var(--font-mono); font-size:13px; letter-spacing:.08em; color:var(--stay-400); }
+.preloader .brand { font-family:var(--font-display); font-weight:800; font-size:clamp(28px,4vw,44px); color:var(--paper-050); letter-spacing:-.02em; }
+.preloader .bar { width:180px; height:2px; background:rgba(255,255,255,.12); overflow:hidden; border-radius:2px; }
+.preloader .bar i { display:block; height:100%; width:0%; background:var(--stay-500); transition:width .2s; }
+
+/* nav */
+nav {
+  position:fixed; top:0; left:0; right:0; z-index:900;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:20px clamp(20px,4vw,48px);
+  transition:background .4s, box-shadow .4s, padding .4s, opacity .5s, transform .5s;
+}
+nav.scrolled { background:rgba(12,23,20,.72); backdrop-filter:blur(14px); padding:12px clamp(20px,4vw,48px); }
+nav.light-context.scrolled { background:rgba(247,242,232,.85); box-shadow:0 1px 0 rgba(12,23,20,.08); }
+nav.hidden-nav { opacity:0; transform:translateY(-100%); pointer-events:none; }
+.wordmark { font-family:var(--font-display); font-weight:800; font-size:20px; letter-spacing:-.02em; display:flex; align-items:center; gap:8px; color:var(--paper-050); transition:color .4s; }
+nav.light-context .wordmark { color:var(--ink-900); }
+.wordmark .pin { width:10px; height:10px; border-radius:50%; background:var(--stay-500); box-shadow:0 0 0 4px rgba(26,160,107,.25); }
+nav .cta-mini {
+  font-family:var(--font-mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-900); background:var(--paper-050); border:none; padding:10px 18px; border-radius:100px; cursor:pointer; transition:background .4s,color .4s;
+}
+nav.light-context .cta-mini { background:var(--ink-900); color:var(--paper-050); }
+
+/* ============ HERO — real satellite globe ============ */
+.hero { position:relative; height:100vh; min-height:640px; overflow:hidden; background:#04080a; }
+#map { position:absolute; inset:0; }
+.hero.explore-mode #map { pointer-events:auto; }
+.hero:not(.explore-mode) #map { pointer-events:none; }
+.hero-vignette { position:absolute; inset:0; z-index:2; pointer-events:none;
+  background:radial-gradient(120% 100% at 50% 45%, transparent 40%, rgba(4,8,10,.55) 100%),
+             linear-gradient(180deg, rgba(4,8,10,.55) 0%, transparent 22%, transparent 70%, rgba(4,8,10,.6) 100%);
+  transition:opacity 1.2s;
+}
+.hero.explore-mode .hero-vignette { opacity:0; }
+.hero-content {
+  position:absolute; inset:0; z-index:5; pointer-events:none;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 20px;
+  transition:opacity .9s, transform .9s;
+}
+.hero.explore-mode .hero-content { opacity:0; transform:scale(.96); }
+.hero-content .kicker {
+  font-family:var(--font-mono); font-size:clamp(11px,1.2vw,13px); letter-spacing:.16em;
+  color:var(--stay-300, #BDE9D5); text-transform:uppercase; margin-bottom:18px;
+  color:#BDE9D5;
+  opacity:0; animation:riseIn .9s .3s cubic-bezier(.2,.7,.2,1) forwards;
+}
+.hero-content h1 {
+  font-family:var(--font-display); font-weight:800;
+  font-size:clamp(52px,10vw,140px); line-height:.96; letter-spacing:-.03em; color:var(--paper-050);
+  text-shadow:0 4px 40px rgba(0,0,0,.5);
+}
+.hero-content h1 .word { display:inline-block; overflow:hidden; vertical-align:bottom; }
+.hero-content h1 .word span { display:inline-block; transform:translateY(110%); animation:wordUp 1s cubic-bezier(.16,1,.3,1) forwards; }
+.hero-content h1 .stay span { color:var(--stay-400); animation-delay:.55s; }
+.hero-content h1 .or span { animation-delay:.68s; }
+.hero-content h1 .nay span { color:var(--nay-400); animation-delay:.8s; }
+@keyframes wordUp { to { transform:translateY(0); } }
+@keyframes riseIn { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:none; } }
+.hero-content .sub {
+  max-width:600px; margin-top:24px; font-size:clamp(16px,1.6vw,19px); line-height:1.6; color:rgba(251,248,241,.85);
+  text-shadow:0 2px 20px rgba(0,0,0,.5);
+  opacity:0; animation:riseIn .9s 1.05s cubic-bezier(.2,.7,.2,1) forwards;
+}
+.dest-chip {
+  margin-top:30px; display:inline-flex; align-items:center; gap:12px;
+  font-family:var(--font-mono); font-size:clamp(11px,1.2vw,13px); letter-spacing:.1em;
+  color:var(--paper-050); background:rgba(12,23,20,.55); border:1px solid rgba(255,255,255,.16);
+  padding:12px 20px; border-radius:100px; backdrop-filter:blur(10px);
+  opacity:0; animation:riseIn .9s 1.2s cubic-bezier(.2,.7,.2,1) forwards;
+}
+.dest-chip .dot { width:8px; height:8px; border-radius:50%; background:var(--stay-400); animation:blink 1.6s infinite; }
+@keyframes blink { 50% { opacity:.3; } }
+.dest-chip .dest-text { transition:opacity .45s; }
+.dest-chip .dest-text.swap { opacity:0; }
+.hero-content .cta-row { display:flex; gap:14px; margin-top:34px; pointer-events:auto; flex-wrap:wrap; justify-content:center; opacity:0; animation:riseIn .9s 1.35s cubic-bezier(.2,.7,.2,1) forwards; }
+.btn {
+  font-family:var(--font-body); font-weight:600; font-size:16px;
+  padding:16px 32px; border-radius:100px; border:none; cursor:pointer;
+  transition:transform .3s cubic-bezier(.2,.7,.2,1), box-shadow .3s;
+}
+.btn:active { transform:scale(.97); }
+.btn-primary { background:var(--stay-500); color:#fff; box-shadow:0 10px 34px -8px rgba(26,160,107,.6); }
+.btn-primary:hover { transform:translateY(-2px); box-shadow:0 16px 44px -8px rgba(26,160,107,.7); }
+.btn-ghost { background:rgba(251,248,241,.08); color:var(--paper-050); border:1.5px solid rgba(251,248,241,.35); backdrop-filter:blur(8px); }
+.btn-ghost:hover { border-color:var(--paper-050); transform:translateY(-2px); }
+.scroll-hint {
+  position:absolute; bottom:26px; left:50%; transform:translateX(-50%); z-index:6; pointer-events:none;
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.14em; color:rgba(251,248,241,.6); text-transform:uppercase;
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  opacity:0; animation:riseIn 1s 2s forwards; transition:opacity .6s;
+}
+.hero.explore-mode .scroll-hint { opacity:0 !important; }
+.scroll-hint .line { width:1px; height:44px; background:rgba(251,248,241,.25); position:relative; overflow:hidden; }
+.scroll-hint .line::after { content:''; position:absolute; top:-50%; left:0; width:100%; height:50%; background:var(--stay-400); animation:dripline 1.8s ease-in-out infinite; }
+@keyframes dripline { 0%{top:-50%} 100%{top:110%} }
+
+/* pulsing destination marker */
+.pulse-marker { position:relative; width:18px; height:18px; }
+.pulse-marker .core { position:absolute; inset:4px; border-radius:50%; background:var(--stay-400); box-shadow:0 0 12px rgba(63,191,139,.9); }
+.pulse-marker .ring { position:absolute; inset:0; border-radius:50%; border:2px solid var(--stay-400); animation:markerPulse 1.8s ease-out infinite; }
+.pulse-marker .ring2 { animation-delay:.9s; }
+@keyframes markerPulse { 0% { transform:scale(.5); opacity:1; } 100% { transform:scale(2.6); opacity:0; } }
+
+/* explore-mode handoff UI */
+.handoff {
+  position:absolute; left:50%; bottom:30px; transform:translate(-50%, 140%); z-index:8;
+  display:flex; align-items:center; gap:16px; flex-wrap:wrap; justify-content:center;
+  background:rgba(12,23,20,.78); border:1px solid rgba(255,255,255,.14); backdrop-filter:blur(14px);
+  padding:14px 18px; border-radius:18px; max-width:min(92vw, 700px);
+  transition:transform .8s cubic-bezier(.16,1,.3,1);
+}
+.handoff.show { transform:translate(-50%, 0); }
+.handoff p { font-size:14px; line-height:1.45; color:var(--paper-050); }
+.handoff p b { color:var(--stay-400); }
+.handoff .btn { font-size:13px; padding:10px 18px; }
+.exit-explore {
+  position:absolute; top:24px; left:50%; transform:translate(-50%,-200%); z-index:8;
+  transition:transform .6s cubic-bezier(.16,1,.3,1);
+}
+.exit-explore.show { transform:translate(-50%,0); }
+
+/* ============ VERDICT SCROLL SCENE (light paper this time) ============ */
+.verdict-scene { position:relative; height:340vh; background:var(--paper-100); }
+.verdict-sticky { position:sticky; top:0; height:100vh; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+.contours { position:absolute; inset:0; opacity:.5; }
+.contours path { fill:none; stroke:rgba(58,71,63,.25); stroke-width:1; stroke-dasharray:2000; stroke-dashoffset:2000; }
+.verdict-heading { position:absolute; top:11vh; left:0; right:0; text-align:center; z-index:3; padding:0 20px; }
+.verdict-heading .mono-tag { font-family:var(--font-mono); font-size:12px; letter-spacing:.14em; color:var(--stay-600); text-transform:uppercase; }
+.verdict-heading h2 { font-family:var(--font-display); font-weight:800; font-size:clamp(30px,4.6vw,58px); color:var(--ink-900); letter-spacing:-.02em; margin-top:10px; }
+.vcard {
+  position:absolute; width:min(420px,86vw); background:var(--paper-000); border-radius:24px; padding:26px;
+  box-shadow:0 40px 90px -24px rgba(12,23,20,.4); will-change:transform,opacity; opacity:0;
+}
+.vcard .photo { height:190px; border-radius:16px; margin-bottom:18px; position:relative; overflow:hidden; }
+.vcard .photo .coord-stamp { position:absolute; bottom:10px; left:12px; font-family:var(--font-mono); font-size:10px; letter-spacing:.08em; color:rgba(255,255,255,.92); background:rgba(12,23,20,.45); padding:4px 8px; border-radius:6px; backdrop-filter:blur(4px); }
+.photo-a { background:linear-gradient(160deg,#2E7D6B 0%,#5BAF8F 34%,#F2A93B 100%); }
+.photo-a::before { content:''; position:absolute; inset:0; background:radial-gradient(80% 60% at 70% 20%, rgba(255,255,255,.35), transparent 60%); }
+.photo-b { background:linear-gradient(200deg,#1E5C9E 0%,#3B8FD9 45%,#F7F2E8 120%); }
+.photo-b::before { content:''; position:absolute; inset:0; background:radial-gradient(70% 50% at 30% 15%, rgba(255,255,255,.4), transparent 60%); }
+.vcard h3 { font-family:var(--font-display); font-weight:700; font-size:22px; color:var(--ink-900); }
+.vcard .meta { font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; color:var(--ink-500); margin:6px 0 12px; }
+.vcard p { font-size:15px; line-height:1.55; color:var(--ink-600); }
+.vcard .verified { display:inline-flex; align-items:center; gap:6px; margin-top:14px; font-size:12px; font-weight:600; color:var(--stay-700); background:var(--stay-100); padding:6px 12px; border-radius:100px; }
+.stamp {
+  position:absolute; z-index:5; font-family:var(--font-display); font-weight:800;
+  font-size:clamp(90px,16vw,220px); letter-spacing:-.02em; line-height:1;
+  padding:.05em .25em; border:.045em solid currentColor; border-radius:.12em;
+  will-change:transform,opacity; opacity:0;
+}
+.stamp.stay { color:var(--stay-600); text-shadow:0 0 50px rgba(20,135,90,.25); }
+.stamp.nay { color:var(--nay-500); text-shadow:0 0 50px rgba(237,90,62,.25); }
+.stamp::after {
+  content:''; position:absolute; inset:0; border-radius:.12em;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='r'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.12' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23r)' opacity='0.5'/%3E%3C/svg%3E");
+  mix-blend-mode:screen; opacity:.35; pointer-events:none;
+}
+.shockwave { position:absolute; z-index:4; width:10px; height:10px; border-radius:50%; border:2px solid var(--stay-500); opacity:0; will-change:transform,opacity; }
+
+/* ============ TILT CARDS ============ */
+.cards-section { position:relative; padding:clamp(90px,12vh,160px) clamp(20px,5vw,60px); background:var(--paper-100); overflow:hidden; }
+.cards-section .topo-bg { position:absolute; inset:0; opacity:.35; pointer-events:none; }
+.section-head { position:relative; max-width:1100px; margin:0 auto clamp(44px,6vw,80px); }
+.section-head .mono-tag { font-family:var(--font-mono); font-size:12px; letter-spacing:.14em; color:var(--stay-600); text-transform:uppercase; }
+.section-head h2 { font-family:var(--font-display); font-weight:800; font-size:clamp(32px,5vw,60px); letter-spacing:-.025em; color:var(--ink-900); margin-top:12px; line-height:1.05; }
+.section-head p { max-width:560px; margin-top:16px; font-size:17px; line-height:1.6; color:var(--ink-600); }
+.card-grid { position:relative; display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:clamp(18px,2.6vw,32px); max-width:1100px; margin:0 auto; perspective:1200px; }
+.tilt-card {
+  position:relative; background:var(--paper-000); border-radius:24px; padding:22px;
+  box-shadow:0 18px 50px -18px rgba(12,23,20,.22);
+  transform-style:preserve-3d; will-change:transform; transition:box-shadow .35s;
+  opacity:0; transform:translateY(48px);
+}
+.tilt-card.inview { animation:cardIn .9s cubic-bezier(.16,1,.3,1) forwards; }
+.tilt-card:nth-child(2).inview { animation-delay:.12s; }
+.tilt-card:nth-child(3).inview { animation-delay:.24s; }
+@keyframes cardIn { to { opacity:1; transform:translateY(0); } }
+.tilt-card:hover { box-shadow:0 34px 80px -20px rgba(12,23,20,.35); }
+.tilt-card .photo { height:200px; border-radius:16px; position:relative; overflow:hidden; transform:translateZ(30px); }
+.tilt-card .inner { transform:translateZ(20px); }
+.photo-1 { background:linear-gradient(150deg,#14875A,#3FBF8B 45%,#F8CE86); }
+.photo-2 { background:linear-gradient(200deg,#2A77C4,#9CCBEF 50%,#DFF4EA); }
+.photo-3 { background:linear-gradient(160deg,#E08A1E,#F2A93B 40%,#ED5A3E); }
+.tilt-card .photo::after { content:''; position:absolute; inset:0; background:radial-gradient(90% 70% at 75% 15%, rgba(255,255,255,.4), transparent 55%); }
+.tilt-card .badge {
+  position:absolute; top:12px; left:12px; z-index:2;
+  font-family:var(--font-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  padding:6px 10px; border-radius:100px; backdrop-filter:blur(6px);
+}
+.badge.stay { background:rgba(223,244,234,.92); color:var(--stay-700); }
+.badge.nay { background:rgba(253,232,226,.92); color:var(--nay-700); }
+.tilt-card h3 { font-family:var(--font-display); font-weight:700; font-size:20px; color:var(--ink-900); margin-top:16px; }
+.tilt-card .meta { font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; color:var(--ink-500); margin-top:6px; }
+.tilt-card .score-row { display:flex; align-items:center; justify-content:space-between; margin-top:14px; }
+.stars { color:var(--sun-500); font-size:14px; letter-spacing:2px; }
+.score-pill { font-family:var(--font-mono); font-size:12px; font-weight:700; padding:5px 11px; border-radius:100px; }
+.score-pill.stay { background:var(--stay-100); color:var(--stay-700); }
+.score-pill.nay { background:var(--nay-100); color:var(--nay-700); }
+
+/* ============ STATS ============ */
+.stats { background:var(--ink-900); padding:clamp(80px,12vh,150px) clamp(20px,5vw,60px); position:relative; overflow:hidden; }
+.stats-grid { max-width:1100px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:40px; position:relative; }
+.stat { text-align:center; }
+.stat .num { font-family:var(--font-display); font-weight:800; font-size:clamp(44px,6vw,76px); color:var(--paper-050); letter-spacing:-.02em; }
+.stat .num .accent { color:var(--stay-400); }
+.stat .label { font-family:var(--font-mono); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-400); margin-top:10px; }
+.stats .promise { text-align:center; margin-top:clamp(40px,6vh,70px); font-family:var(--font-mono); font-size:13px; letter-spacing:.1em; color:var(--ink-300); text-transform:uppercase; }
+.stats .promise b { color:var(--stay-400); }
+
+/* ============ MARQUEE ============ */
+.marquee-section { background:var(--paper-100); padding:clamp(70px,10vh,120px) 0; overflow:hidden; }
+.marquee { display:flex; gap:20px; width:max-content; will-change:transform; padding:10px 0; }
+.mq-card { flex-shrink:0; width:340px; background:var(--paper-000); border:1px solid var(--ink-100); border-radius:18px; padding:20px; box-shadow:0 8px 24px -12px rgba(12,23,20,.12); }
+.mq-card .top { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.mq-card .avatar { width:34px; height:34px; border-radius:50%; font-family:var(--font-display); font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; color:#fff; }
+.mq-card .who { font-weight:600; font-size:14px; color:var(--ink-900); }
+.mq-card .where { font-family:var(--font-mono); font-size:10px; color:var(--ink-500); letter-spacing:.06em; }
+.mq-card .tag { margin-left:auto; font-family:var(--font-mono); font-size:10px; font-weight:700; letter-spacing:.1em; padding:4px 9px; border-radius:100px; }
+.mq-card .tag.s { background:var(--stay-100); color:var(--stay-700); }
+.mq-card .tag.n { background:var(--nay-100); color:var(--nay-700); }
+.mq-card p { font-size:14px; line-height:1.55; color:var(--ink-600); }
+
+/* ============ FINAL ============ */
+.final { position:relative; background:var(--paper-100); padding:clamp(100px,16vh,200px) 20px; text-align:center; overflow:hidden; }
+.final h2 { font-family:var(--font-display); font-weight:800; font-size:clamp(40px,7vw,96px); letter-spacing:-.03em; color:var(--ink-900); line-height:1.02; }
+.final h2 em { font-style:normal; color:var(--stay-600); }
+.final p { margin:22px auto 40px; max-width:520px; font-size:17px; line-height:1.6; color:var(--ink-600); }
+.btn-dark { background:var(--ink-900); color:var(--paper-050); }
+.btn-big { font-size:18px; padding:22px 48px; }
+footer { background:var(--paper-100); border-top:1px solid var(--ink-100); padding:26px 20px; text-align:center; font-family:var(--font-mono); font-size:11px; letter-spacing:.1em; color:var(--ink-400); text-transform:uppercase; }
+
+.reveal { opacity:0; transform:translateY(36px); transition:opacity .9s cubic-bezier(.16,1,.3,1), transform .9s cubic-bezier(.16,1,.3,1); }
+.reveal.inview { opacity:1; transform:none; }
+
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
+}
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="progress"><span id="progressBar"></span></div>
+
+<div class="preloader" id="preloader">
+  <div class="coords" id="preCoords">ACQUIRING SATELLITE…</div>
+  <div class="brand">StayOrNay</div>
+  <div class="bar"><i id="preBar"></i></div>
+</div>
+
+<nav id="nav">
+  <div class="wordmark"><span class="pin"></span>StayOrNay</div>
+  <button class="cta-mini">Read Verdicts</button>
+</nav>
+
+<!-- HERO — real satellite globe -->
+<header class="hero" id="hero">
+  <div id="map"></div>
+  <div class="hero-vignette"></div>
+  <div class="hero-content" id="heroContent">
+    <div class="kicker">Independent villa verdicts · Worldwide</div>
+    <h1>
+      <span class="word stay"><span>Stay</span></span>
+      <span class="word or"><span>or</span></span>
+      <span class="word nay"><span>Nay?</span></span>
+    </h1>
+    <p class="sub">We don't take bookings — and we never will. We're the independent review layer for every villa on Earth, so wherever you book, you book with a good feeling in your stomach.</p>
+    <div class="dest-chip"><span class="dot"></span><span class="dest-text" id="destText">-8.4095° S · 115.1889° E — BALI, INDONESIA</span></div>
+    <div class="cta-row">
+      <button class="btn btn-primary" id="exploreBtn">Explore the world</button>
+      <button class="btn btn-ghost" id="scrollBtn">How verdicts work</button>
+    </div>
+  </div>
+  <div class="scroll-hint"><span>Scroll</span><span class="line"></span></div>
+
+  <div class="exit-explore" id="exitExplore"><button class="btn btn-ghost">← Back to orbit</button></div>
+  <div class="handoff" id="handoff">
+    <p><b>✦ This is the handoff.</b> Right here, your real map takes over — verdict pins, reviews, the works. One continuous shot from space to the villa's front door.</p>
+    <button class="btn btn-primary" id="replayBtn">Replay from space</button>
+    <button class="btn btn-ghost" id="continueBtn">Continue the tour ↓</button>
+  </div>
+</header>
+
+<!-- VERDICT SCROLL SCENE -->
+<section class="verdict-scene" id="verdictScene">
+  <div class="verdict-sticky">
+    <svg class="contours" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+      <path id="c1" d="M-50,650 C200,560 340,700 560,620 C780,540 900,660 1250,560"/>
+      <path id="c2" d="M-50,540 C240,460 380,600 600,510 C820,430 960,560 1250,450"/>
+      <path id="c3" d="M-50,430 C260,360 420,490 640,410 C860,330 1000,450 1250,350"/>
+      <path id="c4" d="M-50,320 C280,260 460,380 680,300 C900,230 1040,340 1250,250"/>
+    </svg>
+    <div class="verdict-heading">
+      <div class="mono-tag">The verdict system</div>
+      <h2>One stay. One verdict.<br>Anywhere on Earth.</h2>
+    </div>
+
+    <div class="vcard" id="cardA">
+      <div class="photo photo-a"><span class="coord-stamp">-8.6478° S · 115.1385° E · BALI</span></div>
+      <h3>Villa Cahaya, Canggu</h3>
+      <div class="meta">3 NIGHTS · VERIFIED STAY · JUN 2026</div>
+      <p>"The photos undersold it. Private pool actually private, staff remembered our names, and the sunrise over the rice fields — unreal."</p>
+      <span class="verified">✓ Verified stayer</span>
+    </div>
+    <div class="stamp stay" id="stampStay">STAY</div>
+
+    <div class="vcard" id="cardB">
+      <div class="photo photo-b"><span class="coord-stamp">36.3932° N · 25.4615° E · SANTORINI</span></div>
+      <h3>Villa Thera View, Santorini</h3>
+      <div class="meta">4 NIGHTS · VERIFIED STAY · MAY 2026</div>
+      <p>"'Caldera view' — if you lean off the roof. Cruise-ship crowds outside the gate by 9am, and the 'private plunge pool' is shared with three units."</p>
+      <span class="verified" style="background:var(--nay-100);color:var(--nay-700)">✓ Verified stayer</span>
+    </div>
+    <div class="stamp nay" id="stampNay">NAY</div>
+    <div class="shockwave" id="shockA"></div>
+    <div class="shockwave" id="shockB" style="border-color:var(--nay-500)"></div>
+  </div>
+</section>
+
+<!-- TILT CARDS -->
+<section class="cards-section">
+  <svg class="topo-bg" viewBox="0 0 1400 900" preserveAspectRatio="xMidYMid slice">
+    <g fill="none" stroke="rgba(58,71,63,.14)" stroke-width="1">
+      <ellipse cx="200" cy="150" rx="180" ry="90"/><ellipse cx="200" cy="150" rx="130" ry="60"/><ellipse cx="200" cy="150" rx="80" ry="34"/>
+      <ellipse cx="1200" cy="700" rx="220" ry="110"/><ellipse cx="1200" cy="700" rx="160" ry="76"/><ellipse cx="1200" cy="700" rx="100" ry="44"/>
+      <ellipse cx="1150" cy="120" rx="150" ry="70"/><ellipse cx="1150" cy="120" rx="95" ry="40"/>
+    </g>
+  </svg>
+  <div class="section-head reveal">
+    <div class="mono-tag">Bali · Santorini · Tulum · Phuket · Amalfi · Cape Town</div>
+    <h2>Real villas. Real verdicts.<br>Everywhere.</h2>
+    <p>Every verdict comes from someone who paid, stayed, and told the truth — in any country, in any season. Hover the cards.</p>
+  </div>
+  <div class="card-grid" id="cardGrid">
+    <article class="tilt-card" data-verdict="stay">
+      <div class="photo photo-1"><span class="badge stay">✓ Stay</span></div>
+      <div class="inner">
+        <h3>Villa Padi Emas</h3>
+        <div class="meta">CANGGU, BALI · -8.6478° S · 115.1385° E</div>
+        <div class="score-row"><span class="stars">★★★★★</span><span class="score-pill stay">9.4 / 10</span></div>
+      </div>
+    </article>
+    <article class="tilt-card" data-verdict="stay">
+      <div class="photo photo-2"><span class="badge stay">✓ Stay</span></div>
+      <div class="inner">
+        <h3>Casa Cenote Azul</h3>
+        <div class="meta">TULUM, MEXICO · 20.2114° N · 87.4654° W</div>
+        <div class="score-row"><span class="stars">★★★★☆</span><span class="score-pill stay">8.7 / 10</span></div>
+      </div>
+    </article>
+    <article class="tilt-card" data-verdict="nay">
+      <div class="photo photo-3"><span class="badge nay">✕ Nay</span></div>
+      <div class="inner">
+        <h3>Villa Thera View</h3>
+        <div class="meta">SANTORINI, GREECE · 36.3932° N · 25.4615° E</div>
+        <div class="score-row"><span class="stars">★★☆☆☆</span><span class="score-pill nay">3.1 / 10</span></div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats">
+  <div class="stats-grid">
+    <div class="stat reveal"><div class="num"><span class="count" data-target="12431">0</span></div><div class="label">Verified stays</div></div>
+    <div class="stat reveal"><div class="num"><span class="count" data-target="214">0</span></div><div class="label">Destinations</div></div>
+    <div class="stat reveal"><div class="num"><span class="count" data-target="68">0</span></div><div class="label">Countries</div></div>
+    <div class="stat reveal"><div class="num"><span class="accent">0</span></div><div class="label">Bookings taken. Ever.</div></div>
+  </div>
+  <p class="promise reveal">We never sell villas. <b>We only tell the truth about them.</b></p>
+</section>
+
+<!-- MARQUEE -->
+<section class="marquee-section">
+  <div class="marquee" id="mq1"></div>
+</section>
+
+<!-- FINAL -->
+<section class="final">
+  <h2 class="reveal">Book anywhere.<br>With a <em>good feeling.</em></h2>
+  <p class="reveal">Check the verdict before you book — on any platform, in any country. If we say Stay, you can stop second-guessing.</p>
+  <button class="btn btn-dark btn-big reveal" id="finalBtn">Check a villa's verdict →</button>
+</section>
+
+<footer>StayOrNay · Demo concept v2 · Independent villa verdicts, worldwide</footer>
+
+<script>
+/* ================= DESTINATIONS ================= */
+const DESTS = [
+  { name:'BALI, INDONESIA',      lng:115.1889, lat:-8.4095 },
+  { name:'SANTORINI, GREECE',    lng:25.4615,  lat:36.3932 },
+  { name:'TULUM, MEXICO',        lng:-87.4654, lat:20.2114 },
+  { name:'PHUKET, THAILAND',     lng:98.3923,  lat:7.8804  },
+  { name:'AMALFI COAST, ITALY',  lng:14.6027,  lat:40.6340 },
+  { name:'CAPE TOWN, S. AFRICA', lng:18.4241,  lat:-33.9249 },
+];
+function coordStr(d) {
+  const la = Math.abs(d.lat).toFixed(4) + '° ' + (d.lat < 0 ? 'S' : 'N');
+  const lo = Math.abs(d.lng).toFixed(4) + '° ' + (d.lng < 0 ? 'W' : 'E');
+  return la + ' · ' + lo + ' — ' + d.name;
+}
+
+/* ================= PRELOADER ================= */
+const preloader = document.getElementById('preloader');
+const preBar = document.getElementById('preBar');
+const preCoords = document.getElementById('preCoords');
+const frames = ['ACQUIRING SATELLITE…','LOCKING ORBIT…','214 DESTINATIONS ONLINE','EARTH — LOCKED ✓'];
+let cf = 0, plProgress = 0, mapReady = false, minWait = false;
+const cfTimer = setInterval(() => { preCoords.textContent = frames[Math.min(cf++, frames.length - 1)]; }, 340);
+const plTimer = setInterval(() => {
+  plProgress += mapReady ? 22 : 5 + Math.random() * 8;
+  preBar.style.width = Math.min(plProgress, 100) + '%';
+  if (plProgress >= 100) {
+    clearInterval(plTimer); clearInterval(cfTimer);
+    setTimeout(() => preloader.classList.add('done'), 300);
+  }
+}, 130);
+setTimeout(() => { minWait = true; }, 1200);
+
+/* ================= MAPBOX SATELLITE GLOBE ================= */
+mapboxgl.accessToken = 'pk.eyJ1Ijoic3RheW9ybmF5IiwiYSI6ImNtcTk3YnZzZjAwNGEyenBhYmN4YXhucmMifQ.ma2M8g7sBGr494NiKTu1pw';
+const START = DESTS[0];
+const map = new mapboxgl.Map({
+  container:'map',
+  style:'mapbox://styles/mapbox/standard-satellite',
+  projection:'globe',
+  center:[START.lng, START.lat],
+  zoom:1.6,
+  pitch:0,
+  bearing:0,
+  attributionControl:false,
+  interactive:false,
+});
+map.on('load', () => { mapReady = true; });
+/* clean globe: hide labels/roads until zoomed in close (the handoff) */
+map.on('style.load', () => {
+  try {
+    map.setConfigProperty('basemap', 'showPlaceLabels', false);
+    map.setConfigProperty('basemap', 'showRoadsAndTransit', false);
+    map.setConfigProperty('basemap', 'showPointOfInterestLabels', false);
+    map.setConfigProperty('basemap', 'showTransitLabels', false);
+  } catch (e) { /* older style versions */ }
+});
+map.on('error', e => console.warn('map error', e && e.error));
+
+/* pulsing marker that follows the featured destination */
+const markerEl = document.createElement('div');
+markerEl.className = 'pulse-marker';
+markerEl.innerHTML = '<span class="ring"></span><span class="ring ring2"></span><span class="core"></span>';
+const marker = new mapboxgl.Marker({ element:markerEl }).setLngLat([START.lng, START.lat]).addTo(map);
+
+/* ================= DESTINATION SHOWCASE ================= */
+const destText = document.getElementById('destText');
+let destIdx = 0, cycleTimer = null, exploring = false, heroVisible = true;
+
+function goToDest(i, fast) {
+  const d = DESTS[i];
+  marker.setLngLat([d.lng, d.lat]);
+  map.easeTo({ center:[d.lng, d.lat], zoom:1.6, duration: fast ? 0 : 4200, easing: t => 1 - Math.pow(1 - t, 3) });
+  destText.classList.add('swap');
+  setTimeout(() => { destText.textContent = coordStr(d); destText.classList.remove('swap'); }, 450);
+}
+function startCycle() {
+  stopCycle();
+  cycleTimer = setInterval(() => {
+    if (exploring || !heroVisible || document.hidden) return;
+    destIdx = (destIdx + 1) % DESTS.length;
+    goToDest(destIdx);
+  }, 6500);
+}
+function stopCycle() { if (cycleTimer) clearInterval(cycleTimer); cycleTimer = null; }
+startCycle();
+
+/* pause showcase when hero is offscreen */
+new IntersectionObserver(en => { heroVisible = en[0].isIntersecting; }, { threshold: .1 })
+  .observe(document.getElementById('hero'));
+
+/* ================= EXPLORE MODE (the handoff) ================= */
+const hero = document.getElementById('hero');
+const nav = document.getElementById('nav');
+const handoff = document.getElementById('handoff');
+const exitExplore = document.getElementById('exitExplore');
+
+function enterExplore() {
+  if (exploring) return;
+  exploring = true;
+  stopCycle();
+  window.scrollTo({ top:0, behavior:'auto' });
+  document.body.style.overflow = 'hidden';
+  hero.classList.add('explore-mode');
+  nav.classList.add('hidden-nav');
+  const d = DESTS[destIdx];
+  map.flyTo({
+    center:[d.lng, d.lat],
+    zoom:15.6, pitch:58, bearing:-18,
+    duration:9000, curve:1.42, essential:true,
+  });
+  map.once('moveend', () => {
+    if (!exploring) return;
+    ['scrollZoom','dragPan','dragRotate','touchZoomRotate','doubleClickZoom','keyboard'].forEach(h => map[h] && map[h].enable());
+    handoff.classList.add('show');
+    exitExplore.classList.add('show');
+  });
+}
+function exitExploreMode(scrollOn) {
+  exploring = false;
+  handoff.classList.remove('show');
+  exitExplore.classList.remove('show');
+  ['scrollZoom','dragPan','dragRotate','touchZoomRotate','doubleClickZoom','keyboard'].forEach(h => map[h] && map[h].disable());
+  document.body.style.overflow = '';
+  hero.classList.remove('explore-mode');
+  nav.classList.remove('hidden-nav');
+  map.flyTo({ center:[DESTS[destIdx].lng, DESTS[destIdx].lat], zoom:1.6, pitch:0, bearing:0, duration: scrollOn ? 2500 : 5500, curve:1.3 });
+  startCycle();
+  if (scrollOn) document.getElementById('verdictScene').scrollIntoView({ behavior:'smooth' });
+}
+document.getElementById('exploreBtn').addEventListener('click', enterExplore);
+document.getElementById('replayBtn').addEventListener('click', () => { exitExploreMode(false); setTimeout(enterExplore, 6200); });
+document.getElementById('continueBtn').addEventListener('click', () => exitExploreMode(true));
+exitExplore.querySelector('button').addEventListener('click', () => exitExploreMode(false));
+document.getElementById('scrollBtn').addEventListener('click', () => document.getElementById('verdictScene').scrollIntoView({ behavior:'smooth' }));
+document.getElementById('finalBtn').addEventListener('click', () => { window.scrollTo({ top:0, behavior:'smooth' }); });
+
+/* ================= SCROLL ENGINE ================= */
+const progressBar = document.getElementById('progressBar');
+const scene = document.getElementById('verdictScene');
+const cardA = document.getElementById('cardA'), cardB = document.getElementById('cardB');
+const stampStay = document.getElementById('stampStay'), stampNay = document.getElementById('stampNay');
+const shockA = document.getElementById('shockA'), shockB = document.getElementById('shockB');
+const cPaths = [document.getElementById('c1'), document.getElementById('c2'), document.getElementById('c3'), document.getElementById('c4')];
+
+const clamp01 = v => Math.max(0, Math.min(1, v));
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const phase = (p, a, b) => clamp01((p - a) / (b - a));
+
+function stampIn(el, p, angle) {
+  const e = easeOut(p);
+  el.style.opacity = p <= 0 ? 0 : Math.min(1, p * 2.2);
+  el.style.transform = `rotate(${angle}deg) scale(${3.2 - e * 2.2})`;
+}
+function shock(el, p) {
+  if (p <= 0 || p >= 1) { el.style.opacity = 0; return; }
+  el.style.opacity = (1 - p) * .8;
+  el.style.transform = `scale(${1 + p * 60})`;
+}
+
+function onScroll() {
+  const sy = scrollY;
+  const docH = document.documentElement.scrollHeight - innerHeight;
+  progressBar.style.width = (sy / docH * 100) + '%';
+  nav.classList.toggle('scrolled', sy > 40);
+  nav.classList.toggle('light-context', sy > innerHeight * .75);
+
+  const rect = scene.getBoundingClientRect();
+  const total = scene.offsetHeight - innerHeight;
+  const p = clamp01(-rect.top / total);
+
+  cPaths.forEach((path, i) => {
+    path.style.strokeDashoffset = 2000 * (1 - phase(p, 0, .25 + i * .05));
+  });
+
+  const a1 = phase(p, .02, .18);
+  cardA.style.opacity = a1;
+  cardA.style.transform = `translateY(${(1 - easeOut(a1)) * 120}px) rotate(${-3 + easeOut(a1) * 3}deg)`;
+
+  stampIn(stampStay, phase(p, .20, .30), -10);
+  shock(shockA, phase(p, .28, .40));
+  const exit1 = phase(p, .42, .52);
+  if (exit1 > 0) {
+    cardA.style.opacity = 1 - exit1;
+    cardA.style.transform = `translateY(${-easeOut(exit1) * 160}px) rotate(${-easeOut(exit1) * 6}deg)`;
+    stampStay.style.opacity = Math.max(0, 1 - exit1 * 1.6);
+    stampStay.style.transform = `rotate(-10deg) scale(1) translateY(${-easeOut(exit1) * 140}px)`;
+  }
+
+  const a3 = phase(p, .50, .64);
+  cardB.style.opacity = a3;
+  cardB.style.transform = `translateY(${(1 - easeOut(a3)) * 120}px) rotate(${3 - easeOut(a3) * 3}deg)`;
+
+  stampIn(stampNay, phase(p, .66, .76), 8);
+  shock(shockB, phase(p, .74, .86));
+  const exit2 = phase(p, .9, 1);
+  if (exit2 > 0) {
+    cardB.style.opacity = 1 - exit2;
+    stampNay.style.opacity = Math.max(0, 1 - exit2 * 1.6);
+  }
+}
+addEventListener('scroll', onScroll, { passive:true });
+onScroll();
+
+/* ================= TILT CARDS ================= */
+document.querySelectorAll('.tilt-card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - .5;
+    const py = (e.clientY - r.top) / r.height - .5;
+    card.style.transition = 'box-shadow .35s';
+    card.style.transform = `rotateY(${px * 14}deg) rotateX(${-py * 12}deg) translateY(-6px)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transition = 'transform .6s cubic-bezier(.16,1,.3,1), box-shadow .35s';
+    card.style.transform = 'rotateY(0) rotateX(0) translateY(0)';
+  });
+});
+
+/* ================= REVEALS + COUNTERS ================= */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if (!en.isIntersecting) return;
+    en.target.classList.add('inview');
+    if (en.target.classList.contains('stat')) {
+      const num = en.target.querySelector('.count');
+      if (num && !num.dataset.done) {
+        num.dataset.done = 1;
+        const target = +num.dataset.target;
+        const t0 = performance.now(), dur = 1600;
+        (function tick(now) {
+          const k = clamp01((now - t0) / dur);
+          num.textContent = Math.round(target * (1 - Math.pow(1 - k, 3))).toLocaleString();
+          if (k < 1) requestAnimationFrame(tick);
+        })(t0);
+      }
+    }
+    io.unobserve(en.target);
+  });
+}, { threshold:.25 });
+document.querySelectorAll('.reveal, .tilt-card, .stat').forEach(el => io.observe(el));
+
+/* ================= MARQUEE ================= */
+const reviews = [
+  { n:'Mia K.', w:'BALI', v:'s', c:'#14875A', t:'"Checked the verdict before booking — saved us from a construction-zone nightmare next door."' },
+  { n:'Jonas B.', w:'SANTORINI', v:'s', c:'#2A77C4', t:'"Finally a review site with zero incentive to sell me anything. That changes how you read every word."' },
+  { n:'Ayu P.', w:'PHUKET', v:'n', c:'#D9472E', t:'"Gave my honest NAY and it actually got published. No booking site would ever do that."' },
+  { n:'Sofie L.', w:'TULUM', v:'s', c:'#E08A1E', t:'"Booked through Airbnb like always — but only after StayOrNay said Stay. Slept easy both times."' },
+  { n:'Tom W.', w:'AMALFI', v:'s', c:'#1AA06B', t:'"Spun the globe, zoomed into Amalfi, found a verified gem in 30 seconds. Ridiculous."' },
+  { n:'Nina R.', w:'CAPE TOWN', v:'n', c:'#ED5A3E', t:'"Verdict said NAY, the listing said dream villa. Should have trusted the verdict."' },
+];
+const mq = document.getElementById('mq1');
+mq.innerHTML = [...reviews, ...reviews, ...reviews].map(r => `
+  <div class="mq-card"><div class="top">
+    <div class="avatar" style="background:${r.c}">${r.n[0]}</div>
+    <div><div class="who">${r.n}</div><div class="where">${r.w}</div></div>
+    <span class="tag ${r.v}">${r.v === 's' ? '✓ STAY' : '✕ NAY'}</span>
+  </div><p>${r.t}</p></div>`).join('');
+let mqX = 0;
+(function mqLoop() {
+  mqX -= .6;
+  const w = mq.scrollWidth / 3;
+  if (-mqX >= w) mqX += w;
+  mq.style.transform = `translateX(${mqX}px)`;
+  requestAnimationFrame(mqLoop);
+})();
+</script>
+</body>
+</html>

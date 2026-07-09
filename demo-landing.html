@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StayOrNay — Landing Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   StayOrNay — Cinematic Landing DEMO
+   Brand-evolved: same paper/ink/stay/nay palette, new motion.
+   ============================================================ */
+:root {
+  --ink-900:#0C1714; --ink-800:#15201C; --ink-700:#223029; --ink-600:#38473F;
+  --ink-500:#5A6A60; --ink-400:#8A988E; --ink-300:#B6C0B8; --ink-200:#D6DCD6; --ink-100:#E9ECE7;
+  --paper-000:#FFFFFF; --paper-050:#FBF8F1; --paper-100:#F7F2E8; --paper-200:#EFE8D8; --paper-300:#E4DAC4;
+  --stay-700:#0E6A47; --stay-600:#14875A; --stay-500:#1AA06B; --stay-400:#3FBF8B; --stay-200:#BDE9D5; --stay-100:#DFF4EA;
+  --nay-700:#B8341F; --nay-600:#D9472E; --nay-500:#ED5A3E; --nay-400:#F47E68; --nay-200:#FBD2C8; --nay-100:#FDE8E2;
+  --sky-600:#2A77C4; --sky-500:#3B8FD9; --sky-300:#9CCBEF;
+  --sun-600:#E08A1E; --sun-500:#F2A93B; --sun-300:#F8CE86;
+  --font-display:'Bricolage Grotesque','Hanken Grotesk',system-ui,sans-serif;
+  --font-body:'Hanken Grotesk',system-ui,sans-serif;
+  --font-mono:'Space Mono',ui-monospace,monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior:auto; }
+body {
+  font-family:var(--font-body); color:var(--ink-800);
+  background:var(--paper-100);
+  overflow-x:hidden;
+  cursor:none;
+}
+@media (hover:none), (max-width:760px) { body { cursor:auto; } .cursor-dot,.cursor-ring { display:none; } }
+::selection { background:var(--stay-200); color:var(--ink-900); }
+
+/* ---------- film grain ---------- */
+.grain {
+  position:fixed; inset:-50%; width:200%; height:200%;
+  pointer-events:none; z-index:9998; opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain 7s steps(10) infinite;
+}
+@keyframes grain {
+  0%,100%{transform:translate(0,0)} 10%{transform:translate(-3%,-2%)} 20%{transform:translate(2%,3%)}
+  30%{transform:translate(-4%,1%)} 40%{transform:translate(3%,-3%)} 50%{transform:translate(-2%,4%)}
+  60%{transform:translate(4%,2%)} 70%{transform:translate(-3%,-4%)} 80%{transform:translate(1%,3%)} 90%{transform:translate(-1%,-2%)}
+}
+
+/* ---------- custom cursor ---------- */
+.cursor-dot, .cursor-ring { position:fixed; top:0; left:0; pointer-events:none; z-index:9999; border-radius:50%; will-change:transform; }
+.cursor-dot { width:8px; height:8px; background:var(--ink-900); transition:background .25s; }
+.cursor-ring { width:36px; height:36px; border:1.5px solid rgba(12,23,20,.35); transition:width .25s,height .25s,border-color .25s,background .25s; }
+body.cursor-stay .cursor-dot { background:var(--stay-600); }
+body.cursor-stay .cursor-ring { border-color:var(--stay-500); width:56px; height:56px; background:rgba(26,160,107,.08); }
+body.cursor-nay .cursor-dot { background:var(--nay-600); }
+body.cursor-nay .cursor-ring { border-color:var(--nay-500); width:56px; height:56px; background:rgba(237,90,62,.08); }
+
+/* ---------- scroll progress ---------- */
+.progress { position:fixed; top:0; left:0; height:3px; width:100%; z-index:1000; background:transparent; }
+.progress span { display:block; height:100%; width:0%; background:linear-gradient(90deg,var(--stay-600),var(--stay-400)); }
+
+/* ---------- preloader ---------- */
+.preloader {
+  position:fixed; inset:0; z-index:2000; background:var(--ink-900);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+  transition:opacity .7s ease, visibility .7s;
+}
+.preloader.done { opacity:0; visibility:hidden; }
+.preloader .coords { font-family:var(--font-mono); font-size:13px; letter-spacing:.08em; color:var(--stay-400); }
+.preloader .brand { font-family:var(--font-display); font-weight:800; font-size:clamp(28px,4vw,44px); color:var(--paper-050); letter-spacing:-.02em; }
+.preloader .bar { width:180px; height:2px; background:rgba(255,255,255,.12); overflow:hidden; border-radius:2px; }
+.preloader .bar i { display:block; height:100%; width:0%; background:var(--stay-500); transition:width .2s; }
+
+/* ---------- nav ---------- */
+nav {
+  position:fixed; top:0; left:0; right:0; z-index:900;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:20px clamp(20px,4vw,48px);
+  transition:background .4s, box-shadow .4s, padding .4s;
+}
+nav.scrolled { background:rgba(247,242,232,.85); backdrop-filter:blur(14px); box-shadow:0 1px 0 rgba(12,23,20,.08); padding:12px clamp(20px,4vw,48px); }
+.wordmark { font-family:var(--font-display); font-weight:800; font-size:20px; color:var(--ink-900); letter-spacing:-.02em; display:flex; align-items:center; gap:8px; }
+.wordmark .pin { width:10px; height:10px; border-radius:50%; background:var(--stay-500); box-shadow:0 0 0 4px var(--stay-200); }
+nav .cta-mini {
+  font-family:var(--font-mono); font-size:12px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--paper-050); background:var(--ink-900); border:none; padding:10px 18px; border-radius:100px; cursor:none;
+}
+
+/* ============ HERO ============ */
+.hero { position:relative; height:100vh; min-height:640px; overflow:hidden; background:radial-gradient(120% 90% at 50% 0%, var(--paper-050), var(--paper-200)); }
+#globe { position:absolute; inset:0; width:100%; height:100%; }
+.hero-content {
+  position:relative; z-index:5; height:100%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+  padding:0 20px;
+}
+.hero .kicker {
+  font-family:var(--font-mono); font-size:clamp(11px,1.2vw,13px); letter-spacing:.14em;
+  color:var(--ink-500); text-transform:uppercase; margin-bottom:18px;
+  opacity:0; animation:riseIn .9s .3s cubic-bezier(.2,.7,.2,1) forwards;
+}
+.hero h1 {
+  font-family:var(--font-display); font-weight:800;
+  font-size:clamp(56px,11vw,150px); line-height:.96; letter-spacing:-.03em; color:var(--ink-900);
+}
+.hero h1 .word { display:inline-block; overflow:hidden; vertical-align:bottom; }
+.hero h1 .word span { display:inline-block; transform:translateY(110%); animation:wordUp 1s cubic-bezier(.16,1,.3,1) forwards; }
+.hero h1 .stay span { color:var(--stay-600); animation-delay:.55s; }
+.hero h1 .or span { animation-delay:.68s; }
+.hero h1 .nay span { color:var(--nay-500); animation-delay:.8s; }
+@keyframes wordUp { to { transform:translateY(0); } }
+@keyframes riseIn { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:none; } }
+.hero .sub {
+  max-width:560px; margin-top:26px; font-size:clamp(16px,1.6vw,19px); line-height:1.6; color:var(--ink-600);
+  opacity:0; animation:riseIn .9s 1.05s cubic-bezier(.2,.7,.2,1) forwards;
+}
+.hero .cta-row { display:flex; gap:14px; margin-top:36px; opacity:0; animation:riseIn .9s 1.25s cubic-bezier(.2,.7,.2,1) forwards; }
+.btn {
+  position:relative; font-family:var(--font-body); font-weight:600; font-size:16px;
+  padding:16px 32px; border-radius:100px; border:none; cursor:none; overflow:hidden;
+  transition:transform .3s cubic-bezier(.2,.7,.2,1), box-shadow .3s;
+  will-change:transform;
+}
+.btn-primary { background:var(--stay-600); color:#fff; box-shadow:0 10px 30px -8px rgba(20,135,90,.5); }
+.btn-primary:hover { box-shadow:0 16px 40px -8px rgba(20,135,90,.6); }
+.btn-ghost { background:transparent; color:var(--ink-800); border:1.5px solid var(--ink-300); }
+.btn-ghost:hover { border-color:var(--ink-800); }
+.scroll-hint {
+  position:absolute; bottom:28px; left:50%; transform:translateX(-50%); z-index:6;
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.14em; color:var(--ink-500); text-transform:uppercase;
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  opacity:0; animation:riseIn 1s 1.8s forwards;
+}
+.scroll-hint .line { width:1px; height:44px; background:var(--ink-300); position:relative; overflow:hidden; }
+.scroll-hint .line::after { content:''; position:absolute; top:-50%; left:0; width:100%; height:50%; background:var(--stay-600); animation:dripline 1.8s ease-in-out infinite; }
+@keyframes dripline { 0%{top:-50%} 100%{top:110%} }
+
+/* ============ VERDICT SCROLL SCENE ============ */
+.verdict-scene { position:relative; height:340vh; background:var(--ink-900); }
+.verdict-sticky { position:sticky; top:0; height:100vh; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+.contours { position:absolute; inset:0; opacity:.13; }
+.contours path { fill:none; stroke:var(--stay-400); stroke-width:1; stroke-dasharray:2000; stroke-dashoffset:2000; }
+.verdict-heading {
+  position:absolute; top:11vh; left:0; right:0; text-align:center; z-index:3; padding:0 20px;
+}
+.verdict-heading .mono-tag { font-family:var(--font-mono); font-size:12px; letter-spacing:.14em; color:var(--stay-400); text-transform:uppercase; }
+.verdict-heading h2 { font-family:var(--font-display); font-weight:800; font-size:clamp(30px,4.6vw,58px); color:var(--paper-050); letter-spacing:-.02em; margin-top:10px; }
+.vcard {
+  position:absolute; width:min(420px,86vw); background:var(--paper-050); border-radius:24px; padding:26px;
+  box-shadow:0 40px 90px -20px rgba(0,0,0,.55);
+  will-change:transform,opacity;
+}
+.vcard .photo { height:190px; border-radius:16px; margin-bottom:18px; position:relative; overflow:hidden; }
+.vcard .photo .coord-stamp { position:absolute; bottom:10px; left:12px; font-family:var(--font-mono); font-size:10px; letter-spacing:.08em; color:rgba(255,255,255,.9); background:rgba(12,23,20,.45); padding:4px 8px; border-radius:6px; backdrop-filter:blur(4px); }
+.photo-a { background:linear-gradient(160deg,#2E7D6B 0%,#5BAF8F 34%,#F2A93B 100%); }
+.photo-a::before { content:''; position:absolute; inset:0; background:radial-gradient(80% 60% at 70% 20%, rgba(255,255,255,.35), transparent 60%); }
+.photo-b { background:linear-gradient(200deg,#1E5C9E 0%,#3B8FD9 40%,#ED5A3E 110%); }
+.photo-b::before { content:''; position:absolute; inset:0; background:radial-gradient(70% 50% at 30% 15%, rgba(255,255,255,.3), transparent 60%); }
+.vcard h3 { font-family:var(--font-display); font-weight:700; font-size:22px; color:var(--ink-900); }
+.vcard .meta { font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; color:var(--ink-500); margin:6px 0 12px; }
+.vcard p { font-size:15px; line-height:1.55; color:var(--ink-600); }
+.vcard .verified { display:inline-flex; align-items:center; gap:6px; margin-top:14px; font-size:12px; font-weight:600; color:var(--stay-700); background:var(--stay-100); padding:6px 12px; border-radius:100px; }
+.stamp {
+  position:absolute; z-index:5; font-family:var(--font-display); font-weight:800;
+  font-size:clamp(90px,16vw,220px); letter-spacing:-.02em; line-height:1;
+  padding:.05em .25em; border:.045em solid currentColor; border-radius:.12em;
+  will-change:transform,opacity; opacity:0;
+  mix-blend-mode:normal;
+}
+.stamp.stay { color:var(--stay-400); text-shadow:0 0 60px rgba(63,191,139,.4); }
+.stamp.nay { color:var(--nay-400); text-shadow:0 0 60px rgba(244,126,104,.4); }
+.stamp::after {
+  content:''; position:absolute; inset:0; border-radius:.12em;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='r'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.12' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23r)' opacity='0.5'/%3E%3C/svg%3E");
+  mix-blend-mode:multiply; opacity:.25; pointer-events:none;
+}
+.shockwave { position:absolute; z-index:4; width:10px; height:10px; border-radius:50%; border:2px solid var(--stay-400); opacity:0; will-change:transform,opacity; }
+
+/* ============ CARDS / TILT SECTION ============ */
+.cards-section { position:relative; padding:clamp(90px,12vh,160px) clamp(20px,5vw,60px); background:var(--paper-100); overflow:hidden; }
+.cards-section .topo-bg { position:absolute; inset:0; opacity:.35; pointer-events:none; }
+.section-head { position:relative; max-width:1100px; margin:0 auto clamp(44px,6vw,80px); }
+.section-head .mono-tag { font-family:var(--font-mono); font-size:12px; letter-spacing:.14em; color:var(--stay-600); text-transform:uppercase; }
+.section-head h2 { font-family:var(--font-display); font-weight:800; font-size:clamp(32px,5vw,60px); letter-spacing:-.025em; color:var(--ink-900); margin-top:12px; line-height:1.05; }
+.section-head p { max-width:520px; margin-top:16px; font-size:17px; line-height:1.6; color:var(--ink-600); }
+.card-grid { position:relative; display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:clamp(18px,2.6vw,32px); max-width:1100px; margin:0 auto; perspective:1200px; }
+.tilt-card {
+  position:relative; background:var(--paper-000); border-radius:24px; padding:22px;
+  box-shadow:0 18px 50px -18px rgba(12,23,20,.22);
+  transform-style:preserve-3d; will-change:transform;
+  transition:box-shadow .35s;
+  opacity:0; transform:translateY(48px);
+}
+.tilt-card.inview { animation:cardIn .9s cubic-bezier(.16,1,.3,1) forwards; }
+.tilt-card:nth-child(2).inview { animation-delay:.12s; }
+.tilt-card:nth-child(3).inview { animation-delay:.24s; }
+@keyframes cardIn { to { opacity:1; transform:translateY(0); } }
+.tilt-card:hover { box-shadow:0 34px 80px -20px rgba(12,23,20,.35); }
+.tilt-card .photo { height:200px; border-radius:16px; position:relative; overflow:hidden; transform:translateZ(30px); }
+.tilt-card .inner { transform:translateZ(20px); }
+.photo-1 { background:linear-gradient(150deg,#14875A,#3FBF8B 45%,#F8CE86); }
+.photo-2 { background:linear-gradient(200deg,#2A77C4,#9CCBEF 50%,#DFF4EA); }
+.photo-3 { background:linear-gradient(160deg,#E08A1E,#F2A93B 40%,#ED5A3E); }
+.tilt-card .photo::after { content:''; position:absolute; inset:0; background:radial-gradient(90% 70% at 75% 15%, rgba(255,255,255,.4), transparent 55%); }
+.tilt-card .badge {
+  position:absolute; top:12px; left:12px; z-index:2;
+  font-family:var(--font-mono); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  padding:6px 10px; border-radius:100px; backdrop-filter:blur(6px);
+}
+.badge.stay { background:rgba(223,244,234,.92); color:var(--stay-700); }
+.badge.nay { background:rgba(253,232,226,.92); color:var(--nay-700); }
+.tilt-card h3 { font-family:var(--font-display); font-weight:700; font-size:20px; color:var(--ink-900); margin-top:16px; }
+.tilt-card .meta { font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; color:var(--ink-500); margin-top:6px; }
+.tilt-card .score-row { display:flex; align-items:center; justify-content:space-between; margin-top:14px; }
+.stars { color:var(--sun-500); font-size:14px; letter-spacing:2px; }
+.score-pill { font-family:var(--font-mono); font-size:12px; font-weight:700; padding:5px 11px; border-radius:100px; }
+.score-pill.stay { background:var(--stay-100); color:var(--stay-700); }
+.score-pill.nay { background:var(--nay-100); color:var(--nay-700); }
+
+/* ============ STATS ============ */
+.stats { background:var(--ink-900); padding:clamp(80px,12vh,150px) clamp(20px,5vw,60px); position:relative; overflow:hidden; }
+.stats-grid { max-width:1100px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:40px; position:relative; }
+.stat { text-align:center; }
+.stat .num { font-family:var(--font-display); font-weight:800; font-size:clamp(44px,6vw,76px); color:var(--paper-050); letter-spacing:-.02em; }
+.stat .num .accent { color:var(--stay-400); }
+.stat .label { font-family:var(--font-mono); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-400); margin-top:10px; }
+
+/* ============ MARQUEE ============ */
+.marquee-section { background:var(--paper-100); padding:clamp(70px,10vh,120px) 0; overflow:hidden; }
+.marquee { display:flex; gap:20px; width:max-content; will-change:transform; padding:10px 0; }
+.mq-card {
+  flex-shrink:0; width:340px; background:var(--paper-000); border:1px solid var(--ink-100); border-radius:18px; padding:20px;
+  box-shadow:0 8px 24px -12px rgba(12,23,20,.12);
+}
+.mq-card .top { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.mq-card .avatar { width:34px; height:34px; border-radius:50%; font-family:var(--font-display); font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; color:#fff; }
+.mq-card .who { font-weight:600; font-size:14px; color:var(--ink-900); }
+.mq-card .tag { margin-left:auto; font-family:var(--font-mono); font-size:10px; font-weight:700; letter-spacing:.1em; padding:4px 9px; border-radius:100px; }
+.mq-card .tag.s { background:var(--stay-100); color:var(--stay-700); }
+.mq-card .tag.n { background:var(--nay-100); color:var(--nay-700); }
+.mq-card p { font-size:14px; line-height:1.55; color:var(--ink-600); }
+
+/* ============ FINAL CTA ============ */
+.final { position:relative; background:var(--paper-100); padding:clamp(100px,16vh,200px) 20px; text-align:center; overflow:hidden; }
+.final h2 { font-family:var(--font-display); font-weight:800; font-size:clamp(40px,7vw,96px); letter-spacing:-.03em; color:var(--ink-900); line-height:1.02; }
+.final h2 em { font-style:normal; color:var(--stay-600); position:relative; }
+.final p { margin:22px auto 40px; max-width:480px; font-size:17px; line-height:1.6; color:var(--ink-600); }
+.magnetic-wrap { display:inline-block; }
+.btn-big { font-size:18px; padding:22px 48px; }
+footer { background:var(--paper-100); border-top:1px solid var(--ink-100); padding:26px 20px; text-align:center; font-family:var(--font-mono); font-size:11px; letter-spacing:.1em; color:var(--ink-400); text-transform:uppercase; }
+
+.reveal { opacity:0; transform:translateY(36px); transition:opacity .9s cubic-bezier(.16,1,.3,1), transform .9s cubic-bezier(.16,1,.3,1); }
+.reveal.inview { opacity:1; transform:none; }
+
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
+}
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+<div class="progress"><span id="progressBar"></span></div>
+
+<div class="preloader" id="preloader">
+  <div class="coords" id="preCoords">-8.4095° S · 115.1889° E</div>
+  <div class="brand">StayOrNay</div>
+  <div class="bar"><i id="preBar"></i></div>
+</div>
+
+<nav id="nav">
+  <div class="wordmark"><span class="pin"></span>StayOrNay</div>
+  <button class="cta-mini hoverable">Get Verdicts</button>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <canvas id="globe"></canvas>
+  <div class="hero-content">
+    <div class="kicker">Verified villa verdicts · Bali, Indonesia</div>
+    <h1>
+      <span class="word stay"><span>Stay</span></span>
+      <span class="word or"><span>or</span></span>
+      <span class="word nay"><span>Nay?</span></span>
+    </h1>
+    <p class="sub">Every villa gets one honest verdict — from people who actually slept there. No paid placements. No filtered photos. Just the truth, mapped.</p>
+    <div class="cta-row">
+      <button class="btn btn-primary hoverable magnetic">Explore the map</button>
+      <button class="btn btn-ghost hoverable magnetic">Read verdicts</button>
+    </div>
+  </div>
+  <div class="scroll-hint"><span>Scroll</span><span class="line"></span></div>
+</header>
+
+<!-- VERDICT SCROLL SCENE -->
+<section class="verdict-scene" id="verdictScene">
+  <div class="verdict-sticky">
+    <svg class="contours" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+      <path id="c1" d="M-50,650 C200,560 340,700 560,620 C780,540 900,660 1250,560"/>
+      <path id="c2" d="M-50,540 C240,460 380,600 600,510 C820,430 960,560 1250,450"/>
+      <path id="c3" d="M-50,430 C260,360 420,490 640,410 C860,330 1000,450 1250,350"/>
+      <path id="c4" d="M-50,320 C280,260 460,380 680,300 C900,230 1040,340 1250,250"/>
+    </svg>
+    <div class="verdict-heading">
+      <div class="mono-tag">The verdict system</div>
+      <h2>One stay. One verdict.</h2>
+    </div>
+
+    <div class="vcard" id="cardA">
+      <div class="photo photo-a"><span class="coord-stamp">-8.6478° S · 115.1385° E</span></div>
+      <h3>Villa Cahaya, Canggu</h3>
+      <div class="meta">3 NIGHTS · VERIFIED STAY · JUN 2026</div>
+      <p>"The photos undersold it. Private pool actually private, staff remembered our names, and the sunrise over the rice fields — unreal."</p>
+      <span class="verified">✓ Verified stayer</span>
+    </div>
+    <div class="stamp stay" id="stampStay">STAY</div>
+
+    <div class="vcard" id="cardB">
+      <div class="photo photo-b"><span class="coord-stamp">-8.5069° S · 115.2625° E</span></div>
+      <h3>Villa Mirage, Ubud</h3>
+      <div class="meta">2 NIGHTS · VERIFIED STAY · MAY 2026</div>
+      <p>"Construction next door from 7am. 'Jungle view' was a tarp. The listing photos must be five years old. Save your money."</p>
+      <span class="verified" style="background:var(--nay-100);color:var(--nay-700)">✓ Verified stayer</span>
+    </div>
+    <div class="stamp nay" id="stampNay">NAY</div>
+    <div class="shockwave" id="shockA"></div>
+    <div class="shockwave" id="shockB" style="border-color:var(--nay-400)"></div>
+  </div>
+</section>
+
+<!-- TILT CARDS -->
+<section class="cards-section">
+  <svg class="topo-bg" viewBox="0 0 1400 900" preserveAspectRatio="xMidYMid slice">
+    <g fill="none" stroke="rgba(58,71,63,.14)" stroke-width="1">
+      <ellipse cx="200" cy="150" rx="180" ry="90"/><ellipse cx="200" cy="150" rx="130" ry="60"/><ellipse cx="200" cy="150" rx="80" ry="34"/>
+      <ellipse cx="1200" cy="700" rx="220" ry="110"/><ellipse cx="1200" cy="700" rx="160" ry="76"/><ellipse cx="1200" cy="700" rx="100" ry="44"/>
+      <ellipse cx="1150" cy="120" rx="150" ry="70"/><ellipse cx="1150" cy="120" rx="95" ry="40"/>
+    </g>
+  </svg>
+  <div class="section-head reveal">
+    <div class="mono-tag">Live from the island</div>
+    <h2>Real villas.<br>Real verdicts.</h2>
+    <p>Hover the cards — every one is a real place on the map, reviewed by someone who paid, stayed, and told the truth.</p>
+  </div>
+  <div class="card-grid" id="cardGrid">
+    <article class="tilt-card hoverable" data-verdict="stay">
+      <div class="photo photo-1"><span class="badge stay">✓ Stay</span></div>
+      <div class="inner">
+        <h3>Villa Padi Emas</h3>
+        <div class="meta">CANGGU · -8.6478° S · 115.1385° E</div>
+        <div class="score-row"><span class="stars">★★★★★</span><span class="score-pill stay">9.4 / 10</span></div>
+      </div>
+    </article>
+    <article class="tilt-card hoverable" data-verdict="stay">
+      <div class="photo photo-2"><span class="badge stay">✓ Stay</span></div>
+      <div class="inner">
+        <h3>The Tide House</h3>
+        <div class="meta">ULUWATU · -8.8291° S · 115.0849° E</div>
+        <div class="score-row"><span class="stars">★★★★☆</span><span class="score-pill stay">8.7 / 10</span></div>
+      </div>
+    </article>
+    <article class="tilt-card hoverable" data-verdict="nay">
+      <div class="photo photo-3"><span class="badge nay">✕ Nay</span></div>
+      <div class="inner">
+        <h3>Villa Mirage</h3>
+        <div class="meta">UBUD · -8.5069° S · 115.2625° E</div>
+        <div class="score-row"><span class="stars">★★☆☆☆</span><span class="score-pill nay">3.1 / 10</span></div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats">
+  <div class="stats-grid">
+    <div class="stat reveal"><div class="num"><span class="count" data-target="1284">0</span></div><div class="label">Verified stays</div></div>
+    <div class="stat reveal"><div class="num"><span class="count" data-target="312">0</span><span class="accent">+</span></div><div class="label">Villas mapped</div></div>
+    <div class="stat reveal"><div class="num"><span class="count" data-target="97">0</span><span class="accent">%</span></div><div class="label">Would trust again</div></div>
+    <div class="stat reveal"><div class="num"><span class="accent">0</span></div><div class="label">Paid placements</div></div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<section class="marquee-section">
+  <div class="marquee" id="mq1"></div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <h2 class="reveal">Book with<br><em>confidence.</em></h2>
+  <p class="reveal">Stop gambling on filtered photos. Get the verdict before you get the bill.</p>
+  <div class="magnetic-wrap reveal"><button class="btn btn-primary btn-big hoverable magnetic">Start exploring →</button></div>
+</section>
+
+<footer>StayOrNay · Demo concept · -8.4095° S, 115.1889° E</footer>
+
+<script>
+/* ================= PRELOADER ================= */
+const preloader = document.getElementById('preloader');
+const preBar = document.getElementById('preBar');
+const preCoords = document.getElementById('preCoords');
+let plProgress = 0;
+const coordsFrames = ['ACQUIRING SATELLITE…','LOCKING COORDINATES…','-8.4095° S · 115.1889° E','BALI — LOCKED ✓'];
+let cf = 0;
+const cfTimer = setInterval(() => { preCoords.textContent = coordsFrames[Math.min(cf++, coordsFrames.length-1)]; }, 320);
+const plTimer = setInterval(() => {
+  plProgress += 8 + Math.random() * 20;
+  preBar.style.width = Math.min(plProgress, 100) + '%';
+  if (plProgress >= 100) {
+    clearInterval(plTimer); clearInterval(cfTimer);
+    setTimeout(() => preloader.classList.add('done'), 350);
+  }
+}, 130);
+
+/* ================= CUSTOM CURSOR ================= */
+const dot = document.querySelector('.cursor-dot');
+const ring = document.querySelector('.cursor-ring');
+let mx = innerWidth/2, my = innerHeight/2, rx = mx, ry = my;
+addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+document.querySelectorAll('.hoverable').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    const v = el.dataset.verdict;
+    document.body.classList.add(v === 'nay' ? 'cursor-nay' : 'cursor-stay');
+  });
+  el.addEventListener('mouseleave', () => document.body.classList.remove('cursor-stay','cursor-nay'));
+});
+
+/* ================= GLOBE (canvas, no deps) ================= */
+const canvas = document.getElementById('globe');
+const ctx = canvas.getContext('2d');
+let W, H, DPR = Math.min(devicePixelRatio || 1, 2);
+function sizeCanvas() {
+  W = canvas.clientWidth; H = canvas.clientHeight;
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+sizeCanvas(); addEventListener('resize', sizeCanvas);
+
+// Fibonacci sphere points
+const N = 900, pts = [];
+for (let i = 0; i < N; i++) {
+  const y = 1 - (i / (N - 1)) * 2;
+  const r = Math.sqrt(1 - y * y);
+  const th = i * 2.39996323;
+  pts.push({ x: Math.cos(th) * r, y, z: Math.sin(th) * r });
+}
+// Bali marker: lat -8.4, lon 115.19
+const lat = -8.4095 * Math.PI/180, lon = 115.1889 * Math.PI/180;
+const bali = { x: Math.cos(lat)*Math.cos(lon), y: Math.sin(lat), z: Math.cos(lat)*Math.sin(lon) };
+
+let rot = 0, targetTiltX = 0, targetTiltY = 0, tiltX = 0, tiltY = 0;
+addEventListener('mousemove', e => {
+  targetTiltY = (e.clientX / innerWidth - .5) * .35;
+  targetTiltX = (e.clientY / innerHeight - .5) * .25;
+});
+let heroScroll = 0;
+
+function drawGlobe(t) {
+  ctx.clearRect(0, 0, W, H);
+  const cx = W / 2, cy = H * 0.52 + heroScroll * 0.25;
+  const R = Math.min(W, H) * 0.44 * (1 + heroScroll * 0.0004);
+  tiltX += (targetTiltX - tiltX) * .04;
+  tiltY += (targetTiltY - tiltY) * .04;
+  rot += 0.0016;
+
+  // atmosphere
+  const glow = ctx.createRadialGradient(cx, cy, R * .82, cx, cy, R * 1.35);
+  glow.addColorStop(0, 'rgba(26,160,107,0.10)');
+  glow.addColorStop(.6, 'rgba(59,143,217,0.05)');
+  glow.addColorStop(1, 'rgba(59,143,217,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(cx, cy, R * 1.35, 0, 7); ctx.fill();
+
+  const cosR = Math.cos(rot + tiltY), sinR = Math.sin(rot + tiltY);
+  const cosT = Math.cos(tiltX * .8), sinT = Math.sin(tiltX * .8);
+
+  function project(p) {
+    let x = p.x * cosR - p.z * sinR;
+    let z = p.x * sinR + p.z * cosR;
+    let y = p.y * cosT - z * sinT;
+    z = p.y * sinT + z * cosT;
+    return { sx: cx + x * R, sy: cy + y * R, z };
+  }
+
+  // dotted sphere
+  for (const p of pts) {
+    const q = project(p);
+    if (q.z < -0.15) continue;
+    const a = 0.12 + q.z * 0.55;
+    const s = 0.8 + q.z * 1.3;
+    ctx.fillStyle = `rgba(34,48,41,${Math.max(a, 0)})`;
+    ctx.beginPath(); ctx.arc(q.sx, q.sy, s, 0, 7); ctx.fill();
+  }
+
+  // graticule rings (equator-ish arcs)
+  ctx.strokeStyle = 'rgba(58,71,63,0.14)';
+  ctx.lineWidth = 1;
+  for (let g = -2; g <= 2; g++) {
+    ctx.beginPath();
+    let started = false;
+    for (let a = 0; a <= Math.PI * 2 + .01; a += .05) {
+      const yy = Math.sin(g * .45);
+      const rr = Math.cos(g * .45);
+      const q = project({ x: Math.cos(a) * rr, y: yy, z: Math.sin(a) * rr });
+      if (q.z < 0) { started = false; continue; }
+      if (!started) { ctx.moveTo(q.sx, q.sy); started = true; }
+      else ctx.lineTo(q.sx, q.sy);
+    }
+    ctx.stroke();
+  }
+
+  // Bali marker
+  const b = project(bali);
+  if (b.z > -0.05) {
+    const pulse = (t / 900) % 1;
+    ctx.strokeStyle = `rgba(26,160,107,${(1 - pulse) * .7})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(b.sx, b.sy, 6 + pulse * 26, 0, 7); ctx.stroke();
+    ctx.fillStyle = '#14875A';
+    ctx.beginPath(); ctx.arc(b.sx, b.sy, 5, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.9)';
+    ctx.beginPath(); ctx.arc(b.sx, b.sy, 2, 0, 7); ctx.fill();
+    // label
+    ctx.font = '700 11px "Space Mono", monospace';
+    ctx.fillStyle = 'rgba(12,23,20,.75)';
+    ctx.fillText('BALI', b.sx + 14, b.sy + 4);
+  }
+}
+
+/* ================= SCROLL ENGINE ================= */
+const progressBar = document.getElementById('progressBar');
+const nav = document.getElementById('nav');
+const scene = document.getElementById('verdictScene');
+const cardA = document.getElementById('cardA'), cardB = document.getElementById('cardB');
+const stampStay = document.getElementById('stampStay'), stampNay = document.getElementById('stampNay');
+const shockA = document.getElementById('shockA'), shockB = document.getElementById('shockB');
+const cPaths = [document.getElementById('c1'), document.getElementById('c2'), document.getElementById('c3'), document.getElementById('c4')];
+
+const clamp01 = v => Math.max(0, Math.min(1, v));
+const ease = t => 1 - Math.pow(1 - t, 3);
+
+function phase(p, a, b) { return clamp01((p - a) / (b - a)); }
+
+function stampIn(el, p, angle) {
+  // p: 0 -> not yet, 1 -> landed
+  const e = ease(p);
+  const scale = 3.2 - e * 2.2;
+  el.style.opacity = p <= 0 ? 0 : Math.min(1, p * 2.2);
+  el.style.transform = `rotate(${angle}deg) scale(${scale})`;
+}
+function shock(el, p) {
+  if (p <= 0 || p >= 1) { el.style.opacity = 0; return; }
+  el.style.opacity = (1 - p) * .8;
+  el.style.transform = `scale(${1 + p * 60})`;
+}
+
+function onScroll() {
+  const sy = scrollY;
+  const docH = document.documentElement.scrollHeight - innerHeight;
+  progressBar.style.width = (sy / docH * 100) + '%';
+  nav.classList.toggle('scrolled', sy > 40);
+  heroScroll = sy;
+
+  // verdict scene progress
+  const rect = scene.getBoundingClientRect();
+  const total = scene.offsetHeight - innerHeight;
+  const p = clamp01(-rect.top / total);
+
+  // contour draw
+  cPaths.forEach((path, i) => {
+    const pp = phase(p, 0, .25 + i * .05);
+    path.style.strokeDashoffset = 2000 * (1 - pp);
+  });
+
+  // ----- Act 1: card A enters (0 → .18) -----
+  const a1 = phase(p, .02, .18);
+  cardA.style.opacity = a1;
+  cardA.style.transform = `translateY(${(1 - ease(a1)) * 120}px) rotate(${-3 + ease(a1) * 3}deg)`;
+
+  // ----- Act 2: STAY stamp slams (.2 → .3), holds, exits (.42 → .5) -----
+  const a2 = phase(p, .20, .30);
+  stampIn(stampStay, a2, -10);
+  shock(shockA, phase(p, .28, .40));
+  const exit1 = phase(p, .42, .52);
+  if (exit1 > 0) {
+    cardA.style.opacity = 1 - exit1;
+    cardA.style.transform = `translateY(${-ease(exit1) * 160}px) rotate(${-ease(exit1) * 6}deg)`;
+    stampStay.style.opacity = Math.max(0, 1 - exit1 * 1.6);
+    stampStay.style.transform = `rotate(-10deg) scale(1) translateY(${-ease(exit1) * 140}px)`;
+  }
+
+  // ----- Act 3: card B enters (.5 → .64) -----
+  const a3 = phase(p, .50, .64);
+  cardB.style.opacity = a3;
+  cardB.style.transform = `translateY(${(1 - ease(a3)) * 120}px) rotate(${3 - ease(a3) * 3}deg)`;
+
+  // ----- Act 4: NAY stamp (.66 → .76) -----
+  const a4 = phase(p, .66, .76);
+  stampIn(stampNay, a4, 8);
+  shock(shockB, phase(p, .74, .86));
+  const exit2 = phase(p, .9, 1);
+  if (exit2 > 0) {
+    cardB.style.opacity = 1 - exit2;
+    stampNay.style.opacity = Math.max(0, 1 - exit2 * 1.6);
+  }
+}
+addEventListener('scroll', onScroll, { passive: true });
+
+/* ================= RAF LOOP ================= */
+function loop(t) {
+  // cursor lerp
+  rx += (mx - rx) * .22; ry += (my - ry) * .22;
+  dot.style.transform = `translate(${mx - 4}px,${my - 4}px)`;
+  const rs = parseFloat(getComputedStyle(ring).width);
+  ring.style.transform = `translate(${rx - rs/2}px,${ry - rs/2}px)`;
+  // globe only when hero visible
+  if (scrollY < innerHeight * 1.2) drawGlobe(t);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+onScroll();
+
+/* ================= TILT CARDS ================= */
+document.querySelectorAll('.tilt-card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - .5;
+    const py = (e.clientY - r.top) / r.height - .5;
+    card.style.transition = 'box-shadow .35s';
+    card.style.transform = `rotateY(${px * 14}deg) rotateX(${-py * 12}deg) translateY(-6px)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transition = 'transform .6s cubic-bezier(.16,1,.3,1), box-shadow .35s';
+    card.style.transform = 'rotateY(0) rotateX(0) translateY(0)';
+  });
+});
+
+/* ================= MAGNETIC BUTTONS ================= */
+document.querySelectorAll('.magnetic').forEach(btn => {
+  btn.addEventListener('mousemove', e => {
+    const r = btn.getBoundingClientRect();
+    const dx = e.clientX - (r.left + r.width/2);
+    const dy = e.clientY - (r.top + r.height/2);
+    btn.style.transform = `translate(${dx * .25}px,${dy * .35}px)`;
+  });
+  btn.addEventListener('mouseleave', () => {
+    btn.style.transition = 'transform .5s cubic-bezier(.16,1,.3,1)';
+    btn.style.transform = 'translate(0,0)';
+    setTimeout(() => btn.style.transition = 'transform .08s', 500);
+  });
+});
+
+/* ================= REVEALS + COUNTERS ================= */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if (!en.isIntersecting) return;
+    en.target.classList.add('inview');
+    if (en.target.classList.contains('stat')) {
+      const num = en.target.querySelector('.count');
+      if (num && !num.dataset.done) {
+        num.dataset.done = 1;
+        const target = +num.dataset.target;
+        const t0 = performance.now(), dur = 1600;
+        (function tick(now) {
+          const k = clamp01((now - t0) / dur);
+          num.textContent = Math.round(target * (1 - Math.pow(1 - k, 3))).toLocaleString();
+          if (k < 1) requestAnimationFrame(tick);
+        })(t0);
+      }
+    }
+    io.unobserve(en.target);
+  });
+}, { threshold: .25 });
+document.querySelectorAll('.reveal, .tilt-card, .stat').forEach(el => io.observe(el));
+
+/* ================= MARQUEE ================= */
+const reviews = [
+  { n:'Mia K.', v:'s', c:'#14875A', t:'"Checked the verdict before booking — saved us from a construction-zone nightmare next door."' },
+  { n:'Jonas B.', v:'s', c:'#2A77C4', t:'"Finally a review site where I trust the photos. The coordinates stamp is genius."' },
+  { n:'Ayu P.', v:'n', c:'#D9472E', t:'"Gave my honest NAY and the platform actually published it. Respect."' },
+  { n:'Sofie L.', v:'s', c:'#E08A1E', t:'"Booked Villa Padi Emas off one verdict. Best stay of the trip, exactly as described."' },
+  { n:'Tom W.', v:'s', c:'#1AA06B', t:'"The map view sold me instantly. Zoomed into Uluwatu, found a gem in 30 seconds."' },
+  { n:'Nina R.', v:'n', c:'#ED5A3E', t:'"Verdict said NAY, agent said book it. Should have listened to the verdict."' },
+];
+const mq = document.getElementById('mq1');
+function mqCard(r) {
+  return `<div class="mq-card"><div class="top">
+    <div class="avatar" style="background:${r.c}">${r.n[0]}</div>
+    <div class="who">${r.n}</div>
+    <span class="tag ${r.v}">${r.v === 's' ? '✓ STAY' : '✕ NAY'}</span>
+  </div><p>${r.t}</p></div>`;
+}
+mq.innerHTML = [...reviews, ...reviews, ...reviews].map(mqCard).join('');
+let mqX = 0;
+(function mqLoop() {
+  mqX -= .6;
+  const w = mq.scrollWidth / 3;
+  if (-mqX >= w) mqX += w;
+  mq.style.transform = `translateX(${mqX}px)`;
+  requestAnimationFrame(mqLoop);
+})();
+</script>
+</body>
+</html>
