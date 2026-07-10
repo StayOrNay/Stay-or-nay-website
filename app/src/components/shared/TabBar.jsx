@@ -15,16 +15,21 @@ const TABS = [
  */
 export function TabBar() {
   return (
+    // A floating glass dock rather than an edge-to-edge bar — sits inside
+    // the 64px slot AppShell reserves, with breathing room on three sides
+    // so it reads as chrome floating over the app, not a wall under it.
     <nav
       style={{
         display: 'flex',
-        height: 64,
+        height: 56,
         flex: 'none',
-        background: 'rgba(255,255,255,0.92)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        borderTop: '1px solid var(--border-soft)',
-        paddingBottom: 4,
+        margin: '0 10px 8px',
+        borderRadius: 20,
+        background: 'rgba(255,255,255,0.82)',
+        backdropFilter: 'blur(16px) saturate(1.1)',
+        WebkitBackdropFilter: 'blur(16px) saturate(1.1)',
+        border: '1px solid var(--border-soft)',
+        boxShadow: '0 10px 30px -12px rgba(12,23,20,0.35)',
       }}
     >
       {TABS.map(({ to, label, Icon }) => (

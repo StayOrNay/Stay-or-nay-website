@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Search, X, ChevronLeft, ChevronRight, SlidersHorizontal, RotateCcw, Check, Map as MapIcon, Layers, PenLine, Star, User } from 'lucide-react';
+import { Search, X, ChevronLeft, ChevronRight, SlidersHorizontal, RotateCcw, Check, Map as MapIcon, Layers, PenLine, Star, User, Globe } from 'lucide-react';
 import { Input, VerdictBadge, Tag, VillaCard } from '../components/core';
 import { SatelliteMap } from '../components/shared';
 import { useVillasWithReviews } from '../hooks/useVillasWithReviews';
@@ -20,7 +20,7 @@ import { reverseGeocode } from '../lib/mapbox';
 export function ExploreScreen() {
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
-  const { immersive, setImmersive, introDone } = useImmersive();
+  const { immersive, setImmersive, introDone, setIntroDone } = useImmersive();
   const villas = useVillasWithReviews();
   const [selected, setSelected] = useState(null);
   const [locationLabel, setLocationLabel] = useState('Bali, Indonesia');
@@ -132,34 +132,75 @@ export function ExploreScreen() {
           </>
         )}
 
-        {/* Search bar floating over the map (mobile only — desktop's lives in the side panel) */}
-        {!isDesktop && (
+        {/* Mobile chrome — gated on introDone so its entrance plays right
+            as the dive hands off, assembling the UI around the map. */}
+        {!isDesktop && introDone && (
           <>
-            <div className="theme-night explore-mobile-top">
+            <div className="theme-night explore-mobile-top explore-enter-card" style={{ animationDelay: '200ms' }}>
               <div>
                 <Input search iconLeft={<Search size={18} />} placeholder="Search anywhere…" />
               </div>
               <FiltersControl filters={filters} setFilters={setFilters} activeCount={activeFilterCount} align="right" compact />
+              <button
+                type="button"
+                className="glass-night explore-globe-btn"
+                onClick={() => { navigate('/'); setIntroDone(false); }}
+                aria-label="Back to the globe"
+                title="Back to the globe"
+              >
+                <Globe size={18} />
+              </button>
             </div>
 
-            {/* Region label — always shown as you pan around; the verdict
+            {/* Region chip — always shown as you pan around; the verdict
                 count tacked onto it only appears once a villa pin is
-                actually inside the current map frame, and drops away again
-                when you pan/zoom away from all of them. */}
-            <div style={{ position: 'absolute', top: 70, left: 16, zIndex: 6, fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
-              {locationLabel}
-              {visibleVillas.length > 0 && ` · ${visibleVillas.length} verdict${visibleVillas.length === 1 ? '' : 's'}`}
+                actually inside the current map frame. */}
+            <div className="glass-night explore-location-pill explore-enter-card" style={{ animationDelay: '320ms' }}>
+              <span className="live-dot" />
+              <span className="label-text">
+                {locationLabel}
+                {visibleVillas.length > 0 && ` · ${visibleVillas.length} verdict${visibleVillas.length === 1 ? '' : 's'}`}
+              </span>
             </div>
+
+            {/* Swipeable villa strip riding the bottom edge of the map —
+                the mobile answer to desktop's side list: every verdict in
+                the current filter, one thumb-flick away. Tapping a card
+                selects its pin and flies the camera to it; the preview
+                sheet then takes over (the strip yields while it's open). */}
+            {!sel && filteredVillas.length > 0 && (
+              <div className="explore-strip explore-enter-card" style={{ animationDelay: '440ms' }}>
+                {filteredVillas.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    className="glass-night theme-night explore-strip-card"
+                    onClick={() => {
+                      setSelected(v.id);
+                      if (mapRef.current && mapRef.current.flyToVilla) mapRef.current.flyToVilla(v.id);
+                    }}
+                  >
+                    {v.image && <img src={v.image} alt="" loading="lazy" />}
+                    <span className="strip-info">
+                      <span className="strip-name">{v.name}</span>
+                      <span className="strip-loc">{v.location}</span>
+                      <VerdictBadge verdict={v.verdict} score={v.score} outOf={v.scoreOutOf} size="sm" />
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </>
         )}
 
-        {/* Bottom-sheet preview — mobile only; desktop shows the same info in the side list */}
+        {/* Bottom-sheet preview — mobile only; desktop shows the same info
+            in the side list. Dark glass, matching the rest of the map room. */}
         {!isDesktop && sel && (
           <div
+            className="glass-night theme-night"
             style={{
               position: 'absolute', left: 10, right: 10, bottom: 10, zIndex: 12,
-              background: 'var(--surface-card)', borderRadius: 'var(--radius-xl)',
-              boxShadow: 'var(--shadow-sheet)', padding: 14,
+              borderRadius: 'var(--radius-xl)', padding: 14,
               animation: 'sheetUp var(--dur-slow) var(--ease-out)',
             }}
           >

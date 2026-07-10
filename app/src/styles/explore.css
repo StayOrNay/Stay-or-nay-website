@@ -110,6 +110,68 @@
 .explore-mobile-top { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 10; display: flex; gap: 8px; align-items: flex-start; }
 .explore-mobile-top > :first-child { flex: 1; }
 
+.explore-globe-btn {
+  flex: none;
+  width: 46px; height: 46px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; cursor: pointer;
+  color: var(--stay-400);
+  transition: transform var(--dur-base) var(--ease-pop), color var(--dur-fast);
+}
+.explore-globe-btn:active { transform: scale(0.92) rotate(-12deg); }
+
+.explore-location-pill {
+  position: absolute; top: 70px; left: 12px; z-index: 6;
+  display: inline-flex; align-items: center; gap: 8px;
+  max-width: calc(100% - 24px);
+  padding: 8px 14px; border-radius: 999px;
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--paper-050);
+}
+.explore-location-pill .live-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex: none;
+  background: var(--stay-400);
+  animation: exploreBlink 1.8s infinite;
+}
+.explore-location-pill .label-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- mobile: swipeable villa strip ---------- */
+.explore-strip {
+  position: absolute; left: 0; right: 0; bottom: 10px; z-index: 11;
+  display: flex; gap: 10px;
+  padding: 6px 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.explore-strip::-webkit-scrollbar { height: 0; }
+.explore-strip-card {
+  flex: none;
+  scroll-snap-align: start;
+  display: flex; align-items: center; gap: 10px;
+  width: 240px;
+  padding: 9px; border-radius: 18px;
+  cursor: pointer; text-align: left;
+  transition: transform var(--dur-base) var(--ease-pop);
+}
+.explore-strip-card:active { transform: scale(0.97); }
+.explore-strip-card img {
+  width: 58px; height: 58px; flex: none;
+  border-radius: 12px; object-fit: cover; display: block;
+}
+.explore-strip-card .strip-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; align-items: flex-start; }
+.explore-strip-card .strip-name {
+  font-family: var(--font-display); font-weight: 700; font-size: 14.5px;
+  color: var(--text-strong); letter-spacing: -0.01em;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.explore-strip-card .strip-loc {
+  font-family: var(--font-body); font-size: 11.5px; color: var(--text-muted);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
 /* ---------- map pins: drop-in ----------
    IMPORTANT: Mapbox owns the marker element's own `transform` (it writes a
    translate() every frame to position the pin — see SatelliteMap's marker

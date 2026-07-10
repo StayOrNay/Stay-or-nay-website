@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { mapboxgl } from '../lib/mapbox';
 import { BALI, EXPLORE_ZOOM } from './geo';
+import { baliLightPreset } from './daynight';
+import { addAtmosphere, setAtmosphere, CITY_TWINKLE_AMP, CLOUD_FADE_START_ZOOM, CLOUD_FADE_END_ZOOM } from './atmosphere';
 import './landing.css';
 
 /**
@@ -33,12 +36,12 @@ const DESTS = [
 const SHOWCASE_ZOOM = 1.6;
 const CYCLE_MS = 6500;
 const TRAVEL_MS = 4200;
-const DIVE_MS = 7000;
+const DIVE_MS = 4600;
 const FADE_MS = 650;
 // Opening beat: one full revolution, fast on frame one and decelerating to
 // a dead stop on Bali (same single-lap quintic as the old GlobeIntro — two
 // laps or a late ramp-up both read as "two spins", see GlobeIntro history).
-const OPEN_SPIN_MS = 2800;
+const OPEN_SPIN_MS = 3800;
 const OPEN_SPIN_DELTA = 360;
 
 function coordStr(d) {
@@ -65,6 +68,7 @@ const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 const phase = (p, a, b) => clamp01((p - a) / (b - a));
 
 export function LandingExperience({ onComplete }) {
+  const navigate = useNavigate();
   const rootRef = useRef(null);
   const globeRef = useRef(null);
   const mapRef = useRef(null);
@@ -116,8 +120,11 @@ export function LandingExperience({ onComplete }) {
         // Clean globe: no labels at orbit altitude — they cluttered the
         // showcase. Set at construction time (not style.load) to avoid the
         // "Style import not found: basemap" race (mapbox-gl-js#12841).
+        // lightPreset matches Bali's actual local time, same as the old
+        // intro, so the landing after the dive is lit like it really is.
         config: {
           basemap: {
+            lightPreset: baliLightPreset(),
             showPlaceLabels: false,
             showPointOfInterestLabels: false,
             showRoadLabels: false,
@@ -137,6 +144,29 @@ export function LandingExperience({ onComplete }) {
       // eslint-disable-next-line no-console
       console.warn('Landing globe tile error (non-fatal):', e && e.error);
     });
+
+    // Real-Earth dressing: yesterday's clouds, the true day/night
+    // terminator, twinkling city lights, polar caps (shared with the old
+    // intro via atmosphere.js). Faded by ALTITUDE, not by beat timing — a
+    // slow ticker reads the camera's actual zoom every ~120ms, so during
+    // the Explore dive the clouds are reliably gone before street level
+    // and the night polygon never darkens the landing frame, no matter
+    // how the flyTo easing moves through those altitudes.
+    map.on('style.load', () => addAtmosphere(map));
+    const atmosphereTicker = window.setInterval(() => {
+      const m = mapRef.current;
+      if (!m) return;
+      let zoom = SHOWCASE_ZOOM;
+      try {
+        zoom = m.getZoom();
+      } catch (err) {
+        return;
+      }
+      const clouds = 1 - Math.min(1, Math.max(0, (zoom - CLOUD_FADE_START_ZOOM) / (CLOUD_FADE_END_ZOOM - CLOUD_FADE_START_ZOOM)));
+      const night = 1 - Math.min(1, Math.max(0, (zoom - 2.2) / 3.2));
+      const twinkle = 1 + CITY_TWINKLE_AMP * Math.sin(Date.now() / 260);
+      setAtmosphere(m, { night, clouds, twinkle });
+    }, 120);
 
     // Pulsing marker that travels with the featured destination.
     const markerEl = document.createElement('div');
@@ -224,6 +254,7 @@ export function LandingExperience({ onComplete }) {
     return () => {
       completedRef.current = true;
       if (spinRafId) cancelAnimationFrame(spinRafId);
+      clearInterval(atmosphereTicker);
       if (cycleRef.current) clearInterval(cycleRef.current);
       resizeTimeouts.forEach((id) => clearTimeout(id));
       resizeObserver.disconnect();
@@ -389,7 +420,7 @@ export function LandingExperience({ onComplete }) {
     }
   };
 
-  const skip = () => {
+  const skip = (path) => {
     if (divingRef.current) return;
     divingRef.current = true;
     const map = mapRef.current;
@@ -398,6 +429,9 @@ export function LandingExperience({ onComplete }) {
     } catch (err) {
       // tearing down anyway
     }
+    // Deep entrances ("Sign in" → /you) route BEFORE the fade reveals the
+    // app, so the destination screen is what the fade lands on.
+    if (typeof path === 'string') navigate(path);
     setFading(true);
     window.setTimeout(finish, FADE_MS);
   };
@@ -418,7 +452,10 @@ export function LandingExperience({ onComplete }) {
 
         <div className="landing-bar">
           <div className="landing-wordmark"><span className="pin" />StayOrNay</div>
-          <button type="button" className="landing-skip" onClick={skip}>Skip</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="button" className="landing-skip" onClick={() => skip('/you')}>Sign in</button>
+            <button type="button" className="landing-skip" onClick={() => skip()}>Skip</button>
+          </div>
         </div>
 
         <div className="landing-hero-content">
