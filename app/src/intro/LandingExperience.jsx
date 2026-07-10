@@ -26,6 +26,10 @@ import './landing.css';
  * jumps straight into the app for returning visitors.
  */
 
+// The site is Bali-first for now, so the world tour is OFF: the globe
+// spins in and holds on Bali. When it's time to go global again, flip
+// WORLD_TOUR to true — the full destination cycle below comes back.
+const WORLD_TOUR = false;
 const DESTS = [
   { name: 'BALI, INDONESIA', lng: BALI.lon, lat: BALI.lat },
   { name: 'SANTORINI, GREECE', lng: 25.4615, lat: 36.3932 },
@@ -37,7 +41,6 @@ const DESTS = [
 const SHOWCASE_ZOOM = 1.6;
 const CYCLE_MS = 6500;
 const TRAVEL_MS = 4200;
-const DIVE_MS = 4600;
 const FADE_MS = 650;
 // Opening beat: one full revolution, fast on frame one and decelerating to
 // a dead stop on Bali (same single-lap quintic as the old GlobeIntro — two
@@ -229,14 +232,20 @@ export function LandingExperience({ onComplete }) {
       }
     };
 
-    cycleRef.current = window.setInterval(() => {
-      if (divingRef.current || document.hidden) return;
-      const root = rootRef.current;
-      // Pause the world tour while the visitor is reading the story below.
-      if (root && root.scrollTop > window.innerHeight * 0.6) return;
-      destIdxRef.current = (destIdxRef.current + 1) % DESTS.length;
-      goToDest(destIdxRef.current);
-    }, CYCLE_MS);
+    if (WORLD_TOUR) {
+      cycleRef.current = window.setInterval(() => {
+        if (divingRef.current || document.hidden) return;
+        const root = rootRef.current;
+        // Pause the world tour while the visitor is reading the story below.
+        if (root && root.scrollTop > window.innerHeight * 0.6) return;
+        destIdxRef.current = (destIdxRef.current + 1) % DESTS.length;
+        goToDest(destIdxRef.current);
+      }, CYCLE_MS);
+    } else {
+      // Bali-first: no cycling — reference goToDest so the tour machinery
+      // stays warm for when WORLD_TOUR flips back on.
+      void goToDest;
+    }
 
     // Keep the canvas honest through URL-bar settling / rotation (the same
     // mobile sizing issue the old intro fixed — see GlobeIntro history).
@@ -403,20 +412,43 @@ export function LandingExperience({ onComplete }) {
       setFading(true);
       window.setTimeout(finish, FADE_MS);
     };
+    // Two-beat "3D swim": dive from orbit into a tilted, banked swoop over
+    // the island (pitch 58°, bearing swung to -24°), then a slower settle
+    // that levels the camera out onto the EXACT shot the live Explore map
+    // opens with (BALI / EXPLORE_ZOOM / pitch 0 / bearing 0) — so the
+    // fade-out still reveals a perfectly camera-matched real map.
+    const SWOOP_MS = 3400;
+    const SETTLE_MS = 1900;
     try {
       map.flyTo({
         center: [BALI.lon, BALI.lat],
-        zoom: EXPLORE_ZOOM,
-        pitch: 0,
-        bearing: 0,
-        duration: DIVE_MS,
+        zoom: EXPLORE_ZOOM - 1.1,
+        pitch: 58,
+        bearing: -24,
+        duration: SWOOP_MS,
         curve: 1.35,
         essential: true,
       });
-      map.once('moveend', handoff);
-      // Backstop: if moveend never fires (tab hidden, teardown race), hand
-      // off anyway rather than strand the visitor on a frozen globe.
-      window.setTimeout(handoff, DIVE_MS + 1200);
+      map.once('moveend', () => {
+        if (done) return;
+        try {
+          map.easeTo({
+            center: [BALI.lon, BALI.lat],
+            zoom: EXPLORE_ZOOM,
+            pitch: 0,
+            bearing: 0,
+            duration: SETTLE_MS,
+            easing: (t) => t * t * (3 - 2 * t), // zero-velocity landing
+            essential: true,
+          });
+          map.once('moveend', handoff);
+        } catch (err) {
+          handoff();
+        }
+      });
+      // Backstop: if a moveend never fires (tab hidden, teardown race),
+      // hand off anyway rather than strand the visitor on a frozen globe.
+      window.setTimeout(handoff, SWOOP_MS + SETTLE_MS + 1500);
     } catch (err) {
       handoff();
     }
@@ -473,7 +505,7 @@ export function LandingExperience({ onComplete }) {
             <span ref={chipTextRef} className="dest-text">{coordStr(DESTS[0])}</span>
           </div>
           <div className="landing-ctas">
-            <button type="button" className="landing-btn landing-btn-primary" onClick={dive}>Explore the world</button>
+            <button type="button" className="landing-btn landing-btn-primary" onClick={dive}>Explore Bali</button>
             <button type="button" className="landing-btn landing-btn-ghost" onClick={scrollToStory}>How it works</button>
           </div>
         </div>
@@ -569,7 +601,7 @@ export function LandingExperience({ onComplete }) {
         <h2 className="landing-reveal">Book anywhere.<br />With a <em>good feeling.</em></h2>
         <p className="landing-reveal">Check the verdict first — on any villa, anywhere in the world.</p>
         <button type="button" className="landing-btn landing-btn-dark landing-btn-big landing-reveal" onClick={dive}>
-          Explore the world →
+          Explore Bali →
         </button>
       </section>
 

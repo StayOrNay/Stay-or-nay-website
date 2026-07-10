@@ -16,9 +16,14 @@ import { antisolarPoint, hemisphereRing, angularDistanceDeg, MAJOR_CITIES, scatt
 
 const NIGHT_CORE_OPACITY = 0.6;
 const NIGHT_EDGE_OPACITY = 0.28;
-const CITY_GLOW_OPACITY = 0.6;
-const CITY_CORE_OPACITY = 1;
-export const CITY_TWINKLE_AMP = 0.22;
+// City lights are deliberately FAINT and small. The old intro's larger,
+// brighter values worked when the camera was sweeping past at speed, but
+// on the landing the globe holds still — at that dwell time the big warm
+// blobs read as "lightbulbs stuck on the globe" rather than distant city
+// glow. Small cores, tight glow, low opacity = the ISS-window look.
+const CITY_GLOW_OPACITY = 0.3;
+const CITY_CORE_OPACITY = 0.75;
+export const CITY_TWINKLE_AMP = 0.1;
 
 const CLOUD_OPACITY = 0.45;
 export const CLOUD_FADE_START_ZOOM = 5;
@@ -111,9 +116,11 @@ export function addAtmosphere(map) {
       source: 'city-lights',
       slot: 'bottom',
       paint: {
-        'circle-radius': ['interpolate', ['linear'], ['get', 'weight'], 0.25, 3, 1, 10, 3, 24],
-        'circle-color': '#ffcf6e',
-        'circle-blur': 0.9,
+        // Tight halos — big soft-blurred radii are what made the lights
+        // read as glued-on bulbs on the stationary landing globe.
+        'circle-radius': ['interpolate', ['linear'], ['get', 'weight'], 0.25, 1.2, 1, 3.5, 3, 8],
+        'circle-color': '#ffd98f',
+        'circle-blur': 1,
         'circle-opacity': CITY_GLOW_OPACITY,
       },
     });
@@ -123,9 +130,9 @@ export function addAtmosphere(map) {
       source: 'city-lights',
       slot: 'bottom',
       paint: {
-        'circle-radius': ['interpolate', ['linear'], ['get', 'weight'], 0.25, 1, 1, 2.2, 3, 4.5],
-        'circle-color': '#fff6e0',
-        'circle-blur': 0.15,
+        'circle-radius': ['interpolate', ['linear'], ['get', 'weight'], 0.25, 0.5, 1, 1.1, 3, 2.2],
+        'circle-color': '#fff3d6',
+        'circle-blur': 0.3,
         'circle-opacity': CITY_CORE_OPACITY,
       },
     });
