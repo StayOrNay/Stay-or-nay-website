@@ -56,15 +56,16 @@ export function FeedScreen() {
             gap: 20,
           }}
         >
-          {villas.map((v) => (
-            <VillaCard
-              key={v.id}
-              name={v.name} location={v.location} coords={v.coords} image={v.image}
-              verdict={v.verdict} score={v.score} scoreOutOf={v.scoreOutOf} rating={v.rating}
-              price={v.price} currency={v.currency} tags={v.tags}
-              saved={saved.has(v.id)} onToggleSave={() => toggleSave(v.id)}
-              onClick={() => navigate(`/villa/${v.id}`)}
-            />
+          {villas.map((v, i) => (
+            <div key={v.id} className="explore-enter-card" style={{ animationDelay: `${Math.min(i, 9) * 60}ms` }}>
+              <VillaCard
+                name={v.name} location={v.location} coords={v.coords} image={v.image}
+                verdict={v.verdict} score={v.score} scoreOutOf={v.scoreOutOf} rating={v.rating}
+                price={v.price} currency={v.currency} tags={v.tags}
+                saved={saved.has(v.id)} onToggleSave={() => toggleSave(v.id)}
+                onClick={() => navigate(`/villa/${v.id}`)}
+              />
+            </div>
           ))}
         </div>
       </div>
@@ -176,7 +177,7 @@ function FeedSlide({ villa, active, saved, onToggleSave, onOpen }) {
         {villa.coords}
       </div>
 
-      {/* Right action rail — TikTok-style */}
+      {/* Right action rail — TikTok-style; slides in with the active slide */}
       <div
         style={{
           position: 'absolute',
@@ -187,6 +188,9 @@ function FeedSlide({ villa, active, saved, onToggleSave, onOpen }) {
           alignItems: 'center',
           gap: 18,
           zIndex: 4,
+          opacity: active ? 1 : 0,
+          transform: active ? 'translateX(0)' : 'translateX(14px)',
+          transition: 'opacity 500ms var(--ease-out) 150ms, transform 500ms var(--ease-out) 150ms',
         }}
       >
         <button
@@ -211,7 +215,8 @@ function FeedSlide({ villa, active, saved, onToggleSave, onOpen }) {
         <VerdictBadge verdict={villa.verdict} score={villa.score} outOf={villa.scoreOutOf} size="sm" />
       </div>
 
-      {/* Caption block, bottom-left — tap to open full verdict */}
+      {/* Caption block, bottom-left — tap to open full verdict; rises in
+          as its slide becomes the active one, TikTok-style */}
       <div
         onClick={onOpen}
         style={{
@@ -221,6 +226,9 @@ function FeedSlide({ villa, active, saved, onToggleSave, onOpen }) {
           bottom: 24,
           cursor: 'pointer',
           color: '#fff',
+          opacity: active ? 1 : 0,
+          transform: active ? 'translateY(0)' : 'translateY(18px)',
+          transition: 'opacity 550ms var(--ease-out) 80ms, transform 550ms var(--ease-out) 80ms',
         }}
       >
         <h2 style={{ margin: '0 0 4px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22, letterSpacing: '-0.015em', textShadow: '0 1px 6px rgba(0,0,0,0.5)' }}>

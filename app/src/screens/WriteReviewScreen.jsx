@@ -214,8 +214,8 @@ export function WriteReviewScreen() {
       <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
         <Header title="Review submitted" onBack={() => navigate('/you/reviews')} />
         <div style={{ padding: 24, maxWidth: 420, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 14 }}>
-          <CheckCircle2 size={40} color="var(--success)" />
-          <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--text-strong)' }}>Thanks — it's in the queue</h2>
+          <span className="stamp-in"><CheckCircle2 size={44} color="var(--success)" /></span>
+          <h2 className="explore-enter-card" style={{ animationDelay: '150ms', margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--text-strong)' }}>Thanks — it's in the queue</h2>
           <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>
             Your review is pending review by the StayOrNay team. You'll see it under "Your reviews" right away, and get a verdict alert once it's approved or rejected.
           </p>
@@ -360,13 +360,21 @@ export function WriteReviewScreen() {
               </div>
             </div>
 
-            {/* Live total/verdict preview */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 14 }}>
+            {/* Live total/verdict preview — STICKY while the sliders are on
+                screen, so the score visibly reacts as you drag each one:
+                the number pops on every change (keyed on `total`) and the
+                badge re-stamps whenever the verdict flips Stay↔Nay (keyed
+                on `verdict`). */}
+            <div style={{ position: 'sticky', top: 8, zIndex: 15, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 14, boxShadow: 'var(--shadow-md)' }}>
               <div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>Your score</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24, color: 'var(--text-strong)' }}>{total} / {MAX_TOTAL}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24, color: 'var(--text-strong)' }}>
+                  <span key={total} className="pop-key">{total}</span> / {MAX_TOTAL}
+                </div>
               </div>
-              <VerdictBadge verdict={verdict} size="md" />
+              <span key={verdict} className="stamp-in">
+                <VerdictBadge verdict={verdict} size="md" />
+              </span>
             </div>
             <p style={{ margin: '-10px 0 0', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-faint)' }}>
               {MAX_TOTAL} points total across five categories · under {NAY_THRESHOLD} is a Nay

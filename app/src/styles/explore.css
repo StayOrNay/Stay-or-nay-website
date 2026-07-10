@@ -204,7 +204,26 @@
 @keyframes exploreBlink { 50% { opacity: 0.3; } }
 .explore-location-chip .label-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* ---------- shared motion utilities (used across Feed / Detail / Write) ---------- */
+
+/* Verdict stamp entrance — the landing's STAY/NAY slam, miniaturized:
+   comes in big and slightly rotated, thumps into place with a small
+   overshoot. Re-triggerable by keying the element on the verdict value. */
+@keyframes stampIn {
+  0% { opacity: 0; transform: scale(2.1) rotate(-7deg); }
+  55% { opacity: 1; transform: scale(0.95) rotate(1.5deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.stamp-in { animation: stampIn 550ms var(--ease-pop) backwards; display: inline-flex; }
+
+/* Number pop — key an element on its value and it pops on every change. */
+@keyframes popKey {
+  0% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.pop-key { animation: popKey 260ms var(--ease-pop); display: inline-block; }
+
 @media (prefers-reduced-motion: reduce) {
-  .explore-enter-dock, .explore-enter-panel, .explore-enter-card { animation: none; opacity: 1; }
-  .explore-map .mapboxgl-marker { animation: none; }
+  .explore-enter-dock, .explore-enter-panel, .explore-enter-card, .stamp-in, .pop-key { animation: none; opacity: 1; }
+  .explore-map .mapboxgl-marker > div { animation: none; }
 }

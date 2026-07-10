@@ -118,7 +118,7 @@ export function VillaDetailScreen() {
 
   const body = (
     <div style={{ padding: isDesktop ? '28px 32px 16px' : '18px 16px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div>
+      <div className="explore-enter-card" style={{ animationDelay: '60ms' }}>
         <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, letterSpacing: '-0.02em', color: 'var(--text-strong)' }}>{villa.name}</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
           <LocationIcon size={15} color="var(--text-muted)" />
@@ -127,32 +127,35 @@ export function VillaDetailScreen() {
       </div>
 
       {/* facts row */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div className="explore-enter-card" style={{ animationDelay: '140ms', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {villa.beds != null && <Tag variant="outline">{villa.beds} bed{villa.beds === 1 ? '' : 's'}</Tag>}
         {villa.sleeps != null && <Tag variant="outline">Sleeps {villa.sleeps}</Tag>}
         {villa.baths != null && <Tag variant="outline">{villa.baths} baths</Tag>}
         {villa.price != null && <Tag variant="outline" tone="sun">{villa.currency}{villa.price} / night</Tag>}
       </div>
 
-      {/* verdict badge — moved off the photo so the media reads cleaner */}
+      {/* verdict badge — moved off the photo so the media reads cleaner;
+          stamps in like the landing's STAY/NAY slam */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-        <VerdictBadge verdict={villa.verdict} score={villa.score} outOf={villa.scoreOutOf} size="lg" />
+        <span className="stamp-in" style={{ animationDelay: '350ms' }}>
+          <VerdictBadge verdict={villa.verdict} score={villa.score} outOf={villa.scoreOutOf} size="lg" />
+        </span>
       </div>
 
       {/* score breakdown FIRST — the five categories that make up the /50 total */}
       {villa.categories && (
-        <div>
+        <div className="explore-enter-card" style={{ animationDelay: '260ms' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 10 }}>
             — Score breakdown
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {CATEGORIES.map((c) => {
+            {CATEGORIES.map((c, ci) => {
               const val = Number(villa.categories[c.key]) || 0;
               return (
                 <div key={c.key} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ width: 118, flex: 'none', fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--text-body)' }}>{c.label}</span>
                   <div style={{ flex: 1, height: 8, borderRadius: 999, background: 'var(--paper-200)', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${(val / 10) * 100}%`, borderRadius: 999, background: isStay ? 'var(--stay-600)' : 'var(--nay-600)', transition: 'width var(--dur-base) var(--ease-out)' }} />
+                    <ScoreBar pct={(val / 10) * 100} delay={450 + ci * 110} color={isStay ? 'var(--stay-600)' : 'var(--nay-600)'} />
                   </div>
                   <span style={{ width: 42, flex: 'none', textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 12.5, color: 'var(--text-strong)' }}>{val}/10</span>
                 </div>
@@ -167,7 +170,7 @@ export function VillaDetailScreen() {
       )}
 
       {/* the review itself — comes AFTER the score breakdown */}
-      <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 16, boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="explore-enter-card" style={{ animationDelay: '380ms', background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 16, boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Avatar name={villa.reviewer} verified={villa.verified} />
           <div style={{ flex: 1 }}>
@@ -268,6 +271,30 @@ export function VillaDetailScreen() {
       </div>
       {cta}
     </div>
+  );
+}
+
+/**
+ * Score bar that FILLS on arrival — 0 to its real value with a long
+ * map-flight ease, staggered per category — instead of just being there.
+ * Purely presentational; the value itself never changes after mount.
+ */
+function ScoreBar({ pct, delay = 0, color }) {
+  const [filled, setFilled] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setFilled(true), delay);
+    return () => clearTimeout(id);
+  }, [delay]);
+  return (
+    <div
+      style={{
+        height: '100%',
+        width: filled ? `${pct}%` : '0%',
+        borderRadius: 999,
+        background: color,
+        transition: 'width 900ms var(--ease-fly)',
+      }}
+    />
   );
 }
 

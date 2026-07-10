@@ -14,9 +14,33 @@ const ImmersiveContext = createContext(null);
  *     it by DOM order but loses to the handle's explicit z-index) before
  *     the intro has handed off to the real map.
  */
+// The cinematic landing plays in full on a visitor's FIRST load only —
+// after it completes once (LandingExperience writes this flag), later
+// visits go straight to the map. Replays are always available (dock pin /
+// globe button / wordmark all call setIntroDone(false)). Lazy initializer
+// + try/catch so Safari private mode (throwing localStorage) just means
+// "always show the landing", never a crash.
+const LANDING_SEEN_KEY = 'son_landing_seen';
+
+function landingAlreadySeen() {
+  try {
+    return window.localStorage.getItem(LANDING_SEEN_KEY) === '1';
+  } catch (err) {
+    return false;
+  }
+}
+
+export function markLandingSeen() {
+  try {
+    window.localStorage.setItem(LANDING_SEEN_KEY, '1');
+  } catch (err) {
+    // Private mode — the landing will simply play again next visit.
+  }
+}
+
 export function ImmersiveProvider({ children }) {
   const [immersive, setImmersive] = useState(false);
-  const [introDone, setIntroDone] = useState(false);
+  const [introDone, setIntroDone] = useState(landingAlreadySeen);
   return (
     <ImmersiveContext.Provider value={{ immersive, setImmersive, introDone, setIntroDone }}>
       {children}

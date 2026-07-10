@@ -5,6 +5,7 @@ import { mapboxgl } from '../lib/mapbox';
 import { BALI, EXPLORE_ZOOM } from './geo';
 import { baliLightPreset } from './daynight';
 import { addAtmosphere, setAtmosphere, CITY_TWINKLE_AMP, CLOUD_FADE_START_ZOOM, CLOUD_FADE_END_ZOOM } from './atmosphere';
+import { markLandingSeen } from '../context/ImmersiveContext';
 import './landing.css';
 
 /**
@@ -95,6 +96,7 @@ export function LandingExperience({ onComplete }) {
   const finish = () => {
     if (completedRef.current) return;
     completedRef.current = true;
+    markLandingSeen(); // future visits skip straight to the map
     if (onComplete) onComplete();
   };
 
