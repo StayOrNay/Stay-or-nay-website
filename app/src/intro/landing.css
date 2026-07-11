@@ -155,18 +155,30 @@
 }
 @keyframes landingDrip { 0% { top: -50%; } 100% { top: 110%; } }
 
-/* pulsing destination marker */
+/* pulsing destination marker — one slow, calm breath (the fast double-ring
+   pulse read as frantic bouncing), plus a small name label so the featured
+   island is identifiable at a glance even on the night side. */
 .landing-pulse-marker { position: relative; width: 18px; height: 18px; }
 .landing-pulse-marker .core {
   position: absolute; inset: 4px; border-radius: 50%;
-  background: var(--stay-400); box-shadow: 0 0 12px rgba(63, 191, 139, 0.9);
+  background: var(--stay-400); box-shadow: 0 0 10px rgba(63, 191, 139, 0.8);
 }
 .landing-pulse-marker .ring {
   position: absolute; inset: 0; border-radius: 50%;
-  border: 2px solid var(--stay-400); animation: landingMarkerPulse 1.8s ease-out infinite;
+  border: 1.5px solid var(--stay-400);
+  animation: landingMarkerPulse 3.6s ease-out infinite;
 }
-.landing-pulse-marker .ring2 { animation-delay: 0.9s; }
-@keyframes landingMarkerPulse { 0% { transform: scale(0.5); opacity: 1; } 100% { transform: scale(2.6); opacity: 0; } }
+@keyframes landingMarkerPulse {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  70% { transform: scale(1.9); opacity: 0; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+.landing-pulse-marker .marker-label {
+  position: absolute; left: 50%; top: calc(100% + 7px); transform: translateX(-50%);
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
+  color: var(--paper-050); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+  pointer-events: none; white-space: nowrap;
+}
 
 /* ---------- verdict scroll scene ---------- */
 .landing-verdict-scene { position: relative; height: 320vh; background: var(--paper-100); }

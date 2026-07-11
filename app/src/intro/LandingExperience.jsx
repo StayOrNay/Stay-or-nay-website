@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { mapboxgl } from '../lib/mapbox';
 import { BALI, EXPLORE_ZOOM } from './geo';
-import { baliLightPreset } from './daynight';
 import { addAtmosphere, setAtmosphere, CITY_TWINKLE_AMP, CLOUD_FADE_START_ZOOM, CLOUD_FADE_END_ZOOM } from './atmosphere';
 import { markLandingSeen } from '../context/ImmersiveContext';
 import './landing.css';
@@ -125,11 +124,15 @@ export function LandingExperience({ onComplete }) {
         // Clean globe: no labels at orbit altitude — they cluttered the
         // showcase. Set at construction time (not style.load) to avoid the
         // "Style import not found: basemap" race (mapbox-gl-js#12841).
-        // lightPreset matches Bali's actual local time, same as the old
-        // intro, so the landing after the dive is lit like it really is.
+        // Always 'day' — NOT baliLightPreset(). The time-of-day preset
+        // darkened the whole basemap during Bali's night (i.e. most of the
+        // day in Europe), and stacked with the terminator overlay it made
+        // the hero island unreadable. The geographic night polygon +
+        // city lights already tell the day/night story; the base imagery
+        // stays bright so you can always SEE Bali.
         config: {
           basemap: {
-            lightPreset: baliLightPreset(),
+            lightPreset: 'day',
             showPlaceLabels: false,
             showPointOfInterestLabels: false,
             showRoadLabels: false,
@@ -176,7 +179,7 @@ export function LandingExperience({ onComplete }) {
     // Pulsing marker that travels with the featured destination.
     const markerEl = document.createElement('div');
     markerEl.className = 'landing-pulse-marker';
-    markerEl.innerHTML = '<span class="ring"></span><span class="ring ring2"></span><span class="core"></span>';
+    markerEl.innerHTML = '<span class="ring"></span><span class="core"></span><span class="marker-label">BALI</span>';
     const marker = new mapboxgl.Marker({ element: markerEl })
       .setLngLat([DESTS[0].lng, DESTS[0].lat])
       .addTo(map);
@@ -212,6 +215,8 @@ export function LandingExperience({ onComplete }) {
     const goToDest = (i) => {
       const d = DESTS[i];
       marker.setLngLat([d.lng, d.lat]);
+      const label = markerEl.querySelector('.marker-label');
+      if (label) label.textContent = d.name.split(',')[0];
       try {
         map.easeTo({
           center: [d.lng, d.lat],

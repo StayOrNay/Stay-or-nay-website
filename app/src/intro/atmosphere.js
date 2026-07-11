@@ -14,8 +14,13 @@ import { antisolarPoint, hemisphereRing, angularDistanceDeg, MAJOR_CITIES, scatt
  * isn't smeared with overzoomed clouds or a night polygon).
  */
 
-const NIGHT_CORE_OPACITY = 0.6;
-const NIGHT_EDGE_OPACITY = 0.28;
+// Kept LIGHT on purpose: at 0.6 the night hemisphere went near-black, and
+// whenever the featured island was on the night side (Bali evenings —
+// most of Europe's browsing hours) the hero destination was invisible.
+// This is a suggestion of night, not a blackout — land stays readable
+// through it, city lights still read on top.
+const NIGHT_CORE_OPACITY = 0.3;
+const NIGHT_EDGE_OPACITY = 0.15;
 // City lights are deliberately FAINT and small. The old intro's larger,
 // brighter values worked when the camera was sweeping past at speed, but
 // on the landing the globe holds still — at that dwell time the big warm
