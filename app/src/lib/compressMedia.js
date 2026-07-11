@@ -33,6 +33,15 @@ const TARGET_BYTES = 47 * 1024 * 1024;
 const FFMPEG_ESM = 'https://esm.sh/@ffmpeg/ffmpeg@0.12.10';
 const UTIL_ESM = 'https://esm.sh/@ffmpeg/util@0.12.1';
 const CORE_BASE = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+// The FFmpeg class spawns a Web Worker. By default it resolves the worker
+// script relative to its own module — which, when the module comes from
+// esm.sh, is a CROSS-ORIGIN URL, and browsers refuse to construct Workers
+// cross-origin ("Failed to construct 'Worker': Script at 'https://esm.sh/…'
+// cannot be accessed from origin 'https://stayornayy.com'"). Fix: pass an
+// explicit classWorkerURL, blobbed to same-origin. It must be the UMD worker
+// chunk (self-contained, no imports) — the ESM worker.js has relative
+// imports that break inside a blob: URL.
+const WORKER_UMD = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/814.ffmpeg.js';
 
 let ffmpegPromise = null;
 let utilPromise = null;
@@ -54,6 +63,7 @@ async function getFfmpeg() {
       await ffmpeg.load({
         coreURL: await toBlobURL(`${CORE_BASE}/ffmpeg-core.js`, 'text/javascript'),
         wasmURL: await toBlobURL(`${CORE_BASE}/ffmpeg-core.wasm`, 'application/wasm'),
+        classWorkerURL: await toBlobURL(WORKER_UMD, 'text/javascript'),
       });
       return ffmpeg;
     })();

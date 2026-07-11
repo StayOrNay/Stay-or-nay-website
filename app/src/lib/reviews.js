@@ -53,34 +53,54 @@ export async function submitReview({ propertyLink, propertyName, userId, reviewe
   if (!isSupabaseConfigured) return { data: null, error: NOT_CONFIGURED_ERROR };
   const total = totalFromCategories(scores);
   const verdict = verdictFromTotal(total);
-  return supabase
-    .from(TABLE)
-    .insert({
-      villa_id: null,
-      property_link: propertyLink,
-      property_name: propertyName,
-      user_id: userId,
-      reviewer_name: reviewerName,
-      score_location: scores.location,
-      score_value: scores.value,
-      score_cleanliness: scores.cleanliness,
-      score_amenities: scores.amenities,
-      score_host: scores.host,
-      total,
-      verdict,
-      headline,
-      body,
-      media_urls: mediaUrls,
-      beds,
-      price_paid: pricePaid,
-      currency,
-      area,
-      lat,
-      lon,
-      status: 'pending',
-    })
-    .select()
-    .single();
+  const row = {
+    villa_id: null,
+    property_link: propertyLink,
+    property_name: propertyName,
+    user_id: userId,
+    reviewer_name: reviewerName,
+    score_location: scores.location,
+    score_value: scores.value,
+    score_cleanliness: scores.cleanliness,
+    score_amenities: scores.amenities,
+    score_host: scores.host,
+    total,
+    verdict,
+    headline,
+    body,
+    media_urls: mediaUrls,
+    beds,
+    price_paid: pricePaid,
+    currency,
+    area,
+    lat,
+    lon,
+    status: 'pending',
+  };
+
+  const insert = (payload) => supabase.from(TABLE).insert(payload).select().single();
+
+  let result = await insert(row);
+
+  // Schema-drift safety net: the live DB only gains new columns when a
+  // migration from supabase/migrations/ is pasted into the SQL editor by
+  // hand, so the code can briefly be ahead of the table ("Could not find
+  // the 'X' column of 'reviews' in the schema cache", PGRST204). Rather
+  // than losing the visitor's finished review (media already uploaded!)
+  // over an optional column, strip the columns PostgREST names as missing
+  // and retry — never dropping the fields a review can't exist without.
+  const REQUIRED = ['property_link', 'property_name', 'user_id', 'total', 'verdict', 'headline', 'body', 'media_urls', 'status'];
+  let attempts = 0;
+  while (result.error && attempts < 6) {
+    const missing = /Could not find the '([^']+)' column/.exec(result.error.message || '')?.[1];
+    if (!missing || REQUIRED.includes(missing) || !(missing in row)) break;
+    // eslint-disable-next-line no-console
+    console.warn(`reviews table is missing optional column "${missing}" — submitting without it. Run the pending SQL migration in supabase/migrations/ to keep this data.`);
+    delete row[missing];
+    attempts += 1;
+    result = await insert(row);
+  }
+  return result;
 }
 
 /** All of the signed-in user's own reviews, any status, newest first. */
