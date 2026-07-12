@@ -165,13 +165,17 @@
 }
 .landing-pulse-marker .ring {
   position: absolute; inset: 0; border-radius: 50%;
-  border: 1.5px solid var(--stay-400);
-  animation: landingMarkerPulse 3.6s ease-out infinite;
+  border: 2px solid var(--stay-400);
+  animation: landingMarkerPulse 4.5s linear infinite;
 }
+/* One slow breath: the ring fades IN over the first moments (no hard
+   blink), then expands linearly to ~3.5x while dissolving gradually.
+   ease-out timing was the "fast bounce" culprit — it front-loaded the
+   whole expansion and fade into the first half-second of each cycle. */
 @keyframes landingMarkerPulse {
-  0% { transform: scale(0.6); opacity: 0.9; }
-  70% { transform: scale(1.9); opacity: 0; }
-  100% { transform: scale(1.9); opacity: 0; }
+  0% { transform: scale(0.55); opacity: 0; }
+  12% { opacity: 0.7; }
+  100% { transform: scale(3.5); opacity: 0; }
 }
 .landing-pulse-marker .marker-label {
   position: absolute; left: 50%; top: calc(100% + 7px); transform: translateX(-50%);
