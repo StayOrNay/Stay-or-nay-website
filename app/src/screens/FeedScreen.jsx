@@ -44,7 +44,7 @@ export function FeedScreen() {
 
   if (isDesktop) {
     return (
-      <div className="hud-screen" data-theme="night">
+      <div className="hud-screen">
         <div className="hud-aurora"><div className="hud-grid" /></div>
         <div className="hud-content">
           <div className="hud-label" style={{ padding: '26px 28px 8px' }}>

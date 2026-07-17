@@ -15,7 +15,7 @@ export function LanguageScreen() {
   const { language, setLanguage, languages } = useLanguage();
 
   return (
-    <div className="hud-screen" data-theme="night">
+    <div className="hud-screen">
       <div className="hud-aurora"><div className="hud-grid" /></div>
       <div className="hud-content">
       <Header title="Language" onBack={() => navigate('/you')} />

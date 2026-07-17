@@ -105,16 +105,17 @@ export function AccountScreen() {
 
   return (
     <div
-      data-theme="night"
+      className="hud-screen"
       style={{
         position: 'relative',
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
-        background: 'var(--surface-page)',
         minHeight: '100%',
       }}
     >
+      <div className="hud-aurora"><div className="hud-grid" /></div>
+      <div className="hud-content">
       <button
         onClick={() => navigate('/you')}
         aria-label="Back"
@@ -356,6 +357,7 @@ export function AccountScreen() {
             </>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

@@ -149,7 +149,7 @@ export function RequestReviewScreen() {
   };
 
   return (
-    <div className="hud-screen" data-theme="night">
+    <div className="hud-screen">
       <div className="hud-aurora"><div className="hud-grid" /></div>
       <div className="hud-content">
       <Header title="Request a review" onBack={() => navigate(-1)} />

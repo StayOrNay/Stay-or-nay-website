@@ -211,7 +211,7 @@ export function WriteReviewScreen() {
 
   if (done) {
     return (
-      <div className="hud-screen" data-theme="night">
+      <div className="hud-screen">
         <div className="hud-aurora"><div className="hud-grid" /></div>
         <div className="hud-content">
         <Header title="Review submitted" onBack={() => navigate('/you/reviews')} />
@@ -229,7 +229,7 @@ export function WriteReviewScreen() {
   }
 
   return (
-    <div className="hud-screen" data-theme="night">
+    <div className="hud-screen">
       <div className="hud-aurora"><div className="hud-grid" /></div>
       <div className="hud-content">
       <Header title="Write a review" onBack={() => navigate(-1)} />

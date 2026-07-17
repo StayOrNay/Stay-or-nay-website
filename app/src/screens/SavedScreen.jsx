@@ -16,7 +16,7 @@ export function SavedScreen() {
   const savedVillas = villas.filter((v) => saved.has(v.id));
 
   return (
-    <div className="hud-screen" data-theme="night">
+    <div className="hud-screen">
       <div className="hud-aurora"><div className="hud-grid" /></div>
       <div className="hud-content">
       <Header title="Saved villas" />
