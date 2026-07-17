@@ -39,9 +39,14 @@ const ICE_CAP_COLOR = '#eef2f5';
 const ICE_CAP_OPACITY = 0.88;
 
 function gibsCloudUrl() {
-  const d = new Date(Date.now() - 24 * 60 * 60 * 1000); // yesterday UTC — guaranteed processed
+  // NOAA-20, not SNPP: the Suomi-NPP imagery feed stopped updating, so its
+  // "yesterday" tiles started coming back empty and the globe silently lost
+  // its clouds. NOAA-20 runs the same VIIRS instrument and is still
+  // producing daily true-color imagery. Two days back instead of one so the
+  // date is always fully processed regardless of the visitor's timezone.
+  const d = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
   const day = d.toISOString().slice(0, 10);
-  return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/${day}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`;
+  return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/${day}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`;
 }
 
 // Circle of constant latitude around a pole (see GlobeIntro's capRing for

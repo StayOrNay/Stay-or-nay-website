@@ -149,9 +149,11 @@ export function RequestReviewScreen() {
   };
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
+    <div className="hud-screen" data-theme="night">
+      <div className="hud-aurora"><div className="hud-grid" /></div>
+      <div className="hud-content">
       <Header title="Request a review" onBack={() => navigate(-1)} />
-      <div style={{ padding: 16, maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 48 }}>
+      <div style={{ padding: 18, maxWidth: 560, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 48 }}>
         <p className="rise" style={{ '--i': 0, margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>
           Booked (or thinking about booking) somewhere and want an honest review before or during your stay? Send us the link and we'll go — or arrange for someone to. It's free.
         </p>
@@ -168,7 +170,7 @@ export function RequestReviewScreen() {
             <Button variant="stay" block onClick={() => navigate('/you/account')}>Sign in or create an account</Button>
           </>
         ) : done ? (
-          <div className="rise" style={{ '--i': 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 12, background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 22 }}>
+          <div className="rise holo-card" style={{ '--i': 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 12, padding: 26 }}>
             <span className="stamp-in success-ring" style={{ animationDelay: '150ms' }}><CheckCircle2 size={32} color="var(--success)" /></span>
             <h2 className="rise" style={{ '--i': 3, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--text-strong)' }}>Request sent</h2>
             <p className="rise" style={{ '--i': 4, margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.5 }}>
@@ -177,7 +179,8 @@ export function RequestReviewScreen() {
             <Button variant="neutral" size="sm" onClick={() => setDone(false)}>Send another request</Button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <form onSubmit={handleSubmit} className="rise holo-card" style={{ '--i': 1, display: 'flex', flexDirection: 'column', gap: 16, padding: 18 }}>
+            <div className="hud-label">New mission briefing</div>
             <div className="rise" style={{ '--i': 1 }}>
               <Input
                 label="Property link"
@@ -242,8 +245,8 @@ export function RequestReviewScreen() {
 
         {user && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-              Your requests
+            <div className="hud-label">
+              <span className="hud-live-dot" /> Your requests
             </div>
             {authLoading || loadingMine ? (
               <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>Loading…</div>
@@ -253,7 +256,7 @@ export function RequestReviewScreen() {
               myRequests.map((r, idx) => {
                 const meta = STATUS_META[r.status] || STATUS_META.open;
                 return (
-                  <div key={r.id} className="rise card-lift" style={{ '--i': Math.min(idx, 6), background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div key={r.id} className="rise card-lift glass-card" style={{ '--i': Math.min(idx, 6), padding: 15, display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
                       <a href={r.property_link} target="_blank" rel="noreferrer" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--text-strong)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {r.property_name || r.property_link}
@@ -275,13 +278,14 @@ export function RequestReviewScreen() {
           </div>
         )}
       </div>
+      </div>
     </div>
   );
 }
 
 function Notice({ icon, children }) {
   return (
-    <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 18, display: 'flex', gap: 12 }}>
+    <div className="rise glass-card" style={{ '--i': 1, padding: 18, display: 'flex', gap: 12 }}>
       <span style={{ flex: 'none', marginTop: 1 }}>{icon}</span>
       <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>{children}</p>
     </div>

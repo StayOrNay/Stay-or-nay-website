@@ -42,9 +42,11 @@ export function MyReviewsScreen() {
   }, [user]);
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
+    <div className="hud-screen" data-theme="night">
+      <div className="hud-aurora"><div className="hud-grid" /></div>
+      <div className="hud-content">
       <Header title="Your reviews" onBack={() => navigate('/you')} />
-      <div style={{ padding: 16, maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ padding: 18, maxWidth: 560, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
         {!configured ? (
           <EmptyState text="Sign-in isn't set up yet on this deploy, so reviews aren't available right now." />
         ) : authLoading || loading ? (
@@ -73,11 +75,10 @@ export function MyReviewsScreen() {
                   return (
                     <div
                       key={r.id}
-                      className="rise card-lift"
+                      className="rise card-lift glass-card"
                       style={{
                         '--i': Math.min(idx + 1, 8),
-                        background: 'var(--surface-card)', border: '1px solid var(--border-soft)',
-                        borderRadius: 'var(--radius-lg)', padding: 14, display: 'flex', flexDirection: 'column', gap: 8,
+                        padding: 15, display: 'flex', flexDirection: 'column', gap: 8,
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
@@ -115,13 +116,14 @@ export function MyReviewsScreen() {
           </>
         )}
       </div>
+      </div>
     </div>
   );
 }
 
 function EmptyState({ text }) {
   return (
-    <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 18, textAlign: 'center' }}>
+    <div className="rise glass-card" style={{ '--i': 1, padding: 18, textAlign: 'center' }}>
       <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>{text}</p>
     </div>
   );

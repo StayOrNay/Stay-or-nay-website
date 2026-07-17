@@ -16,10 +16,10 @@ export function Header({ title, onBack = null, right = null }) {
         gap: 10,
         height: 56,
         padding: '0 12px',
-        background: 'rgba(247,242,232,0.82)',
+        background: 'var(--header-bg, rgba(247,242,232,0.82))',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
-        borderBottom: '1px solid var(--border-soft)',
+        borderBottom: '1px solid var(--header-border, var(--border-soft))',
         flex: 'none',
       }}
     >

@@ -30,10 +30,12 @@ export function SettingsScreen() {
   };
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
+    <div className="hud-screen" data-theme="night">
+      <div className="hud-aurora"><div className="hud-grid" /></div>
+      <div className="hud-content">
       <Header title="Settings" onBack={() => navigate('/you')} />
-      <div style={{ padding: 16, maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <div className="rise" style={{ '--i': 0, background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+      <div style={{ padding: 18, maxWidth: 480, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div className="rise glass-card" style={{ '--i': 0, overflow: 'hidden' }}>
           {ROWS.map(({ Icon, label, hint, to }, i) => (
             <div
               key={label}
@@ -58,6 +60,7 @@ export function SettingsScreen() {
             </Button>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

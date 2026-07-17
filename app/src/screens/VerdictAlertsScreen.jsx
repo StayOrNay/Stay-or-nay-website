@@ -40,9 +40,11 @@ export function VerdictAlertsScreen() {
   }, [user]);
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
+    <div className="hud-screen" data-theme="night">
+      <div className="hud-aurora"><div className="hud-grid" /></div>
+      <div className="hud-content">
       <Header title="Verdict alerts" onBack={() => navigate('/you')} />
-      <div style={{ padding: 16, maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ padding: 18, maxWidth: 560, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <p className="rise" style={{ '--i': 0, margin: 0, fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.5 }}>
           You'll see one of these every time a review you submitted gets approved or rejected.
         </p>
@@ -72,13 +74,12 @@ export function VerdictAlertsScreen() {
               return (
                 <div
                   key={r.id}
-                  className={clickable ? 'rise card-lift' : 'rise'}
+                  className={clickable ? 'rise card-lift glass-card' : 'rise glass-card'}
                   onClick={clickable ? handleClick : undefined}
                   style={{
                     '--i': Math.min(idx + 1, 8),
                     display: 'flex', gap: 12, alignItems: 'flex-start',
-                    background: 'var(--surface-card)', border: '1px solid var(--border-soft)',
-                    borderRadius: 'var(--radius-lg)', padding: 14, cursor: clickable ? 'pointer' : 'default',
+                    padding: 15, cursor: clickable ? 'pointer' : 'default',
                   }}
                 >
                   <span className="stamp-in" style={{ animationDelay: `${250 + Math.min(idx, 6) * 70}ms`, flex: 'none', color: approved ? 'var(--stay-600)' : 'var(--nay-600)', marginTop: 1 }}>
@@ -98,14 +99,15 @@ export function VerdictAlertsScreen() {
           </div>
         )}
       </div>
+      </div>
     </div>
   );
 }
 
 function EmptyState({ icon, text }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center', padding: '36px 20px', background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)' }}>
-      <span style={{ color: 'var(--text-faint)' }}>{icon}</span>
+    <div className="rise glass-card" style={{ '--i': 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center', padding: '36px 20px' }}>
+      <span className="empty-breath" style={{ color: 'var(--text-faint)' }}>{icon}</span>
       <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55, maxWidth: 280 }}>{text}</p>
     </div>
   );

@@ -44,29 +44,32 @@ export function FeedScreen() {
 
   if (isDesktop) {
     return (
-      <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
-        <div style={{ padding: '24px 28px 8px', fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-          {villas.length} verdicts
-        </div>
-        <div
-          style={{
-            padding: '12px 28px 32px',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-            gap: 20,
-          }}
-        >
-          {villas.map((v, i) => (
-            <div key={v.id} className="explore-enter-card" style={{ animationDelay: `${Math.min(i, 9) * 60}ms` }}>
-              <VillaCard
-                name={v.name} location={v.location} coords={v.coords} image={v.image}
-                verdict={v.verdict} score={v.score} scoreOutOf={v.scoreOutOf} rating={v.rating}
-                price={v.price} currency={v.currency} tags={v.tags}
-                saved={saved.has(v.id)} onToggleSave={() => toggleSave(v.id)}
-                onClick={() => navigate(`/villa/${v.id}`)}
-              />
-            </div>
-          ))}
+      <div className="hud-screen" data-theme="night">
+        <div className="hud-aurora"><div className="hud-grid" /></div>
+        <div className="hud-content">
+          <div className="hud-label" style={{ padding: '26px 28px 8px' }}>
+            <span className="hud-live-dot" /> {villas.length} verdicts · live feed
+          </div>
+          <div
+            style={{
+              padding: '12px 28px 32px',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+              gap: 20,
+            }}
+          >
+            {villas.map((v, i) => (
+              <div key={v.id} className="explore-enter-card card-lift" style={{ animationDelay: `${Math.min(i, 9) * 60}ms`, borderRadius: 'var(--radius-lg)' }}>
+                <VillaCard
+                  name={v.name} location={v.location} coords={v.coords} image={v.image}
+                  verdict={v.verdict} score={v.score} scoreOutOf={v.scoreOutOf} rating={v.rating}
+                  price={v.price} currency={v.currency} tags={v.tags}
+                  saved={saved.has(v.id)} onToggleSave={() => toggleSave(v.id)}
+                  onClick={() => navigate(`/villa/${v.id}`)}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -83,6 +86,20 @@ export function FeedScreen() {
         position: 'relative',
       }}
     >
+      {/* Slide-position rail — a glowing tick per verdict. Sticky from the
+          very first slide (height 0 so it takes no room), so it stays pinned
+          mid-screen for the whole scroll; sticky elements are positioned, so
+          the inner rail can anchor to it with position:absolute. */}
+      {villas.length > 1 && (
+        <div style={{ position: 'sticky', top: 0, height: 0, zIndex: 6, pointerEvents: 'none' }}>
+          <div className="feed-progress" style={{ position: 'absolute', right: 5, top: '50dvh', transform: 'translateY(-50%)' }}>
+            {villas.map((v, i) => (
+              <span key={v.id} className={i === activeIndex ? 'on' : ''} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {villas.map((v, i) => (
         <FeedSlide
           key={v.id}

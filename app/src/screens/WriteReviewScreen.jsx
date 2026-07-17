@@ -211,9 +211,11 @@ export function WriteReviewScreen() {
 
   if (done) {
     return (
-      <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
+      <div className="hud-screen" data-theme="night">
+        <div className="hud-aurora"><div className="hud-grid" /></div>
+        <div className="hud-content">
         <Header title="Review submitted" onBack={() => navigate('/you/reviews')} />
-        <div style={{ padding: 24, maxWidth: 420, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 14 }}>
+        <div style={{ padding: 24, maxWidth: 420, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 14 }}>
           <span className="stamp-in success-ring"><CheckCircle2 size={44} color="var(--success)" /></span>
           <h2 className="explore-enter-card" style={{ animationDelay: '150ms', margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--text-strong)' }}>Thanks — it's in the queue</h2>
           <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>
@@ -221,14 +223,17 @@ export function WriteReviewScreen() {
           </p>
           <Button variant="stay" onClick={() => navigate('/you/reviews')}>Go to your reviews</Button>
         </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
+    <div className="hud-screen" data-theme="night">
+      <div className="hud-aurora"><div className="hud-grid" /></div>
+      <div className="hud-content">
       <Header title="Write a review" onBack={() => navigate(-1)} />
-      <div style={{ padding: 16, maxWidth: 520, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18, paddingBottom: 48 }}>
+      <div style={{ padding: 18, maxWidth: 520, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18, paddingBottom: 48 }}>
         {!configured ? (
           <Notice icon={<AlertCircle size={20} color="var(--warning)" />}>
             Sign-in isn't set up yet on this deploy, so reviews can't be submitted right now.
@@ -241,7 +246,8 @@ export function WriteReviewScreen() {
             <Button variant="stay" block onClick={() => navigate('/you/account')}>Sign in or create an account</Button>
           </>
         ) : (
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <form onSubmit={handleSubmit} className="rise holo-card" style={{ '--i': 0, display: 'flex', flexDirection: 'column', gap: 20, padding: 18 }}>
+            <div className="hud-label">Field report</div>
             <div className="rise" style={{ '--i': 0 }}>
               <Input
                 label="Your name"
@@ -375,10 +381,10 @@ export function WriteReviewScreen() {
                 the number pops on every change (keyed on `total`) and the
                 badge re-stamps whenever the verdict flips Stay↔Nay (keyed
                 on `verdict`). */}
-            <div className="rise" style={{ '--i': 7, position: 'sticky', top: 8, zIndex: 15, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 14, boxShadow: 'var(--shadow-md)' }}>
+            <div className="rise holo-card" style={{ '--i': 7, position: 'sticky', top: 8, zIndex: 15, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}>
               <div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>Your score</div>
-                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24, color: 'var(--text-strong)' }}>
+                <div className="hud-label"><span className="hud-live-dot" /> Live score</div>
+                <div className="glow-stay" style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 26, color: 'var(--text-strong)', marginTop: 3 }}>
                   <span key={total} className="pop-key">{total}</span> / {MAX_TOTAL}
                 </div>
               </div>
@@ -392,6 +398,7 @@ export function WriteReviewScreen() {
 
             {/* Category sliders */}
             <div className="rise" style={{ '--i': 8, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div className="hud-label">Score the stay</div>
               {CATEGORIES.map((c) => (
                 <div key={c.key} className="slider-row" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -519,6 +526,7 @@ export function WriteReviewScreen() {
           </form>
         )}
       </div>
+      </div>
     </div>
   );
 }
@@ -575,7 +583,7 @@ function LabelWithHint({ label, hint }) {
 
 function Notice({ icon, children }) {
   return (
-    <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 18, display: 'flex', gap: 12 }}>
+    <div className="rise glass-card" style={{ '--i': 1, padding: 18, display: 'flex', gap: 12 }}>
       <span style={{ flex: 'none', marginTop: 1 }}>{icon}</span>
       <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>{children}</p>
     </div>

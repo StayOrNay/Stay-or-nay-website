@@ -1,0 +1,218 @@
+/* ===========================================================================
+   StayOrNay — "mission control" futuristic pass
+   Extends the Explore screen's dark-glass language to the rest of the app:
+   an aurora-lit night shell, holographic glass cards, HUD labels, glowing
+   rings. Everything respects prefers-reduced-motion.
+   =========================================================================== */
+
+/* ---------- the night shell ----------
+   Structure per screen:
+     <div class="hud-screen">           (relative, fills)
+       <div class="hud-aurora" />       (fixed decorative backdrop)
+       <div class="hud-content">…</div> (the actual scrollable screen)
+     </div>                                                                  */
+.hud-screen {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background:
+    radial-gradient(120% 90% at 50% 0%, #12211c 0%, var(--ink-900) 55%, #060d0b 100%);
+  overflow: hidden;
+}
+.hud-content {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Aurora — two huge blurred color fields drifting very slowly, plus a
+   faint cartographic grid that fades out toward the edges. */
+.hud-aurora { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.hud-aurora::before,
+.hud-aurora::after {
+  content: '';
+  position: absolute;
+  width: 70vmax; height: 70vmax;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform;
+}
+.hud-aurora::before {
+  left: -22vmax; top: -30vmax;
+  background: radial-gradient(circle, rgba(26, 160, 107, 0.32) 0%, transparent 62%);
+  animation: auroraDriftA 26s var(--ease-in-out) infinite alternate;
+}
+.hud-aurora::after {
+  right: -28vmax; bottom: -34vmax;
+  background: radial-gradient(circle, rgba(42, 119, 196, 0.26) 0%, transparent 62%);
+  animation: auroraDriftB 32s var(--ease-in-out) infinite alternate;
+}
+@keyframes auroraDriftA {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(10vmax, 6vmax, 0) scale(1.15); }
+}
+@keyframes auroraDriftB {
+  from { transform: translate3d(0, 0, 0) scale(1.1); }
+  to { transform: translate3d(-8vmax, -7vmax, 0) scale(0.95); }
+}
+.hud-aurora .hud-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(214, 220, 214, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(214, 220, 214, 0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(85% 70% at 50% 30%, #000 0%, transparent 100%);
+  mask-image: radial-gradient(85% 70% at 50% 30%, #000 0%, transparent 100%);
+}
+
+/* ---------- holographic glass card ----------
+   Dark glass with a slowly-shifting green→blue gradient hairline border. */
+.holo-card {
+  position: relative;
+  border-radius: 22px;
+  background: rgba(16, 28, 24, 0.58);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  box-shadow: 0 28px 70px -30px rgba(0, 0, 0, 0.7);
+}
+.holo-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    120deg,
+    rgba(63, 191, 139, 0.85),
+    rgba(156, 203, 239, 0.45),
+    rgba(63, 191, 139, 0.08),
+    rgba(63, 191, 139, 0.85)
+  );
+  background-size: 300% 300%;
+  animation: holoShift 7s linear infinite;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+@keyframes holoShift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+/* Quiet variant — plain hairline, no animated border (for list cards). */
+.glass-card {
+  background: rgba(16, 28, 24, 0.58);
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.65);
+}
+
+/* ---------- HUD label ----------
+   Mono, uppercase, with a small glowing tick — section headers that read
+   like instrument panel captions. */
+.hud-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-300);
+}
+.hud-label::before {
+  content: '';
+  width: 18px;
+  height: 1px;
+  flex: none;
+  background: var(--stay-400);
+  box-shadow: 0 0 8px rgba(63, 191, 139, 0.9);
+}
+
+/* ---------- glowing orbit ring (avatars / logos) ---------- */
+.glow-ring { position: relative; display: inline-flex; border-radius: 50%; }
+.glow-ring::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0% 42%,
+    rgba(63, 191, 139, 0.95) 52%,
+    rgba(156, 203, 239, 0.8) 60%,
+    transparent 70% 100%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 2.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 2.5px));
+  animation: ringSpin 4.5s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(63, 191, 139, 0.7));
+  pointer-events: none;
+}
+@keyframes ringSpin { to { transform: rotate(360deg); } }
+
+/* ---------- glowing number / verdict text ---------- */
+.glow-stay { text-shadow: 0 0 20px rgba(63, 191, 139, 0.6); }
+
+/* ---------- live status dot (reused look from Explore's location chip) --- */
+.hud-live-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex: none;
+  background: var(--stay-400);
+  box-shadow: 0 0 8px rgba(63, 191, 139, 0.9);
+  animation: exploreBlink 1.8s infinite;
+}
+
+/* ---------- header on night screens ----------
+   Header.jsx reads these; on paper screens the fallbacks apply. */
+[data-theme='night'] {
+  --header-bg: rgba(10, 19, 16, 0.6);
+  --header-border: rgba(255, 255, 255, 0.08);
+}
+
+/* Inputs sink into the glass instead of floating as white slabs. */
+[data-theme='night'] input,
+[data-theme='night'] textarea,
+[data-theme='night'] select {
+  color-scheme: dark;
+}
+
+/* Feed (mobile) — slide progress rail on the right edge. */
+.feed-progress {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  pointer-events: none;
+}
+.feed-progress span {
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.28);
+  transition: background var(--dur-base) var(--ease-out), height var(--dur-base) var(--ease-pop), box-shadow var(--dur-base);
+}
+.feed-progress span.on {
+  height: 22px;
+  background: var(--stay-400);
+  box-shadow: 0 0 8px rgba(63, 191, 139, 0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-aurora::before, .hud-aurora::after, .holo-card::before, .glow-ring::before, .hud-live-dot {
+    animation: none;
+  }
+}

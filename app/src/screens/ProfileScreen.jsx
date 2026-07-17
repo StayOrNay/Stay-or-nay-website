@@ -40,55 +40,61 @@ export function ProfileScreen() {
   };
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
-      <Header title="You" />
-      {/* Capped + centered rather than stretched edge-to-edge once the
-          shell is wide — a settings list stretched to 1400px reads worse
-          than one left at a comfortable reading width. */}
-      <div style={{ padding: 16, maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
-        {user ? (
-          <div className="rise" style={{ '--i': 0, display: 'flex', alignItems: 'center', gap: 14 }}>
-            <Avatar name={user.email} size="lg" verified={Boolean(user.email_confirmed_at)} />
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--text-strong)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {user.email}
-              </div>
-              <div className="stamp-in" style={{ marginTop: 4, animationDelay: '350ms' }}><Tag variant="outline" tone="stay">Signed in</Tag></div>
-            </div>
-          </div>
-        ) : (
-          <div className="rise" style={{ '--i': 0, display: 'flex', alignItems: 'center', gap: 14 }}>
-            <Avatar name="Guest" size="lg" />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--text-strong)' }}>Guest</div>
-              <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
-                {configured ? 'Sign in to save your verdicts everywhere.' : 'Browsing without an account.'}
+    <div className="hud-screen" data-theme="night">
+      <div className="hud-aurora"><div className="hud-grid" /></div>
+      <div className="hud-content">
+        <Header title="You" />
+        {/* Capped + centered rather than stretched edge-to-edge once the
+            shell is wide — a settings list stretched to 1400px reads worse
+            than one left at a comfortable reading width. */}
+        <div style={{ padding: 18, maxWidth: 560, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {user ? (
+            <div className="rise holo-card" style={{ '--i': 0, display: 'flex', alignItems: 'center', gap: 16, padding: 18 }}>
+              <span className="glow-ring"><Avatar name={user.email} size="lg" verified={Boolean(user.email_confirmed_at)} /></span>
+              <div style={{ minWidth: 0 }}>
+                <div className="hud-label" style={{ marginBottom: 5 }}>Traveler · online</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 19, color: 'var(--text-strong)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user.email}
+                </div>
+                <div className="stamp-in" style={{ marginTop: 6, animationDelay: '350ms' }}><Tag variant="outline" tone="stay">Signed in</Tag></div>
               </div>
             </div>
-            <Button variant="stay" size="sm" onClick={() => navigate('/you/account')}>Sign in</Button>
-          </div>
-        )}
-        <div className="rise" style={{ '--i': 1, background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-          {ROWS.map(({ Icon, label, to }, i) => (
-            <div
-              key={label}
-              className="nav-row"
-              onClick={to ? () => navigate(to) : undefined}
-              style={{ borderTop: i ? '1px solid var(--border-soft)' : 'none', cursor: to ? 'pointer' : 'default' }}
-            >
-              <span className="row-icon"><Icon size={20} /></span>
-              <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 15, color: 'var(--text-strong)' }}>{label}</span>
-              {to && <span className="row-chevron"><ChevronRight size={18} /></span>}
+          ) : (
+            <div className="rise holo-card" style={{ '--i': 0, display: 'flex', alignItems: 'center', gap: 16, padding: 18 }}>
+              <span className="glow-ring"><Avatar name="Guest" size="lg" /></span>
+              <div style={{ flex: 1 }}>
+                <div className="hud-label" style={{ marginBottom: 5 }}>Guest mode</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 19, color: 'var(--text-strong)' }}>Guest</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+                  {configured ? 'Sign in to save your verdicts everywhere.' : 'Browsing without an account.'}
+                </div>
+              </div>
+              <Button variant="stay" size="sm" onClick={() => navigate('/you/account')}>Sign in</Button>
             </div>
-          ))}
+          )}
+          <div className="rise hud-label" style={{ '--i': 1 }}>Control panel</div>
+          <div className="rise glass-card" style={{ '--i': 1, overflow: 'hidden', marginTop: -8 }}>
+            {ROWS.map(({ Icon, label, to }, i) => (
+              <div
+                key={label}
+                className="nav-row"
+                onClick={to ? () => navigate(to) : undefined}
+                style={{ borderTop: i ? '1px solid var(--border-soft)' : 'none', cursor: to ? 'pointer' : 'default' }}
+              >
+                <span className="row-icon"><Icon size={20} /></span>
+                <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 15, color: 'var(--text-strong)' }}>{label}</span>
+                {to && <span className="row-chevron"><ChevronRight size={18} /></span>}
+              </div>
+            ))}
+          </div>
+          {user && (
+            <div className="rise" style={{ '--i': 2 }}>
+              <Button variant="neutral" block iconLeft={<LogOut size={18} />} onClick={handleSignOut}>
+                Sign out
+              </Button>
+            </div>
+          )}
         </div>
-        {user && (
-          <div className="rise" style={{ '--i': 2 }}>
-            <Button variant="neutral" block iconLeft={<LogOut size={18} />} onClick={handleSignOut}>
-              Sign out
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -15,13 +15,15 @@ export function LanguageScreen() {
   const { language, setLanguage, languages } = useLanguage();
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
+    <div className="hud-screen" data-theme="night">
+      <div className="hud-aurora"><div className="hud-grid" /></div>
+      <div className="hud-content">
       <Header title="Language" onBack={() => navigate('/you')} />
-      <div style={{ padding: 16, maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ padding: 18, maxWidth: 480, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <p className="rise" style={{ '--i': 0, margin: 0, fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
           More languages are on the way. For now, StayOrNay is available in English.
         </p>
-        <div className="rise" style={{ '--i': 1, background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+        <div className="rise glass-card" style={{ '--i': 1, overflow: 'hidden' }}>
           {languages.map((lang, i) => {
             const selected = lang.code === language;
             return (
@@ -53,6 +55,7 @@ export function LanguageScreen() {
             );
           })}
         </div>
+      </div>
       </div>
     </div>
   );

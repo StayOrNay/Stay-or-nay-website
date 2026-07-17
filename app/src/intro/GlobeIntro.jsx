@@ -82,9 +82,11 @@ function pitchProgress(t) {
 }
 
 function gibsCloudUrl() {
-  const d = new Date(Date.now() - 24 * 60 * 60 * 1000); // yesterday UTC — guaranteed processed
+  // NOAA-20 (SNPP's feed went stale — see atmosphere.js); 2-day lag so the
+  // imagery date is always fully processed.
+  const d = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
   const day = d.toISOString().slice(0, 10);
-  return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/${day}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`;
+  return `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/${day}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`;
 }
 
 const NIGHT_CORE_OPACITY = 0.6;

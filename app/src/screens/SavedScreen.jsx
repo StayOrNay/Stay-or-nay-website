@@ -16,11 +16,13 @@ export function SavedScreen() {
   const savedVillas = villas.filter((v) => saved.has(v.id));
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
+    <div className="hud-screen" data-theme="night">
+      <div className="hud-aurora"><div className="hud-grid" /></div>
+      <div className="hud-content">
       <Header title="Saved villas" />
       {savedVillas.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '64px 32px', gap: 14 }}>
-          <div className="rise empty-breath" style={{ '--i': 0, width: 64, height: 64, borderRadius: '50%', background: 'var(--paper-200)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}>
+          <div className="rise empty-breath" style={{ '--i': 0, width: 64, height: 64, borderRadius: '50%', background: 'var(--surface-sunken)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}>
             <Heart size={28} />
           </div>
           <div className="rise" style={{ '--i': 1, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--text-strong)' }}>No villas saved yet</div>
@@ -33,8 +35,8 @@ export function SavedScreen() {
         </div>
       ) : (
         <div style={{ padding: '14px 14px 24px' }}>
-          <div className="rise" style={{ '--i': 0, fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 16 }}>
-            {savedVillas.length} on your shortlist
+          <div className="rise hud-label" style={{ '--i': 0, marginBottom: 16 }}>
+            <span className="hud-live-dot" /> {savedVillas.length} on your shortlist
           </div>
           {/* CSS grid (not a JS breakpoint) — naturally reflows from one
               column on a phone-width canvas to several once the shell
@@ -53,6 +55,7 @@ export function SavedScreen() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
