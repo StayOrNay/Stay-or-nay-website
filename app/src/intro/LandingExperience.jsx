@@ -417,43 +417,29 @@ export function LandingExperience({ onComplete }) {
       setFading(true);
       window.setTimeout(finish, FADE_MS);
     };
-    // Two-beat "3D swim": dive from orbit into a tilted, banked swoop over
-    // the island (pitch 58°, bearing swung to -24°), then a slower settle
-    // that levels the camera out onto the EXACT shot the live Explore map
-    // opens with (BALI / EXPLORE_ZOOM / pitch 0 / bearing 0) — so the
-    // fade-out still reveals a perfectly camera-matched real map.
-    const SWOOP_MS = 3400;
-    const SETTLE_MS = 1900;
+    // ONE continuous glide, orbit → the exact shot the live Explore map
+    // opens with (BALI / EXPLORE_ZOOM / pitch 0 / bearing 0). The old
+    // two-beat version (banked swoop, then a second settle move) read as
+    // "it zooms in twice" — chaining two camera moves means decelerating
+    // to a stop and accelerating again. A single flyTo with a low curve
+    // (no zoom-out hump) and a smoothstep easing accelerates once, glides,
+    // and lands at zero velocity on a perfectly camera-matched real map.
+    const DIVE_MS = 4600;
     try {
       map.flyTo({
         center: [BALI.lon, BALI.lat],
-        zoom: EXPLORE_ZOOM - 1.1,
-        pitch: 58,
-        bearing: -24,
-        duration: SWOOP_MS,
-        curve: 1.35,
+        zoom: EXPLORE_ZOOM,
+        pitch: 0,
+        bearing: 0,
+        duration: DIVE_MS,
+        curve: 1.1, // near-direct path — no "pull back, then plunge" second beat
+        easing: (t) => t * t * (3 - 2 * t), // smooth in, zero-velocity landing
         essential: true,
       });
-      map.once('moveend', () => {
-        if (done) return;
-        try {
-          map.easeTo({
-            center: [BALI.lon, BALI.lat],
-            zoom: EXPLORE_ZOOM,
-            pitch: 0,
-            bearing: 0,
-            duration: SETTLE_MS,
-            easing: (t) => t * t * (3 - 2 * t), // zero-velocity landing
-            essential: true,
-          });
-          map.once('moveend', handoff);
-        } catch (err) {
-          handoff();
-        }
-      });
+      map.once('moveend', handoff);
       // Backstop: if a moveend never fires (tab hidden, teardown race),
       // hand off anyway rather than strand the visitor on a frozen globe.
-      window.setTimeout(handoff, SWOOP_MS + SETTLE_MS + 1500);
+      window.setTimeout(handoff, DIVE_MS + 1500);
     } catch (err) {
       handoff();
     }
