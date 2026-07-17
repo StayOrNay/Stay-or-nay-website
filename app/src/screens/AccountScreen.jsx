@@ -154,6 +154,7 @@ export function AccountScreen() {
           ) : view === 'check-email' ? (
             <>
               <div
+                className="stamp-in success-ring"
                 style={{
                   width: 60, height: 60, borderRadius: 'var(--radius-pill)',
                   background: 'var(--brand-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -161,7 +162,7 @@ export function AccountScreen() {
               >
                 <Mail size={26} color="var(--brand)" />
               </div>
-              <h1 style={{ margin: '20px 0 8px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 23, color: 'var(--text-strong)', textAlign: 'center' }}>
+              <h1 className="rise" style={{ '--i': 2, margin: '20px 0 8px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 23, color: 'var(--text-strong)', textAlign: 'center' }}>
                 Check your email
               </h1>
               <p style={{ margin: '0 0 4px', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', textAlign: 'center', lineHeight: 1.6 }}>
@@ -198,11 +199,11 @@ export function AccountScreen() {
             </>
           ) : user ? (
             <>
-              <Avatar name={user.email} size="lg" />
-              <div style={{ marginTop: 14, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 19, color: 'var(--text-strong)', textAlign: 'center', wordBreak: 'break-word' }}>
+              <span className="rise" style={{ '--i': 0 }}><Avatar name={user.email} size="lg" /></span>
+              <div className="rise" style={{ '--i': 1, marginTop: 14, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 19, color: 'var(--text-strong)', textAlign: 'center', wordBreak: 'break-word' }}>
                 {user.email}
               </div>
-              <div style={{ marginTop: 8 }}>
+              <div className="stamp-in" style={{ marginTop: 8, animationDelay: '350ms' }}>
                 <Tag variant="outline" tone="stay">
                   {user.email_confirmed_at ? 'Verified' : 'Awaiting email confirmation'}
                 </Tag>
@@ -222,22 +223,24 @@ export function AccountScreen() {
             </>
           ) : (
             <>
-              <Logo />
-              <h1 style={{ margin: '20px 0 6px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 25, letterSpacing: '-0.01em', color: 'var(--text-strong)', textAlign: 'center' }}>
+              <span className="rise" style={{ '--i': 0 }}><Logo /></span>
+              <h1 className="rise" style={{ '--i': 1, margin: '20px 0 6px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 25, letterSpacing: '-0.01em', color: 'var(--text-strong)', textAlign: 'center' }}>
                 Welcome to{' '}
                 <span style={{ color: 'var(--stay-500)' }}>Stay</span>
                 <span style={{ color: 'var(--ink-400)' }}>Or</span>
                 <span style={{ color: 'var(--nay-500)' }}>Nay</span>
               </h1>
-              <p style={{ margin: '0 0 22px', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', textAlign: 'center' }}>
+              <p className="rise" style={{ '--i': 2, margin: '0 0 22px', fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', textAlign: 'center' }}>
                 {useMagicLink ? 'Connect with your email — no password needed.' : 'Log in or create an account with email.'}
               </p>
 
               <button
                 type="button"
+                className="rise press"
                 onClick={handleGoogle}
                 disabled={googleLoading || submitting}
                 style={{
+                  '--i': 3,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                   width: '100%', padding: '13px 16px',
                   border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-pill)',
@@ -245,14 +248,13 @@ export function AccountScreen() {
                   fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 15,
                   cursor: googleLoading || submitting ? 'default' : 'pointer',
                   boxShadow: 'var(--shadow-sm)', opacity: googleLoading || submitting ? 0.7 : 1,
-                  transition: 'opacity 120ms ease, transform 120ms ease',
                 }}
               >
                 <GoogleIcon size={18} />
                 {googleLoading ? 'Redirecting to Google…' : 'Continue with Google'}
               </button>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', margin: '18px 0' }}>
+              <div className="rise" style={{ '--i': 4, display: 'flex', alignItems: 'center', gap: 12, width: '100%', margin: '18px 0' }}>
                 <span style={{ flex: 1, height: 1, background: 'var(--border-soft)' }} />
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                   or
@@ -260,7 +262,7 @@ export function AccountScreen() {
                 <span style={{ flex: 1, height: 1, background: 'var(--border-soft)' }} />
               </div>
 
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
+              <form onSubmit={handleSubmit} className="rise" style={{ '--i': 5, display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
                 {!useMagicLink && (
                   <div style={{ display: 'flex', gap: 6, background: 'var(--surface-sunken)', borderRadius: 'var(--radius-pill)', padding: 4, marginBottom: 4 }}>
                     {['signin', 'signup'].map((m) => (

@@ -18,10 +18,10 @@ export function LanguageScreen() {
     <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
       <Header title="Language" onBack={() => navigate('/you')} />
       <div style={{ padding: 16, maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+        <p className="rise" style={{ '--i': 0, margin: 0, fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
           More languages are on the way. For now, StayOrNay is available in English.
         </p>
-        <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+        <div className="rise" style={{ '--i': 1, background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           {languages.map((lang, i) => {
             const selected = lang.code === language;
             return (
@@ -29,6 +29,7 @@ export function LanguageScreen() {
                 key={lang.code}
                 type="button"
                 disabled={!lang.available}
+                className={lang.available ? 'nav-row' : undefined}
                 onClick={() => setLanguage(lang.code)}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', gap: 12,
@@ -47,7 +48,7 @@ export function LanguageScreen() {
                     Coming soon
                   </span>
                 )}
-                {selected && <Check size={18} color="var(--brand)" />}
+                {selected && <span key={language} className="stamp-in"><Check size={18} color="var(--brand)" /></span>}
               </button>
             );
           })}

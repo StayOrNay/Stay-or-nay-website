@@ -152,7 +152,7 @@ export function RequestReviewScreen() {
     <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
       <Header title="Request a review" onBack={() => navigate(-1)} />
       <div style={{ padding: 16, maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 48 }}>
-        <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>
+        <p className="rise" style={{ '--i': 0, margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>
           Booked (or thinking about booking) somewhere and want an honest review before or during your stay? Send us the link and we'll go — or arrange for someone to. It's free.
         </p>
 
@@ -168,43 +168,49 @@ export function RequestReviewScreen() {
             <Button variant="stay" block onClick={() => navigate('/you/account')}>Sign in or create an account</Button>
           </>
         ) : done ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 12, background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 22 }}>
-            <CheckCircle2 size={32} color="var(--success)" />
-            <h2 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--text-strong)' }}>Request sent</h2>
-            <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+          <div className="rise" style={{ '--i': 0, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 12, background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 22 }}>
+            <span className="stamp-in success-ring" style={{ animationDelay: '150ms' }}><CheckCircle2 size={32} color="var(--success)" /></span>
+            <h2 className="rise" style={{ '--i': 3, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, color: 'var(--text-strong)' }}>Request sent</h2>
+            <p className="rise" style={{ '--i': 4, margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.5 }}>
               We'll get back to you below once we've looked at it.
             </p>
             <Button variant="neutral" size="sm" onClick={() => setDone(false)}>Send another request</Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Input
-              label="Property link"
-              required
-              type="url"
-              placeholder="Booking.com, Airbnb, Vrbo, the villa's own site…"
-              iconLeft={<Link2 size={16} />}
-              value={propertyLink}
-              onChange={(e) => setPropertyLink(e.target.value)}
-            />
-            <Input
-              label="Property name"
-              required
-              placeholder="e.g. Villa Mawar, The Sanctuary Bali…"
-              value={propertyName}
-              onChange={(e) => setPropertyName(e.target.value)}
-            />
-            <Input
-              label="Location"
-              placeholder="e.g. Canggu, Bali"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div className="rise" style={{ '--i': 1 }}>
+              <Input
+                label="Property link"
+                required
+                type="url"
+                placeholder="Booking.com, Airbnb, Vrbo, the villa's own site…"
+                iconLeft={<Link2 size={16} />}
+                value={propertyLink}
+                onChange={(e) => setPropertyLink(e.target.value)}
+              />
+            </div>
+            <div className="rise" style={{ '--i': 2 }}>
+              <Input
+                label="Property name"
+                required
+                placeholder="e.g. Villa Mawar, The Sanctuary Bali…"
+                value={propertyName}
+                onChange={(e) => setPropertyName(e.target.value)}
+              />
+            </div>
+            <div className="rise" style={{ '--i': 3 }}>
+              <Input
+                label="Location"
+                placeholder="e.g. Canggu, Bali"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              />
+            </div>
+            <div className="rise" style={{ '--i': 4, display: 'flex', gap: 12 }}>
               <DateSelect label="Check-in (optional)" value={checkIn} onChange={setCheckIn} />
               <DateSelect label="Check-out (optional)" value={checkOut} onChange={setCheckOut} />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="rise" style={{ '--i': 5, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <label style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--text-body)' }}>Anything else we should know?</label>
               <textarea
                 rows={4}
@@ -226,9 +232,11 @@ export function RequestReviewScreen() {
               </div>
             )}
 
-            <Button type="submit" variant="stay" block size="lg" disabled={submitting} iconLeft={<Send size={18} />}>
-              {submitting ? 'Sending…' : 'Send request'}
-            </Button>
+            <div className="rise" style={{ '--i': 6 }}>
+              <Button type="submit" variant="stay" block size="lg" disabled={submitting} iconLeft={<Send size={18} />}>
+                {submitting ? 'Sending…' : 'Send request'}
+              </Button>
+            </div>
           </form>
         )}
 
@@ -242,15 +250,17 @@ export function RequestReviewScreen() {
             ) : myRequests.length === 0 ? (
               <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 13.5, color: 'var(--text-faint)' }}>No requests yet.</p>
             ) : (
-              myRequests.map((r) => {
+              myRequests.map((r, idx) => {
                 const meta = STATUS_META[r.status] || STATUS_META.open;
                 return (
-                  <div key={r.id} style={{ background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div key={r.id} className="rise card-lift" style={{ '--i': Math.min(idx, 6), background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
                       <a href={r.property_link} target="_blank" rel="noreferrer" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--text-strong)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {r.property_name || r.property_link}
                       </a>
-                      <Tag tone={meta.tone} iconLeft={<meta.Icon size={12} />}>{meta.label}</Tag>
+                      <span key={r.status} className="stamp-in" style={{ animationDelay: `${200 + Math.min(idx, 6) * 70}ms` }}>
+                        <Tag tone={meta.tone} iconLeft={<meta.Icon size={12} />}>{meta.label}</Tag>
+                      </span>
                     </div>
                     {r.location && <span style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-muted)' }}>{r.location}</span>}
                     {r.admin_note && (

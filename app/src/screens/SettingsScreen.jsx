@@ -33,27 +33,30 @@ export function SettingsScreen() {
     <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
       <Header title="Settings" onBack={() => navigate('/you')} />
       <div style={{ padding: 16, maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+        <div className="rise" style={{ '--i': 0, background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           {ROWS.map(({ Icon, label, hint, to }, i) => (
             <div
               key={label}
+              className="nav-row"
               onClick={() => navigate(to)}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '15px 16px', borderTop: i ? '1px solid var(--border-soft)' : 'none', cursor: 'pointer' }}
+              style={{ borderTop: i ? '1px solid var(--border-soft)' : 'none' }}
             >
-              <Icon size={20} color="var(--text-muted)" />
+              <span className="row-icon"><Icon size={20} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 15, color: 'var(--text-strong)' }}>{label}</div>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-faint)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hint}</div>
               </div>
-              <ChevronRight size={18} color="var(--text-faint)" />
+              <span className="row-chevron"><ChevronRight size={18} /></span>
             </div>
           ))}
         </div>
 
         {user && (
-          <Button variant="neutral" block iconLeft={<LogOut size={18} />} onClick={handleSignOut}>
-            Sign out
-          </Button>
+          <div className="rise" style={{ '--i': 1 }}>
+            <Button variant="neutral" block iconLeft={<LogOut size={18} />} onClick={handleSignOut}>
+              Sign out
+            </Button>
+          </div>
         )}
       </div>
     </div>

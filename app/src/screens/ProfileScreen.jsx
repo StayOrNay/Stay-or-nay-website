@@ -47,17 +47,17 @@ export function ProfileScreen() {
           than one left at a comfortable reading width. */}
       <div style={{ padding: 16, maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
         {user ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div className="rise" style={{ '--i': 0, display: 'flex', alignItems: 'center', gap: 14 }}>
             <Avatar name={user.email} size="lg" verified={Boolean(user.email_confirmed_at)} />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--text-strong)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {user.email}
               </div>
-              <div style={{ marginTop: 4 }}><Tag variant="outline" tone="stay">Signed in</Tag></div>
+              <div className="stamp-in" style={{ marginTop: 4, animationDelay: '350ms' }}><Tag variant="outline" tone="stay">Signed in</Tag></div>
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div className="rise" style={{ '--i': 0, display: 'flex', alignItems: 'center', gap: 14 }}>
             <Avatar name="Guest" size="lg" />
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--text-strong)' }}>Guest</div>
@@ -68,23 +68,26 @@ export function ProfileScreen() {
             <Button variant="stay" size="sm" onClick={() => navigate('/you/account')}>Sign in</Button>
           </div>
         )}
-        <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+        <div className="rise" style={{ '--i': 1, background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           {ROWS.map(({ Icon, label, to }, i) => (
             <div
               key={label}
+              className="nav-row"
               onClick={to ? () => navigate(to) : undefined}
-              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '15px 16px', borderTop: i ? '1px solid var(--border-soft)' : 'none', cursor: to ? 'pointer' : 'default' }}
+              style={{ borderTop: i ? '1px solid var(--border-soft)' : 'none', cursor: to ? 'pointer' : 'default' }}
             >
-              <Icon size={20} color="var(--text-muted)" />
+              <span className="row-icon"><Icon size={20} /></span>
               <span style={{ flex: 1, fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 15, color: 'var(--text-strong)' }}>{label}</span>
-              {to && <ChevronRight size={18} color="var(--text-faint)" />}
+              {to && <span className="row-chevron"><ChevronRight size={18} /></span>}
             </div>
           ))}
         </div>
         {user && (
-          <Button variant="neutral" block iconLeft={<LogOut size={18} />} onClick={handleSignOut}>
-            Sign out
-          </Button>
+          <div className="rise" style={{ '--i': 2 }}>
+            <Button variant="neutral" block iconLeft={<LogOut size={18} />} onClick={handleSignOut}>
+              Sign out
+            </Button>
+          </div>
         )}
       </div>
     </div>

@@ -43,7 +43,7 @@ export function VerdictAlertsScreen() {
     <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
       <Header title="Verdict alerts" onBack={() => navigate('/you')} />
       <div style={{ padding: 16, maxWidth: 560, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.5 }}>
+        <p className="rise" style={{ '--i': 0, margin: 0, fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-faint)', lineHeight: 1.5 }}>
           You'll see one of these every time a review you submitted gets approved or rejected.
         </p>
 
@@ -60,7 +60,7 @@ export function VerdictAlertsScreen() {
           <EmptyState icon={<Bell size={26} />} text="Nothing yet — once a review you submitted is approved or rejected, it'll show up here." />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {alerts.map((r) => {
+            {alerts.map((r, idx) => {
               const villa = villas.find((v) => v.id === r.villa_id);
               const propertyName = r.property_name || (villa ? villa.name : null) || 'that property';
               const approved = r.status === 'approved';
@@ -72,14 +72,16 @@ export function VerdictAlertsScreen() {
               return (
                 <div
                   key={r.id}
+                  className={clickable ? 'rise card-lift' : 'rise'}
                   onClick={clickable ? handleClick : undefined}
                   style={{
+                    '--i': Math.min(idx + 1, 8),
                     display: 'flex', gap: 12, alignItems: 'flex-start',
                     background: 'var(--surface-card)', border: '1px solid var(--border-soft)',
                     borderRadius: 'var(--radius-lg)', padding: 14, cursor: clickable ? 'pointer' : 'default',
                   }}
                 >
-                  <span style={{ flex: 'none', color: approved ? 'var(--stay-600)' : 'var(--nay-600)', marginTop: 1 }}>
+                  <span className="stamp-in" style={{ animationDelay: `${250 + Math.min(idx, 6) * 70}ms`, flex: 'none', color: approved ? 'var(--stay-600)' : 'var(--nay-600)', marginTop: 1 }}>
                     {approved ? <CheckCircle2 size={20} /> : <XCircle size={20} />}
                   </span>
                   <div style={{ minWidth: 0 }}>

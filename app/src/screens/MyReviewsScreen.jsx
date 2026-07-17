@@ -56,22 +56,26 @@ export function MyReviewsScreen() {
           </>
         ) : (
           <>
-            <Button variant="stay" block iconLeft={<PenLine size={18} />} onClick={() => navigate('/write-review')}>
-              Write a review
-            </Button>
+            <div className="rise" style={{ '--i': 0 }}>
+              <Button variant="stay" block iconLeft={<PenLine size={18} />} onClick={() => navigate('/write-review')}>
+                Write a review
+              </Button>
+            </div>
 
             {reviews.length === 0 ? (
               <EmptyState text="You haven't reviewed a villa yet. Stayed somewhere recently? Tell us about it." />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {reviews.map((r) => {
+                {reviews.map((r, idx) => {
                   const villa = villas.find((v) => v.id === r.villa_id);
                   const propertyName = r.property_name || (villa ? villa.name : null) || 'Untitled property';
                   const meta = STATUS_META[r.status] || STATUS_META.pending;
                   return (
                     <div
                       key={r.id}
+                      className="rise card-lift"
                       style={{
+                        '--i': Math.min(idx + 1, 8),
                         background: 'var(--surface-card)', border: '1px solid var(--border-soft)',
                         borderRadius: 'var(--radius-lg)', padding: 14, display: 'flex', flexDirection: 'column', gap: 8,
                       }}
@@ -91,7 +95,9 @@ export function MyReviewsScreen() {
                             {new Date(r.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                           </div>
                         </div>
-                        <Tag tone={meta.tone} iconLeft={<meta.Icon size={12} />}>{meta.label}</Tag>
+                        <span key={r.status} className="stamp-in" style={{ animationDelay: `${250 + Math.min(idx, 6) * 70}ms` }}>
+                          <Tag tone={meta.tone} iconLeft={<meta.Icon size={12} />}>{meta.label}</Tag>
+                        </span>
                       </div>
                       {r.headline && (
                         <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14, color: 'var(--text-strong)' }}>

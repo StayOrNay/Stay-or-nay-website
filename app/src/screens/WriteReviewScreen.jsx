@@ -214,7 +214,7 @@ export function WriteReviewScreen() {
       <div style={{ flex: 1, overflowY: 'auto', background: 'var(--surface-page)' }}>
         <Header title="Review submitted" onBack={() => navigate('/you/reviews')} />
         <div style={{ padding: 24, maxWidth: 420, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 14 }}>
-          <span className="stamp-in"><CheckCircle2 size={44} color="var(--success)" /></span>
+          <span className="stamp-in success-ring"><CheckCircle2 size={44} color="var(--success)" /></span>
           <h2 className="explore-enter-card" style={{ animationDelay: '150ms', margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, color: 'var(--text-strong)' }}>Thanks — it's in the queue</h2>
           <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>
             Your review is pending review by the StayOrNay team. You'll see it under "Your reviews" right away, and get a verdict alert once it's approved or rejected.
@@ -242,42 +242,50 @@ export function WriteReviewScreen() {
           </>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <Input
-              label="Your name"
-              required
-              placeholder="First name is fine — e.g. Benjamin"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <Input
-              label="Property link"
-              required
-              type="url"
-              placeholder="Booking.com, Airbnb, Vrbo, the villa's own site…"
-              iconLeft={<Link2 size={16} />}
-              value={propertyLink}
-              onChange={(e) => setPropertyLink(e.target.value)}
-            />
-            <Input
-              label="Property name"
-              required
-              placeholder="e.g. Villa Mawar, The Sanctuary Bali…"
-              value={propertyName}
-              onChange={(e) => setPropertyName(e.target.value)}
-            />
+            <div className="rise" style={{ '--i': 0 }}>
+              <Input
+                label="Your name"
+                required
+                placeholder="First name is fine — e.g. Benjamin"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div className="rise" style={{ '--i': 1 }}>
+              <Input
+                label="Property link"
+                required
+                type="url"
+                placeholder="Booking.com, Airbnb, Vrbo, the villa's own site…"
+                iconLeft={<Link2 size={16} />}
+                value={propertyLink}
+                onChange={(e) => setPropertyLink(e.target.value)}
+              />
+            </div>
+            <div className="rise" style={{ '--i': 2 }}>
+              <Input
+                label="Property name"
+                required
+                placeholder="e.g. Villa Mawar, The Sanctuary Bali…"
+                value={propertyName}
+                onChange={(e) => setPropertyName(e.target.value)}
+              />
+            </div>
 
-            <Input
-              label="Area / town"
-              required
-              placeholder="e.g. Uluwatu, Bali"
-              value={area}
-              onChange={(e) => setArea(e.target.value)}
-            />
+            <div className="rise" style={{ '--i': 3 }}>
+              <Input
+                label="Area / town"
+                required
+                placeholder="e.g. Uluwatu, Bali"
+                value={area}
+                onChange={(e) => setArea(e.target.value)}
+              />
+            </div>
 
             {/* Exact location — Airbnb never gives a precise address, so the
                 reviewer drops the pin themselves. We seed it from the typed
                 area, then they drag it onto the real spot. */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="rise" style={{ '--i': 4, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                 <label style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--text-body)' }}>Pin the exact spot</label>
                 <Button type="button" variant="ghost" size="sm" iconLeft={<Crosshair size={15} />} disabled={locating || !area.trim()} onClick={locateFromArea}>
@@ -309,19 +317,21 @@ export function WriteReviewScreen() {
               )}
             </div>
 
-            <Input
-              label="Bedrooms"
-              required
-              type="number"
-              min={1}
-              max={30}
-              placeholder="e.g. 3"
-              value={beds}
-              onChange={(e) => setBeds(e.target.value)}
-            />
+            <div className="rise" style={{ '--i': 5 }}>
+              <Input
+                label="Bedrooms"
+                required
+                type="number"
+                min={1}
+                max={30}
+                placeholder="e.g. 3"
+                value={beds}
+                onChange={(e) => setBeds(e.target.value)}
+              />
+            </div>
 
             {/* How much they paid — currency picker + amount, per night. */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="rise" style={{ '--i': 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <label style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--text-body)' }}>
                 How much did you pay?{' '}
                 <span style={{ color: 'var(--text-faint)', fontWeight: 500 }}>per night</span>
@@ -365,7 +375,7 @@ export function WriteReviewScreen() {
                 the number pops on every change (keyed on `total`) and the
                 badge re-stamps whenever the verdict flips Stay↔Nay (keyed
                 on `verdict`). */}
-            <div style={{ position: 'sticky', top: 8, zIndex: 15, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 14, boxShadow: 'var(--shadow-md)' }}>
+            <div className="rise" style={{ '--i': 7, position: 'sticky', top: 8, zIndex: 15, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface-card)', border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-lg)', padding: 14, boxShadow: 'var(--shadow-md)' }}>
               <div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>Your score</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 24, color: 'var(--text-strong)' }}>
@@ -381,12 +391,14 @@ export function WriteReviewScreen() {
             </p>
 
             {/* Category sliders */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="rise" style={{ '--i': 8, display: 'flex', flexDirection: 'column', gap: 16 }}>
               {CATEGORIES.map((c) => (
-                <div key={c.key} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div key={c.key} className="slider-row" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <LabelWithHint label={c.label} hint={c.hint} />
-                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: 'var(--text-muted)' }}>{scores[c.key]} / {MAX_PER_CATEGORY}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: 'var(--text-muted)' }}>
+                      <span key={scores[c.key]} className="pop-key">{scores[c.key]}</span> / {MAX_PER_CATEGORY}
+                    </span>
                   </div>
                   <input
                     type="range"
@@ -401,16 +413,18 @@ export function WriteReviewScreen() {
               ))}
             </div>
 
-            <Input
-              label="Headline"
-              required
-              placeholder="Sum it up in one line"
-              value={headline}
-              onChange={(e) => setHeadline(e.target.value)}
-              maxLength={120}
-            />
+            <div className="rise" style={{ '--i': 9 }}>
+              <Input
+                label="Headline"
+                required
+                placeholder="Sum it up in one line"
+                value={headline}
+                onChange={(e) => setHeadline(e.target.value)}
+                maxLength={120}
+              />
+            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="rise" style={{ '--i': 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <label style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--text-body)' }}>Your review</label>
               <textarea
                 required
@@ -427,22 +441,27 @@ export function WriteReviewScreen() {
             </div>
 
             {/* Media upload */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="rise" style={{ '--i': 11, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <label style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--text-body)' }}>Photos & videos</label>
               <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-faint)' }}>
                 At least {MIN_PHOTOS} photos and {MIN_VIDEOS} videos are required. Long videos are
                 compressed automatically in your browser before upload, so full walkthroughs are fine.
               </p>
               <div style={{ display: 'flex', gap: 8 }}>
-                <Tag tone={photoCount >= MIN_PHOTOS ? 'stay' : 'neutral'} iconLeft={<ImageIcon size={12} />}>
-                  {photoCount} / {MIN_PHOTOS} photos
-                </Tag>
-                <Tag tone={videoCount >= MIN_VIDEOS ? 'stay' : 'neutral'} iconLeft={<VideoIcon size={12} />}>
-                  {videoCount} / {MIN_VIDEOS} videos
-                </Tag>
+                <span key={`p${photoCount}`} className="pop-key">
+                  <Tag tone={photoCount >= MIN_PHOTOS ? 'stay' : 'neutral'} iconLeft={<ImageIcon size={12} />}>
+                    {photoCount} / {MIN_PHOTOS} photos
+                  </Tag>
+                </span>
+                <span key={`v${videoCount}`} className="pop-key">
+                  <Tag tone={videoCount >= MIN_VIDEOS ? 'stay' : 'neutral'} iconLeft={<VideoIcon size={12} />}>
+                    {videoCount} / {MIN_VIDEOS} videos
+                  </Tag>
+                </span>
               </div>
               <label
                 htmlFor="review-media-input"
+                className="dropzone"
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   border: '1.5px dashed var(--border-default)', borderRadius: 'var(--radius-md)',
@@ -450,7 +469,7 @@ export function WriteReviewScreen() {
                   fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600,
                 }}
               >
-                <ImagePlus size={20} />
+                <span className="dz-icon"><ImagePlus size={20} /></span>
                 Add photos or videos
               </label>
               <input id="review-media-input" type="file" accept="image/*,video/*" multiple onChange={handleFiles} style={{ display: 'none' }} />
@@ -492,9 +511,11 @@ export function WriteReviewScreen() {
               </div>
             )}
 
-            <Button type="submit" variant="stay" block size="lg" disabled={submitting || processing > 0} iconLeft={<Send size={18} />}>
-              {processing > 0 ? 'Compressing…' : submitting ? 'Submitting…' : 'Submit for review'}
-            </Button>
+            <div className="rise" style={{ '--i': 12 }}>
+              <Button type="submit" variant="stay" block size="lg" disabled={submitting || processing > 0} iconLeft={<Send size={18} />}>
+                {processing > 0 ? 'Compressing…' : submitting ? 'Submitting…' : 'Submit for review'}
+              </Button>
+            </div>
           </form>
         )}
       </div>

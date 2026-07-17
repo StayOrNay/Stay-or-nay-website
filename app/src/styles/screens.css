@@ -1,0 +1,110 @@
+/* ===========================================================================
+   StayOrNay — screen motion pass (You / Request / Write / Saved / lists)
+   The same design language as Explore & Detail (explore.css): things rise
+   into place with a stagger, rows react to the hand, verdict-ish moments
+   stamp. Nothing loops except the gentlest of empty-state pulses.
+   =========================================================================== */
+
+/* ---------- staggered rise-in ----------
+   Give any element .rise and set --i (its position in the stagger) and it
+   assembles top-to-bottom, same curve as the Explore panel cards. */
+@keyframes screenRise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise {
+  opacity: 0;
+  animation: screenRise 560ms var(--ease-out) forwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* ---------- interactive settings / nav rows ----------
+   Hover: warm wash + icon tint + chevron nudges toward where you're going.
+   Press: whole row compresses slightly. */
+.nav-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 16px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  transition:
+    background var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+.nav-row:hover { background: rgba(26, 160, 107, 0.07); }
+.nav-row:active { transform: scale(0.985); }
+.nav-row .row-icon {
+  color: var(--text-muted);
+  display: inline-flex;
+  transition: color var(--dur-fast) var(--ease-out), transform var(--dur-base) var(--ease-pop);
+}
+.nav-row:hover .row-icon { color: var(--stay-600); transform: scale(1.12); }
+.nav-row .row-chevron {
+  color: var(--text-faint);
+  display: inline-flex;
+  transition: transform var(--dur-base) var(--ease-pop), color var(--dur-fast);
+}
+.nav-row:hover .row-chevron { transform: translateX(4px); color: var(--stay-600); }
+
+/* ---------- cards that react ----------
+   For request/review/alert cards: lift on hover, settle on press. */
+.card-lift {
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out);
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-default);
+}
+.card-lift:active { transform: translateY(0) scale(0.99); }
+
+/* ---------- success moment ----------
+   The check draws a soft ring around itself once. */
+@keyframes successRing {
+  0% { box-shadow: 0 0 0 0 rgba(26, 160, 107, 0.35); }
+  100% { box-shadow: 0 0 0 22px rgba(26, 160, 107, 0); }
+}
+.success-ring {
+  border-radius: 50%;
+  animation: successRing 900ms 300ms var(--ease-out) 1;
+}
+
+/* ---------- gentle empty-state breath (the ONE allowed loop) ---------- */
+@keyframes emptyBreath {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+.empty-breath { animation: emptyBreath 3.6s var(--ease-in-out) infinite; }
+
+/* ---------- dashed dropzone that invites ---------- */
+.dropzone {
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+.dropzone:hover {
+  border-color: var(--stay-600);
+  color: var(--stay-600);
+  background: rgba(26, 160, 107, 0.05);
+}
+.dropzone:active { transform: scale(0.985); }
+.dropzone .dz-icon { transition: transform var(--dur-base) var(--ease-pop); display: inline-flex; }
+.dropzone:hover .dz-icon { transform: translateY(-2px) scale(1.1); }
+
+/* ---------- slider rows: value chip pops via .pop-key (explore.css) ---------- */
+.slider-row input[type='range'] { cursor: pointer; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise { animation: none; opacity: 1; }
+  .success-ring, .empty-breath { animation: none; }
+  .nav-row, .nav-row .row-icon, .nav-row .row-chevron, .card-lift, .dropzone { transition: none; }
+}
