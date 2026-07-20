@@ -590,7 +590,7 @@ export function LandingExperience({ onComplete }) {
       {/* FINAL CTA */}
       <section className="landing-final">
         <h2 className="landing-reveal">Book anywhere.<br />With a <em>good feeling.</em></h2>
-        <p className="landing-reveal">Check the verdict first — on any villa, anywhere in the world.</p>
+        <p className="landing-reveal">Check the verdict first — on any villa, hotel or hostel, anywhere in the world.</p>
         <button type="button" className="landing-btn landing-btn-dark landing-btn-big landing-reveal" onClick={dive}>
           Explore Bali →
         </button>
