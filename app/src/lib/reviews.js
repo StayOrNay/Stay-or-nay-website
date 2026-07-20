@@ -141,6 +141,22 @@ export async function updateReview(id, patch) {
   return supabase.from(TABLE).update(patch).eq('id', id).select().single();
 }
 
+/**
+ * Permanently delete a review row. Admin-only via the reviews_delete_admin_only
+ * RLS policy (supabase/migrations/2026-07-21_reviews_admin_delete.sql — must be
+ * run in the Supabase SQL editor before this works; without it the delete
+ * silently affects 0 rows, which we surface as an error).
+ */
+export async function deleteReview(id) {
+  if (!isSupabaseConfigured) return { data: null, error: NOT_CONFIGURED_ERROR };
+  const { data, error } = await supabase.from(TABLE).delete().eq('id', id).select();
+  if (error) return { data, error };
+  if (!data || data.length === 0) {
+    return { data, error: { message: 'Nothing was deleted — run the 2026-07-21_reviews_admin_delete.sql migration in the Supabase SQL editor to enable admin deletes.' } };
+  }
+  return { data, error: null };
+}
+
 /** The moderation queue — oldest pending review first. Admin-only via RLS. */
 export async function fetchPendingReviews() {
   if (!isSupabaseConfigured) return { data: [], error: null };
