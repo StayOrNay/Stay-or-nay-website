@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Share, Heart, MapPin as LocationIcon, PenLine, X, KeyRound, Copy, Check } from 'lucide-react';
 import { reverseGeocodeFullAddress } from '../lib/mapbox';
@@ -356,7 +357,10 @@ function AddressReveal({ lon, lat, name }) {
         <KeyRound size={13} /> See exact address
       </button>
 
-      {open && (
+      {/* Portaled to <body> — the screen's entrance animations create CSS
+          containing blocks, which would trap this position:fixed overlay
+          and clip it half off-screen (the desktop glitch). */}
+      {open && createPortal(
         <div
           onClick={() => setOpen(false)}
           role="dialog"
@@ -418,7 +422,8 @@ function AddressReveal({ lon, lat, name }) {
               From the reviewer's pin — the nearest registered address, so double-check the gate when you arrive.
             </p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
