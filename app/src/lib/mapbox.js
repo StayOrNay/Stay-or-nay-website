@@ -65,6 +65,45 @@ export async function reverseGeocode(lon, lat) {
 }
 
 /**
+ * Reverse-geocodes coordinates into a short AREA label for the review form's
+ * "Area / town" field — deliberately no street names or house numbers, just
+ * the neighbourhood/town plus the island/region it's on: "Canggu, Bali",
+ * "Uluwatu, Bali", "Ao Nang, Krabi". Tries the finest area granularity
+ * first (neighborhood → locality → place), and prefers the REGION name
+ * (Bali) over the country (Indonesia) for the second half, falling back to
+ * the country when there's no region. Returns null when nothing matches.
+ */
+export async function reverseGeocodeArea(lon, lat) {
+  const base = 'https://api.mapbox.com/search/geocode/v6/reverse';
+  const common = `longitude=${lon}&latitude=${lat}&access_token=${MAPBOX_TOKEN}&limit=1`;
+
+  async function tryQuery(extra) {
+    const res = await fetch(`${base}?${common}${extra}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const props = data?.features?.[0]?.properties;
+    if (!props) return null;
+    const ctx = props.context || {};
+    const name =
+      ctx.neighborhood?.name || ctx.locality?.name || props.name ||
+      ctx.place?.name;
+    if (!name) return null;
+    const region = ctx.region?.name;
+    const country = ctx.country?.name;
+    const second = region || country;
+    // Don't produce "Bali, Bali"-style doubles.
+    if (second && second !== name) return `${name}, ${second}`;
+    return country && country !== name ? `${name}, ${country}` : name;
+  }
+
+  try {
+    return (await tryQuery('&types=neighborhood,locality,place')) ?? (await tryQuery(''));
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Forward-geocodes a free-text place ("Uluwatu, Bali") into coordinates so a
  * user-submitted review can be pinned on the Explore map. Returns
  * { lon, lat, label } or null if nothing matches / the request fails — the

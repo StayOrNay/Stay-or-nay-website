@@ -53,7 +53,8 @@ function reviewToListing(r) {
     currency: r.currency || '$',
     beds: r.beds ?? null,
     tags,
-    reviewer: r.reviewer_name || 'A guest',
+    // First name only, for privacy — "Benjamin", never "Benjamin Gormsen".
+    reviewer: (r.reviewer_name || '').trim().split(/\s+/)[0] || 'A guest',
     verified: true,
     headline: r.headline || '',
     body: r.body || '',

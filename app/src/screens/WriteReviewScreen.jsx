@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ImagePlus, X, Send, AlertCircle, CheckCircle2, Link2, Image as ImageIcon, Video as VideoIcon, Info, MapPin, Crosshair } from 'lucide-react';
 import { Input, Button, VerdictBadge, Tag } from '../components/core';
@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase';
 import { CATEGORIES, MAX_PER_CATEGORY, NAY_THRESHOLD, MAX_TOTAL, MIN_PHOTOS, MIN_VIDEOS, MIN_BODY_CHARS, emptyScores, totalFromCategories, verdictFromTotal } from '../lib/reviewScore';
 import { submitReview, uploadReviewMedia } from '../lib/reviews';
 import { prepareMediaForUpload, MAX_UPLOAD_BYTES } from '../lib/compressMedia';
-import { forwardGeocode } from '../lib/mapbox';
+import { forwardGeocode, reverseGeocodeArea } from '../lib/mapbox';
 import { locateFromListing } from '../lib/listingLocation';
 
 function isVideo(file) {
@@ -42,6 +42,10 @@ export function WriteReviewScreen() {
   const [propertyLink, setPropertyLink] = useState('');
   const [propertyName, setPropertyName] = useState(prefillName);
   const [area, setArea] = useState('');
+  // Mirrors `area` so the link-locate effect can check "has the reviewer
+  // already typed something?" without re-running on every keystroke.
+  const areaRef = useRef('');
+  areaRef.current = area;
   const [coords, setCoords] = useState(null); // {lon, lat} once the reviewer places/geocodes the pin
   const [locating, setLocating] = useState(false);
   const [linkStatus, setLinkStatus] = useState(null); // 'looking' | 'found' | 'none'
@@ -116,7 +120,17 @@ export function WriteReviewScreen() {
     const t = setTimeout(async () => {
       const loc = await locateFromListing(url);
       if (cancelled) return;
-      if (loc) { setCoords(loc); setLinkStatus('found'); }
+      if (loc) {
+        setCoords(loc);
+        setLinkStatus('found');
+        // Auto-fill "Area / town" from the pin — area + island/region only
+        // ("Canggu, Bali"), never street names. Only if the reviewer hasn't
+        // typed their own; their text always wins.
+        if (!areaRef.current.trim()) {
+          const label = await reverseGeocodeArea(loc.lon, loc.lat);
+          if (!cancelled && label && !areaRef.current.trim()) setArea(label);
+        }
+      }
       else setLinkStatus('none');
     }, 800);
     return () => { cancelled = true; clearTimeout(t); };
@@ -250,7 +264,7 @@ export function WriteReviewScreen() {
             <div className="hud-label">Field report</div>
             <div className="rise" style={{ '--i': 0 }}>
               <Input
-                label="Your name"
+                label="Your name (only your first name is shown publicly)"
                 required
                 placeholder="First name is fine — e.g. Benjamin"
                 value={name}
