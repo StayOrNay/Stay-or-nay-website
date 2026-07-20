@@ -58,14 +58,17 @@ export function VillaDetailScreen() {
 
   const hero = (
     <div style={{ position: 'relative', height: isDesktop ? '100%' : 'auto', display: 'flex', flexDirection: 'column', background: 'var(--paper-200)' }}>
-      {/* main viewer — 9:16 vertical frame (TikTok ratio) since review videos are
-          shot portrait. object-fit:contain shows the whole clip: vertical videos
-          fill it edge-to-edge, and the occasional 16:9 drone shot fits inside. */}
-      <div style={{ position: 'relative', flex: isDesktop ? '1 1 auto' : 'none', minHeight: 0, height: isDesktop ? 'auto' : undefined, aspectRatio: isDesktop ? undefined : '9 / 16', maxHeight: isDesktop ? undefined : '78vh', background: '#000' }}>
+      {/* main viewer — a full-width, near-full-height frame. Photos use
+          object-fit:cover so they FILL the frame edge to edge (no black
+          letterbox bars, no side gutters — the frame is exactly the shell's
+          width, and a phone photo just crops a sliver to fit). Videos keep
+          object-fit:contain so nothing is cut off while they play; portrait
+          review clips fill the tall frame almost exactly anyway. */}
+      <div style={{ position: 'relative', flex: isDesktop ? '1 1 auto' : 'none', minHeight: 0, width: '100%', height: isDesktop ? 'auto' : '76dvh', background: '#000' }}>
         {active.type === 'video' ? (
           <video key={active.url} src={active.url} controls playsInline style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', background: '#000' }} />
         ) : (
-          <img src={active.url} alt={villa.name} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+          <img src={active.url} alt={villa.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         )}
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(12,23,20,0.30) 0%, transparent 26%, transparent 62%, rgba(12,23,20,0.55) 100%)' }} />
         {/* top controls */}

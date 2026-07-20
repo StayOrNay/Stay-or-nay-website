@@ -23,7 +23,12 @@ export function TabBar() {
         display: 'flex',
         height: 56,
         flex: 'none',
-        margin: '0 10px 8px',
+        // Sit as low as possible: a slim 4px gap, plus whatever safe-area
+        // inset the phone reports (home-indicator area on iPhones — the
+        // viewport-fit=cover meta in index.html makes the shell extend
+        // under it, and this margin keeps the dock tappable above it).
+        margin: '0 10px',
+        marginBottom: 'calc(4px + env(safe-area-inset-bottom, 0px))',
         borderRadius: 20,
         // Bright sunlit glass — the one piece of chrome visible everywhere,
         // so it sets the (happy) tone.
