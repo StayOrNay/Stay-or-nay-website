@@ -13,7 +13,8 @@ export function Avatar({
   ...rest
 }) {
   const dims = { sm: 28, md: 40, lg: 56 };
-  const dim = dims[size] || dims.md;
+  // Accepts a named size or an exact pixel number (e.g. size={96}).
+  const dim = typeof size === 'number' ? size : dims[size] || dims.md;
   const initials = name
     .split(/\s+/)
     .filter(Boolean)

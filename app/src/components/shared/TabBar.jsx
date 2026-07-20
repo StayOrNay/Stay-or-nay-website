@@ -28,7 +28,7 @@ export function TabBar() {
         // viewport-fit=cover meta in index.html makes the shell extend
         // under it, and this margin keeps the dock tappable above it).
         margin: '0 10px',
-        marginBottom: 'calc(4px + env(safe-area-inset-bottom, 0px))',
+        marginBottom: 'calc(2px + max(env(safe-area-inset-bottom, 0px) - 6px, 0px))',
         borderRadius: 20,
         // Bright sunlit glass — the one piece of chrome visible everywhere,
         // so it sets the (happy) tone.

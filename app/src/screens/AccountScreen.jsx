@@ -200,10 +200,20 @@ export function AccountScreen() {
             </>
           ) : user ? (
             <>
-              <span className="rise" style={{ '--i': 0 }}><Avatar name={user.email} size="lg" /></span>
+              <span className="rise" style={{ '--i': 0 }}>
+                <Avatar src={user.user_metadata?.avatar_url || null} name={user.user_metadata?.display_name || user.email} size="lg" />
+              </span>
               <div className="rise" style={{ '--i': 1, marginTop: 14, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 19, color: 'var(--text-strong)', textAlign: 'center', wordBreak: 'break-word' }}>
-                {user.email}
+                {user.user_metadata?.display_name || user.email}
               </div>
+              <Button
+                variant="stay"
+                block
+                onClick={() => navigate('/you/profile')}
+                style={{ marginTop: 20, borderRadius: 'var(--radius-pill)' }}
+              >
+                {user.user_metadata?.avatar_url ? 'Edit profile' : 'Add a profile picture'}
+              </Button>
               <div className="stamp-in" style={{ marginTop: 8, animationDelay: '350ms' }}>
                 <Tag variant="outline" tone="stay">
                   {user.email_confirmed_at ? 'Verified' : 'Awaiting email confirmation'}

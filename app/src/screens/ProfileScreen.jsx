@@ -1,12 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, PenLine, Bell, Settings, UserRound, Globe, ScrollText, ChevronRight, ShieldCheck, ClipboardList, MapPin, LogOut } from 'lucide-react';
+import { Heart, PenLine, Bell, Settings, UserRound, UserRoundPen, Globe, ScrollText, ChevronRight, ShieldCheck, ClipboardList, MapPin, LogOut, Camera } from 'lucide-react';
 import { Avatar, Tag, Button } from '../components/core';
 import { Header } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
 import { isAdmin } from '../lib/admin';
 
 const BASE_ROWS = [
+  { Icon: UserRoundPen, label: 'Edit profile', to: '/you/profile' },
   { Icon: Heart, label: 'Saved', to: '/saved' },
   { Icon: PenLine, label: 'Your reviews', to: '/you/reviews' },
   { Icon: Bell, label: 'Verdict alerts', to: '/you/alerts' },
@@ -50,14 +51,26 @@ export function ProfileScreen() {
         <div style={{ padding: 18, maxWidth: 560, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
           {user ? (
             <div className="rise holo-card" style={{ '--i': 0, display: 'flex', alignItems: 'center', gap: 16, padding: 18 }}>
-              <span className="glow-ring"><Avatar name={user.email} size="lg" verified={Boolean(user.email_confirmed_at)} /></span>
-              <div style={{ minWidth: 0 }}>
+              <span className="glow-ring">
+                <Avatar
+                  src={user.user_metadata?.avatar_url || null}
+                  name={user.user_metadata?.display_name || user.email}
+                  size="lg"
+                  verified={Boolean(user.email_confirmed_at)}
+                />
+              </span>
+              <div style={{ minWidth: 0, flex: 1 }}>
                 <div className="hud-label" style={{ marginBottom: 5 }}>Traveler · online</div>
                 <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 19, color: 'var(--text-strong)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.email}
+                  {user.user_metadata?.display_name || user.email}
                 </div>
                 <div className="stamp-in" style={{ marginTop: 6, animationDelay: '350ms' }}><Tag variant="outline" tone="stay">Signed in</Tag></div>
               </div>
+              {!user.user_metadata?.avatar_url && (
+                <Button variant="neutral" size="sm" iconLeft={<Camera size={15} />} onClick={() => navigate('/you/profile')}>
+                  Add photo
+                </Button>
+              )}
             </div>
           ) : (
             <div className="rise holo-card" style={{ '--i': 0, display: 'flex', alignItems: 'center', gap: 16, padding: 18 }}>

@@ -15,6 +15,7 @@ import { VillaDetailScreen } from './screens/VillaDetailScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { AccountScreen } from './screens/AccountScreen';
+import { EditProfileScreen } from './screens/EditProfileScreen';
 import { LanguageScreen } from './screens/LanguageScreen';
 import { LegalScreen } from './screens/legal/LegalScreen';
 import { PrivacyPolicyScreen } from './screens/legal/PrivacyPolicyScreen';
@@ -140,6 +141,7 @@ export default function App() {
             <Route path="/you" element={<ProfileScreen />} />
             <Route path="/you/settings" element={<SettingsScreen />} />
             <Route path="/you/account" element={<AccountScreen />} />
+            <Route path="/you/profile" element={<EditProfileScreen />} />
             <Route path="/you/language" element={<LanguageScreen />} />
             <Route path="/you/legal" element={<LegalScreen />} />
             <Route path="/you/legal/privacy" element={<PrivacyPolicyScreen />} />
