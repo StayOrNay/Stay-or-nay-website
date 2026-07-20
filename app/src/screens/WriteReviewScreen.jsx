@@ -479,7 +479,7 @@ export function WriteReviewScreen() {
                 <span className="dz-icon"><ImagePlus size={20} /></span>
                 Add photos or videos
               </label>
-              <input id="review-media-input" type="file" accept="image/*,video/*" multiple onChange={handleFiles} style={{ display: 'none' }} />
+              <input id="review-media-input" type="file" accept="image/*,video/*,.heic,.heif,image/heic,image/heif" multiple onChange={handleFiles} style={{ display: 'none' }} />
               {files.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {files.map((f, i) => (
@@ -502,8 +502,10 @@ export function WriteReviewScreen() {
             {prep && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <span style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-muted)' }}>
-                  Compressing video{prep.total > 1 ? ` ${prep.index + 1} of ${prep.total}` : ''} for upload — {Math.round((prep.fraction || 0) * 100)}%
-                  <span style={{ color: 'var(--text-faint)' }}> (this can take a minute for long clips; keep this tab open)</span>
+                  {prep.phase === 'converting' ? 'Converting iPhone photo (HEIC)' : 'Compressing video'}{prep.total > 1 ? ` ${prep.index + 1} of ${prep.total}` : ''} for upload — {Math.round((prep.fraction || 0) * 100)}%
+                  {prep.phase !== 'converting' && (
+                    <span style={{ color: 'var(--text-faint)' }}> (this can take a minute for long clips; keep this tab open)</span>
+                  )}
                 </span>
                 <div style={{ height: 6, borderRadius: 999, background: 'var(--border-default)', overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${Math.round((prep.fraction || 0) * 100)}%`, background: 'var(--success)', transition: 'width 0.2s ease' }} />

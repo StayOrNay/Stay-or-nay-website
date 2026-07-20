@@ -75,7 +75,64 @@ export function isVideoFile(file) {
   return (file.type || '').startsWith('video/');
 }
 export function isImageFile(file) {
-  return (file.type || '').startsWith('image/');
+  return (file.type || '').startsWith('image/') || isHeicFile(file);
+}
+
+// ---------------------------------------------------------------------------
+// HEIC / HEIF support (iPhone photos)
+//
+// iPhones shoot photos in HEIC by default. Browsers can UPLOAD those files
+// fine, but no browser can DISPLAY them in an <img> tag — so a review photo
+// stored as .heic would show up as a broken image for every visitor. Fix:
+// detect HEIC/HEIF at pick time and convert it to JPEG in the browser before
+// upload, using heic2any loaded on demand from a CDN (nothing added to the
+// app bundle; non-iPhone users never download it).
+// ---------------------------------------------------------------------------
+
+const HEIC2ANY_ESM = 'https://esm.sh/heic2any@0.0.4';
+let heic2anyPromise = null;
+
+export function isHeicFile(file) {
+  const type = (file.type || '').toLowerCase();
+  if (type === 'image/heic' || type === 'image/heif' ||
+      type === 'image/heic-sequence' || type === 'image/heif-sequence') {
+    return true;
+  }
+  // Safari/some pickers hand HEIC over with an empty MIME type — fall back to
+  // the file extension.
+  return /\.(heic|heif)$/i.test(file.name || '');
+}
+
+/**
+ * Convert a HEIC/HEIF photo to JPEG. Non-HEIC files pass through untouched.
+ * Quality 0.9 keeps the photo visually indistinguishable while typically
+ * landing well under the original HEIC size × 2.
+ */
+export async function convertHeicIfNeeded(file) {
+  if (!isHeicFile(file)) return file;
+  if (!heic2anyPromise) {
+    heic2anyPromise = import(/* @vite-ignore */ HEIC2ANY_ESM);
+  }
+  const mod = await heic2anyPromise;
+  const heic2any = mod.default || mod;
+  let blob;
+  try {
+    blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+  } catch (err) {
+    // Some browsers (recent iOS Safari picking from Photos) already hand over
+    // a JPEG despite the .heic name; heic2any then throws. If the browser can
+    // decode it natively, it's fine to upload as-is.
+    try {
+      const bmp = await createImageBitmap(file);
+      bmp.close?.();
+      return file;
+    } catch {
+      throw new Error('This iPhone photo (HEIC) could not be converted. Try exporting it as JPEG from the Photos app.');
+    }
+  }
+  // heic2any returns an array for multi-image HEIC containers; take the first.
+  const single = Array.isArray(blob) ? blob[0] : blob;
+  return new File([single], swapExt(file.name, 'jpg'), { type: 'image/jpeg' });
 }
 
 // Read a video's duration (seconds) without decoding it fully.
@@ -219,13 +276,19 @@ export async function prepareMediaForUpload(files, onProgress) {
       onProgress?.({ index: i, total: files.length, name: file.name, phase, fraction });
 
     let result = file;
-    if (isVideoFile(file) && file.size > TARGET_BYTES) {
+    // iPhone HEIC photos: convert to JPEG first so they display everywhere.
+    if (isHeicFile(file)) {
+      report('converting', 0);
+      result = await convertHeicIfNeeded(file);
+      report('converting', 1);
+    }
+    if (isVideoFile(result) && result.size > TARGET_BYTES) {
       report('compressing', 0);
-      result = await compressVideoIfNeeded(file, (f) => report('compressing', f));
+      result = await compressVideoIfNeeded(result, (f) => report('compressing', f));
       report('compressing', 1);
-    } else if (isImageFile(file) && file.size > TARGET_BYTES) {
+    } else if (isImageFile(result) && result.size > TARGET_BYTES) {
       report('compressing', 0);
-      result = await compressImageIfNeeded(file);
+      result = await compressImageIfNeeded(result);
       report('compressing', 1);
     }
     if (result !== file) changed = true;
