@@ -138,7 +138,24 @@ export async function fetchAllApprovedReviews() {
  */
 export async function updateReview(id, patch) {
   if (!isSupabaseConfigured) return { data: null, error: NOT_CONFIGURED_ERROR };
-  return supabase.from(TABLE).update(patch).eq('id', id).select().single();
+  // Same schema-drift safety net as submitReview: if the live DB hasn't had
+  // a migration run yet (PGRST204 "Could not find the 'X' column"), strip
+  // the missing optional column and retry instead of failing the whole save.
+  const p = { ...patch };
+  const run = () => supabase.from(TABLE).update(p).eq('id', id).select().single();
+  let result = await run();
+  let attempts = 0;
+  while (result.error && attempts < 6) {
+    const missing = /Could not find the '([^']+)' column/.exec(result.error.message || '')?.[1];
+    if (!missing || !(missing in p)) break;
+    // eslint-disable-next-line no-console
+    console.warn(`reviews table is missing column "${missing}" — saving without it. Run the pending SQL migration in supabase/migrations/ to keep this field.`);
+    delete p[missing];
+    attempts += 1;
+    if (Object.keys(p).length === 0) break;
+    result = await run();
+  }
+  return result;
 }
 
 /**
