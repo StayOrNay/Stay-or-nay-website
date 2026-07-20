@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Share, Heart, MapPin as LocationIcon, PenLine } from 'lucide-react';
+import { ChevronLeft, Share, Heart, MapPin as LocationIcon, PenLine, X, KeyRound, Copy, Check } from 'lucide-react';
+import { reverseGeocodeFullAddress } from '../lib/mapbox';
 import { VerdictBadge, Tag, Avatar, Button, IconButton } from '../components/core';
 import { useSaved } from '../context/SavedContext';
 import { useIsDesktop } from '../hooks/useMediaQuery';
@@ -123,9 +124,12 @@ export function VillaDetailScreen() {
     <div style={{ padding: isDesktop ? '28px 32px 16px' : '18px 16px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="explore-enter-card" style={{ animationDelay: '60ms' }}>
         <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 28, letterSpacing: '-0.02em', color: 'var(--text-strong)' }}>{villa.name}</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
           <LocationIcon size={15} color="var(--text-muted)" />
           <span style={{ fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--text-muted)' }}>{villa.location}</span>
+          {typeof villa.lon === 'number' && typeof villa.lat === 'number' && (
+            <AddressReveal lon={villa.lon} lat={villa.lat} name={villa.name} />
+          )}
         </div>
       </div>
 
@@ -298,6 +302,125 @@ function ScoreBar({ pct, delay = 0, color }) {
         transition: 'width 900ms var(--ease-fly)',
       }}
     />
+  );
+}
+
+/**
+ * The address "cheat code" — booking sites hide the exact address until
+ * after you pay, but our pin comes from the listing's own map, so we can
+ * reverse-geocode it into the real street address. A small chip next to
+ * the location line; tap → popup with the full address (fetched on first
+ * open, then cached); tap anywhere outside, the X, or Escape to close.
+ */
+function AddressReveal({ lon, lat, name }) {
+  const [open, setOpen] = useState(false);
+  const [address, setAddress] = useState(null); // null = not fetched, '' = failed
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
+  const reveal = async () => {
+    setOpen(true);
+    if (address === null) {
+      const a = await reverseGeocodeFullAddress(lon, lat);
+      setAddress(a || '');
+    }
+  };
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(address || `${lat}, ${lon}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard unavailable — no-op */ }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={reveal}
+        className="press"
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 5, cursor: 'pointer',
+          border: '1px solid var(--border-default)', background: 'var(--surface-card)',
+          borderRadius: 'var(--radius-pill)', padding: '4px 10px',
+          fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 12, color: 'var(--brand)',
+        }}
+      >
+        <KeyRound size={13} /> See exact address
+      </button>
+
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Exact address"
+          style={{
+            position: 'fixed', inset: 0, zIndex: 80,
+            background: 'rgba(6, 12, 10, 0.55)', backdropFilter: 'blur(3px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 18,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: 380,
+              background: 'var(--surface-card)', border: '1px solid var(--border-soft)',
+              borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 20,
+              display: 'flex', flexDirection: 'column', gap: 12,
+              animation: 'sheetUp var(--dur-slow) var(--ease-out)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, letterSpacing: '-0.015em', color: 'var(--text-strong)' }}>
+                {name} — exact address
+              </h3>
+              <button onClick={() => setOpen(false)} aria-label="Close" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-faint)', padding: 4 }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {address === null ? (
+              <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)' }}>Looking it up…</p>
+            ) : address ? (
+              <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 15.5, fontWeight: 600, color: 'var(--text-strong)', lineHeight: 1.5 }}>{address}</p>
+            ) : (
+              <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)' }}>
+                No street address found for this spot — use the coordinates below.
+              </p>
+            )}
+
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>
+              {lat.toFixed(5)}, {lon.toFixed(5)}
+            </div>
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button variant="stay" size="sm" iconLeft={copied ? <Check size={14} /> : <Copy size={14} />} onClick={copy} disabled={address === null}>
+                {copied ? 'Copied' : 'Copy'}
+              </Button>
+              <Button
+                variant="neutral"
+                size="sm"
+                onClick={() => window.open(`https://www.google.com/maps?q=${lat},${lon}`, '_blank', 'noopener')}
+              >
+                Open in Google Maps
+              </Button>
+            </div>
+
+            <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 11.5, color: 'var(--text-faint)', lineHeight: 1.45 }}>
+              From the reviewer's pin — the nearest registered address, so double-check the gate when you arrive.
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

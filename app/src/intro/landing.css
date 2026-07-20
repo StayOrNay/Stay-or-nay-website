@@ -217,10 +217,19 @@
   color: rgba(255, 255, 255, 0.92); background: rgba(12, 23, 20, 0.45);
   padding: 4px 8px; border-radius: 6px; backdrop-filter: blur(4px);
 }
-.landing-photo-a { background: linear-gradient(160deg, #2e7d6b 0%, #5baf8f 34%, #f2a93b 100%); }
-.landing-photo-a::before { content: ''; position: absolute; inset: 0; background: radial-gradient(80% 60% at 70% 20%, rgba(255, 255, 255, 0.35), transparent 60%); }
-.landing-photo-b { background: linear-gradient(200deg, #1e5c9e 0%, #3b8fd9 45%, #f7f2e8 120%); }
-.landing-photo-b::before { content: ''; position: absolute; inset: 0; background: radial-gradient(70% 50% at 30% 15%, rgba(255, 255, 255, 0.4), transparent 60%); }
+/* Real photos (Unsplash, free license — not scraped from listings). A: a
+   dreamy Bali private-pool villa; B: a sad, run-down pool — the "listing
+   photos lied" villa. Gradient fallbacks paint instantly under the images. */
+.landing-photo-a {
+  background:
+    url('https://images.unsplash.com/photo-1692736933760-8a8a9b8c1b6f?q=70&w=900&auto=format&fit=crop') center/cover no-repeat,
+    linear-gradient(160deg, #2e7d6b 0%, #5baf8f 34%, #f2a93b 100%);
+}
+.landing-photo-b {
+  background:
+    url('https://images.unsplash.com/photo-1646815215472-3ae77c78fbf4?q=70&w=900&auto=format&fit=crop') center/cover no-repeat,
+    linear-gradient(200deg, #6b7d72 0%, #9aa89d 45%, #f7f2e8 120%);
+}
 .landing-vcard h3 { font-family: var(--font-display); font-weight: 700; font-size: 21px; color: var(--ink-900); margin: 0; }
 .landing-vcard .meta { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; color: var(--ink-500); margin: 6px 0 10px; }
 .landing-vcard p { font-size: 14px; line-height: 1.55; color: var(--ink-600); margin: 0; }

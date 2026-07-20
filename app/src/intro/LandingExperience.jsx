@@ -528,10 +528,10 @@ export function LandingExperience({ onComplete }) {
           <div ref={stampStayRef} className="landing-stamp stay">STAY</div>
 
           <div ref={cardBRef} className="landing-vcard">
-            <div className="photo landing-photo-b"><span className="coord-stamp">36.3932° N · 25.4615° E · SANTORINI</span></div>
-            <h3>Villa Thera View, Santorini</h3>
+            <div className="photo landing-photo-b"><span className="coord-stamp">-8.7095° S · 115.1700° E · BALI</span></div>
+            <h3>Villa Asri, Kuta</h3>
             <div className="meta">EXAMPLE VERDICT · 4 NIGHTS · VERIFIED STAY</div>
-            <p>“‘Caldera view’ — if you lean off the roof. Cruise-ship crowds outside the gate by 9am.”</p>
+            <p>“‘Tropical oasis’ — the pool hadn't seen a net in weeks, construction next door from 7am, and the ‘garden view’ was a wall.”</p>
             <span className="verified nay">✓ Verified stayer</span>
           </div>
           <div ref={stampNayRef} className="landing-stamp nay">NAY</div>

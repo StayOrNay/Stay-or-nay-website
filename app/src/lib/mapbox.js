@@ -104,6 +104,34 @@ export async function reverseGeocodeArea(lon, lat) {
 }
 
 /**
+ * Reverse-geocodes coordinates into the FULL street address — the "cheat
+ * code" behind the villa page's address reveal. Booking sites hide the
+ * address until you've paid; our pin comes straight from the listing's own
+ * map, so the nearest street address to it is usually the villa itself.
+ * Tries `types=address` first (street + number), falls back to an
+ * unfiltered query. Returns e.g. "Jl. Pantai Berawa No.12, Canggu,
+ * Badung, Bali 80361, Indonesia" or null.
+ */
+export async function reverseGeocodeFullAddress(lon, lat) {
+  const base = 'https://api.mapbox.com/search/geocode/v6/reverse';
+  const common = `longitude=${lon}&latitude=${lat}&access_token=${MAPBOX_TOKEN}&limit=1`;
+
+  async function tryQuery(extra) {
+    const res = await fetch(`${base}?${common}${extra}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const props = data?.features?.[0]?.properties;
+    return props?.full_address || props?.place_formatted || null;
+  }
+
+  try {
+    return (await tryQuery('&types=address')) ?? (await tryQuery(''));
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Forward-geocodes a free-text place ("Uluwatu, Bali") into coordinates so a
  * user-submitted review can be pinned on the Explore map. Returns
  * { lon, lat, label } or null if nothing matches / the request fails — the
