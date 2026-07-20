@@ -484,7 +484,7 @@ export function LandingExperience({ onComplete }) {
         </div>
 
         <div className="landing-hero-content">
-          <div className="landing-kicker">Independent villa verdicts · Worldwide</div>
+          <div className="landing-kicker">Villas, hotels, hostels · Independent verdicts · Worldwide</div>
           <h1 className="landing-h1">
             <span className="word w-stay"><span>Stay</span></span>{' '}
             <span className="word w-or"><span>or</span></span>{' '}
@@ -572,7 +572,7 @@ export function LandingExperience({ onComplete }) {
           <div className="cell landing-reveal"><div className="big accent">0</div><div className="label">Paid placements</div></div>
           <div className="cell landing-reveal"><div className="big">100%</div><div className="label">Verified stays</div></div>
         </div>
-        <p className="promise landing-reveal">We never sell villas. <b>We only tell the truth about them.</b></p>
+        <p className="promise landing-reveal">We don't list stays or take bookings. <b>We only tell the truth about them.</b></p>
       </section>
 
       {/* CHECKS MARQUEE */}
@@ -596,7 +596,7 @@ export function LandingExperience({ onComplete }) {
         </button>
       </section>
 
-      <footer className="landing-footer">StayOrNay · Independent villa verdicts, worldwide</footer>
+      <footer className="landing-footer">StayOrNay · Villas, hotels, hostels · Independent verdicts, worldwide</footer>
     </div>
   );
 }
