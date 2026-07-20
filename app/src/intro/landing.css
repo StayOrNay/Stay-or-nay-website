@@ -299,7 +299,7 @@
   font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.1em;
   color: var(--ink-300); text-transform: uppercase; line-height: 1.8;
 }
-.landing-trust .promise b { color: var(--stay-400); }
+.landing-trust .promise b { color: var(--stay-400); display: block; margin-top: 6px; }
 
 /* ---------- checks marquee ---------- */
 .landing-marquee-section { background: var(--paper-100); padding: clamp(60px, 9vh, 110px) 0; overflow: hidden; }

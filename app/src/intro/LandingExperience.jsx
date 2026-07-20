@@ -572,7 +572,7 @@ export function LandingExperience({ onComplete }) {
           <div className="cell landing-reveal"><div className="big accent">0</div><div className="label">Paid placements</div></div>
           <div className="cell landing-reveal"><div className="big">100%</div><div className="label">Verified stays</div></div>
         </div>
-        <p className="promise landing-reveal">We don't list stays or take bookings. <b>We only tell the truth about them.</b></p>
+        <p className="promise landing-reveal">We're not a booking site. <b>We're the second opinion you check before you book.</b></p>
       </section>
 
       {/* CHECKS MARQUEE */}
