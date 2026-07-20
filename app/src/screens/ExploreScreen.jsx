@@ -1,6 +1,7 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Search, X, ChevronLeft, ChevronRight, SlidersHorizontal, RotateCcw, Check, Map as MapIcon, Layers, PenLine, Star, User, Globe } from 'lucide-react';
+import { Search, X, ChevronLeft, ChevronRight, SlidersHorizontal, RotateCcw, Check, Map as MapIcon, Layers, PenLine, Star, User, Globe, HelpCircle } from 'lucide-react';
+import { CATEGORIES, MAX_PER_CATEGORY, MAX_TOTAL, NAY_THRESHOLD, MIN_PHOTOS, MIN_VIDEOS } from '../lib/reviewScore';
 import { Input, VerdictBadge, Tag, VillaCard } from '../components/core';
 import { SatelliteMap } from '../components/shared';
 import { useVillasWithReviews } from '../hooks/useVillasWithReviews';
@@ -26,6 +27,7 @@ export function ExploreScreen() {
   const [locationLabel, setLocationLabel] = useState('Bali, Indonesia');
   const [mapBounds, setMapBounds] = useState(null);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [showScoring, setShowScoring] = useState(false);
   const mapRef = useRef(null);
   const geocodeTimerRef = useRef(null);
   const geocodeSeqRef = useRef(0);
@@ -98,7 +100,10 @@ export function ExploreScreen() {
                         {visibleVillas.length > 0 && ` · ${visibleVillas.length} verdict${visibleVillas.length === 1 ? '' : 's'}`}
                       </span>
                     </div>
-                    <FiltersControl filters={filters} setFilters={setFilters} activeCount={activeFilterCount} align="right" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 'none' }}>
+                      <ScoringHelpButton onClick={() => setShowScoring(true)} />
+                      <FiltersControl filters={filters} setFilters={setFilters} activeCount={activeFilterCount} align="right" />
+                    </div>
                   </div>
                 </div>
                 {filteredVillas.map((v, i) => (
@@ -161,6 +166,18 @@ export function ExploreScreen() {
                 {locationLabel}
                 {visibleVillas.length > 0 && ` · ${visibleVillas.length} verdict${visibleVillas.length === 1 ? '' : 's'}`}
               </span>
+              <button
+                type="button"
+                onClick={() => setShowScoring(true)}
+                aria-label="How the rating works"
+                style={{
+                  border: 'none', background: 'transparent', cursor: 'pointer', flex: 'none',
+                  padding: 0, margin: '-2px -4px -2px 0', display: 'inline-flex', alignItems: 'center',
+                  color: 'var(--stay-400)',
+                }}
+              >
+                <HelpCircle size={15} />
+              </button>
             </div>
 
             {/* Swipeable villa strip riding the bottom edge of the map —
@@ -222,6 +239,112 @@ export function ExploreScreen() {
             </div>
           </div>
         )}
+      </div>
+
+      {showScoring && <ScoringHelpPopup onClose={() => setShowScoring(false)} />}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Scoring help — a small "?" that opens a one-glance explainer of the
+ * rating system. Deliberately minimal: opens only on click, closes on
+ * the X, a tap anywhere outside, or Escape.
+ * ------------------------------------------------------------------ */
+
+function ScoringHelpButton({ onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="How the rating works"
+      title="How the rating works"
+      className="press"
+      style={{
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        width: 34, height: 34, borderRadius: 'var(--radius-pill)', cursor: 'pointer',
+        border: '1px solid var(--border-default)', background: 'var(--surface-card)',
+        color: 'var(--text-body)', boxShadow: 'var(--shadow-sm)', flex: 'none',
+      }}
+    >
+      <HelpCircle size={17} />
+    </button>
+  );
+}
+
+function ScoringHelpPopup({ onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const row = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 };
+  const label = { fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-strong)' };
+  const pts = { fontFamily: 'var(--font-mono)', fontSize: 12.5, fontWeight: 700, color: 'var(--text-muted)', whiteSpace: 'nowrap' };
+
+  return (
+    <div
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="How the rating works"
+      style={{
+        position: 'fixed', inset: 0, zIndex: 80,
+        background: 'rgba(6, 12, 10, 0.55)', backdropFilter: 'blur(3px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 18,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: 380, maxHeight: '85vh', overflowY: 'auto',
+          background: 'var(--surface-card)', border: '1px solid var(--border-soft)',
+          borderRadius: 'var(--radius-xl)', boxShadow: 'var(--shadow-lg)', padding: 20,
+          display: 'flex', flexDirection: 'column', gap: 14,
+          animation: 'sheetUp var(--dur-slow) var(--ease-out)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 19, letterSpacing: '-0.015em', color: 'var(--text-strong)' }}>
+            How the rating works
+          </h3>
+          <button onClick={onClose} aria-label="Close" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-faint)', padding: 4 }}>
+            <X size={19} />
+          </button>
+        </div>
+
+        <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+          Every review rates the stay on {CATEGORIES.length} things, each out of {MAX_PER_CATEGORY} points:
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {CATEGORIES.map((c) => (
+            <div key={c.key} style={row}>
+              <span style={label}>{c.label}</span>
+              <span style={pts}>0–{MAX_PER_CATEGORY}</span>
+            </div>
+          ))}
+          <div style={{ ...row, borderTop: '1px solid var(--border-soft)', paddingTop: 8 }}>
+            <span style={{ ...label, fontWeight: 700 }}>Total</span>
+            <span style={{ ...pts, color: 'var(--text-strong)' }}>out of {MAX_TOTAL}</span>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ flex: 1, textAlign: 'center', padding: '10px 8px', borderRadius: 'var(--radius-lg)', background: 'var(--brand-soft)' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: 'var(--brand)' }}>STAY</div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 700, color: 'var(--text-strong)', marginTop: 2 }}>{NAY_THRESHOLD}–{MAX_TOTAL}</div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center', padding: '10px 8px', borderRadius: 'var(--radius-lg)', background: 'var(--verdict-nay-soft)' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: 'var(--verdict-nay)' }}>NAY</div>
+            <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 700, color: 'var(--text-strong)', marginTop: 2 }}>0–{NAY_THRESHOLD - 1}</div>
+          </div>
+        </div>
+
+        <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-faint)', lineHeight: 1.5 }}>
+          Every verdict is a real stay, backed by at least {MIN_PHOTOS} photos, {MIN_VIDEOS} video and a written review.
+        </p>
       </div>
     </div>
   );
