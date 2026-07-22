@@ -360,6 +360,7 @@ function ScoringHelpPopup({ onClose }) {
 const DOCK_ITEMS = [
   { to: '/', label: 'Explore', Icon: MapIcon },
   { to: '/feed', label: 'Feed', Icon: Layers },
+  { to: '/check', label: 'Check a villa', Icon: Search },
   { to: '/write-review', label: 'Write a review', Icon: Star },
   { to: '/request-review', label: 'Request a review', Icon: PenLine },
   { to: '/you', label: 'You', Icon: User },

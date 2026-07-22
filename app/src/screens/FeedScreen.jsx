@@ -144,12 +144,42 @@ export function FeedScreen() {
           0%, 100% { opacity: 0.55; transform: translateY(0); }
           50% { opacity: 1; transform: translateY(-3px); }
         }
+        @keyframes feedVideoIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
       `}</style>
     </div>
   );
 }
 
 function FeedSlide({ villa, active, saved, onToggleSave, onOpen }) {
+  // Scroll-stopper: the photo shows for 2 seconds, then a RANDOM video from
+  // the review takes over (muted + looping, TikTok-style). A new random clip
+  // is picked every time the slide becomes the active one, so re-scrolling
+  // past the same villa doesn't always show the same footage. Scrolling away
+  // unmounts the <video>, which stops playback and its network fetch. If the
+  // clip can't play on this device (codec), we just stay on the photo.
+  const videos = React.useMemo(
+    () => (villa.mediaUrls || []).filter((m) => m && m.type === 'video' && m.url),
+    [villa.mediaUrls],
+  );
+  const [videoUrl, setVideoUrl] = useState(null);
+
+  useEffect(() => {
+    if (!active || videos.length === 0) {
+      setVideoUrl(null);
+      return undefined;
+    }
+    const t = setTimeout(() => {
+      setVideoUrl(videos[Math.floor(Math.random() * videos.length)].url);
+    }, 2000);
+    return () => {
+      clearTimeout(t);
+      setVideoUrl(null);
+    };
+  }, [active, videos]);
+
   return (
     <section
       style={{
@@ -175,6 +205,25 @@ function FeedSlide({ villa, active, saved, onToggleSave, onOpen }) {
           transition: 'transform 600ms var(--ease-out)',
         }}
       />
+      {videoUrl && (
+        <video
+          key={videoUrl}
+          src={videoUrl}
+          autoPlay
+          muted
+          loop
+          playsInline
+          onError={() => setVideoUrl(null)}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            animation: 'feedVideoIn 500ms var(--ease-out) both',
+          }}
+        />
+      )}
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(12,23,20,0.45) 0%, rgba(12,23,20,0.05) 22%, rgba(12,23,20,0.15) 55%, rgba(12,23,20,0.88) 100%)' }} />
 
       {/* Coordinate stamp, top */}

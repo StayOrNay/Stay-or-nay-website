@@ -27,6 +27,7 @@ import { WriteReviewScreen } from './screens/WriteReviewScreen';
 import { ModerationScreen } from './screens/ModerationScreen';
 import { AdminEditReviewsScreen } from './screens/AdminEditReviewsScreen';
 import { RequestReviewScreen } from './screens/RequestReviewScreen';
+import { CheckVillaScreen } from './screens/CheckVillaScreen';
 import { AdminReviewRequestsScreen } from './screens/AdminReviewRequestsScreen';
 
 /**
@@ -153,6 +154,7 @@ export default function App() {
             <Route path="/you/manage" element={<AdminEditReviewsScreen />} />
             <Route path="/write-review" element={<WriteReviewScreen />} />
             <Route path="/request-review" element={<RequestReviewScreen />} />
+            <Route path="/check" element={<CheckVillaScreen />} />
             <Route path="/you/review-requests" element={<AdminReviewRequestsScreen />} />
             <Route path="/villa/:id" element={<VillaDetailScreen />} />
           </Route>

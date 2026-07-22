@@ -119,13 +119,27 @@ export async function convertHeicIfNeeded(file) {
   try {
     blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
   } catch (err) {
-    // Some browsers (recent iOS Safari picking from Photos) already hand over
-    // a JPEG despite the .heic name; heic2any then throws. If the browser can
-    // decode it natively, it's fine to upload as-is.
+    // heic2any can fail in two very different situations:
+    //  a) The file is already a JPEG despite the .heic name (recent iOS
+    //     Safari sometimes does this when picking from Photos).
+    //  b) It's a real HEIC that heic2any's decoder chokes on — but Safari
+    //     can still decode it natively.
+    // In BOTH cases the uploader's browser can decode the file, so the old
+    // "upload as-is" fallback looked fine to them. But in case (b) the raw
+    // .heic ended up in storage and showed as a broken image on every
+    // non-Safari browser. So: if the browser can decode it, re-encode it to
+    // JPEG through a canvas instead of ever passing the original through.
     try {
       const bmp = await createImageBitmap(file);
+      const canvas = document.createElement('canvas');
+      canvas.width = bmp.width;
+      canvas.height = bmp.height;
+      canvas.getContext('2d').drawImage(bmp, 0, 0);
       bmp.close?.();
-      return file;
+      const jpegBlob = await new Promise((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('canvas.toBlob failed'))), 'image/jpeg', 0.9)
+      );
+      return new File([jpegBlob], swapExt(file.name, 'jpg'), { type: 'image/jpeg' });
     } catch {
       throw new Error('This iPhone photo (HEIC) could not be converted. Try exporting it as JPEG from the Photos app.');
     }

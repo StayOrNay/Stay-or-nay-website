@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ImagePlus, X, Send, AlertCircle, CheckCircle2, Link2, Image as ImageIcon, Video as VideoIcon, Info, MapPin, Crosshair } from 'lucide-react';
+import { ImagePlus, X, Send, AlertCircle, CheckCircle2, Link2, Image as ImageIcon, Video as VideoIcon, Info, MapPin, Crosshair, LifeBuoy } from 'lucide-react';
 import { Input, Button, VerdictBadge, Tag } from '../components/core';
 import { Header, LocationPicker } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
@@ -10,6 +10,7 @@ import { submitReview, uploadReviewMedia } from '../lib/reviews';
 import { prepareMediaForUpload, MAX_UPLOAD_BYTES } from '../lib/compressMedia';
 import { forwardGeocode, reverseGeocodeArea } from '../lib/mapbox';
 import { locateFromListing } from '../lib/listingLocation';
+import { ADMIN_EMAILS } from '../lib/admin';
 
 function isVideo(file) {
   return file.type.startsWith('video/');
@@ -86,9 +87,20 @@ export function WriteReviewScreen() {
         const prepared = await prepareMediaForUpload([file], (info) => setPrep({ ...info, name: file.name }));
         out = prepared.files[0];
       } catch (err) {
-        setError(`Couldn't process "${file.name}": ${err?.message || err}. Try a more common format (MP4/MOV).`);
+        setError(`Couldn't process "${file.name}": ${err?.message || err}. If it's a video, remember it has to be under 24 seconds (max 50 MB) — otherwise try a more common format (MP4/MOV).`);
       } finally {
         setPrep(null);
+      }
+      // Reject over-limit files RIGHT HERE at pick time — clearer than
+      // letting them sit in the list only to fail at submit.
+      if (out.size > MAX_UPLOAD_BYTES) {
+        setError(
+          isVideo(out)
+            ? `"${file.name}" is ${Math.ceil(out.size / (1024 * 1024))} MB — over the 50 MB upload limit, so it can't be uploaded. Videos have to be under 24 seconds: trim it shorter in your camera roll, then add it again.`
+            : `"${file.name}" is ${Math.ceil(out.size / (1024 * 1024))} MB — over the 50 MB upload limit, so it can't be uploaded.`
+        );
+        setProcessing((n) => Math.max(0, n - 1));
+        continue;
       }
       setFiles((prev) => [...prev, out]);
       setProcessing((n) => Math.max(0, n - 1));
@@ -170,7 +182,7 @@ export function WriteReviewScreen() {
     }
     const tooBig = files.find((f) => f.size > MAX_UPLOAD_BYTES);
     if (tooBig) {
-      setError(`"${tooBig.name}" is still ${Math.ceil(tooBig.size / (1024 * 1024))} MB, over the 50 MB limit. Please upload a shorter or lower-resolution video.`);
+      setError(`"${tooBig.name}" is ${Math.ceil(tooBig.size / (1024 * 1024))} MB — over the 50 MB upload limit, so it can't be uploaded. Videos have to be under 24 seconds: trim it shorter in your camera roll, then add it again.`);
       return;
     }
 
@@ -465,8 +477,11 @@ export function WriteReviewScreen() {
             <div className="rise" style={{ '--i': 11, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <label style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--text-body)' }}>Photos & videos</label>
               <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-faint)' }}>
-                At least {MIN_PHOTOS} photos and {MIN_VIDEOS} videos are required. Long videos are
-                compressed automatically in your browser before upload, so full walkthroughs are fine.
+                At least {MIN_PHOTOS} photos and {MIN_VIDEOS} videos are required.
+              </p>
+              <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 12.5, fontWeight: 600, color: 'var(--text-body)' }}>
+                ⚠️ Keep each video under 24 seconds. Longer clips usually end up over our 50 MB
+                upload limit and won't upload — trim them in your camera roll first.
               </p>
               <div style={{ display: 'flex', gap: 8 }}>
                 <span key={`p${photoCount}`} className="pop-key">
@@ -511,6 +526,15 @@ export function WriteReviewScreen() {
                   ))}
                 </div>
               )}
+              {/* Report a problem — right under the uploader, because this
+                  is where things go wrong (video too big, format refused).
+                  Opens the visitor's mail app with a prefilled report. */}
+              <a
+                href={`mailto:${ADMIN_EMAILS[0]}?subject=${encodeURIComponent('StayOrNay — problem uploading a review')}&body=${encodeURIComponent('What went wrong (which file, what error did you see)?\n\n')}`}
+                style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-muted)', textDecoration: 'underline', textUnderlineOffset: 3 }}
+              >
+                <LifeBuoy size={13} /> Something not working? Report a problem
+              </a>
             </div>
 
             {prep && (
