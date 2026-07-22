@@ -1,13 +1,14 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { Map, Layers, PenLine, Star, User, Search } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { Map, Layers, Star, User, Search } from 'lucide-react';
 
+// Write + Request share ONE "Review" tab (they fork on /review). The
+// `also` list keeps the tab lit while you're inside either flow.
 const TABS = [
   { to: '/', label: 'Explore', Icon: Map },
   { to: '/feed', label: 'Feed', Icon: Layers },
   { to: '/check', label: 'Check', Icon: Search },
-  { to: '/write-review', label: 'Write', Icon: Star },
-  { to: '/request-review', label: 'Request', Icon: PenLine },
+  { to: '/review', label: 'Review', Icon: Star, also: ['/write-review', '/request-review'] },
   { to: '/you', label: 'You', Icon: User },
 ];
 
@@ -15,6 +16,7 @@ const TABS = [
  * Fixed bottom tab bar: Explore · Feed · Saved · You.
  */
 export function TabBar() {
+  const { pathname } = useLocation();
   return (
     // A floating glass dock rather than an edge-to-edge bar — sits inside
     // the 64px slot AppShell reserves, with breathing room on three sides
@@ -40,12 +42,14 @@ export function TabBar() {
         boxShadow: '0 12px 30px -12px rgba(12,23,20,0.3)',
       }}
     >
-      {TABS.map(({ to, label, Icon }) => (
+      {TABS.map(({ to, label, Icon, also }) => (
         <NavLink
           key={to}
           to={to}
           end={to === '/'}
-          style={({ isActive }) => ({
+          style={({ isActive: navActive }) => {
+            const isActive = navActive || (also || []).includes(pathname);
+            return ({
             flex: 1,
             border: 'none',
             background: 'transparent',
@@ -60,9 +64,12 @@ export function TabBar() {
             fontWeight: 600,
             fontSize: 11,
             textDecoration: 'none',
-          })}
+          });
+          }}
         >
-          {({ isActive }) => (
+          {({ isActive: navActive }) => {
+            const isActive = navActive || (also || []).includes(pathname);
+            return (
             <>
               {/* Active tab gets a soft brand pill behind the icon, with a
                   small pop (transform, not layout) on activation. */}
@@ -84,7 +91,8 @@ export function TabBar() {
               </span>
               {label}
             </>
-          )}
+          );
+          }}
         </NavLink>
       ))}
     </nav>

@@ -154,7 +154,7 @@ export function FeedScreen() {
 }
 
 function FeedSlide({ villa, active, saved, onToggleSave, onOpen }) {
-  // Scroll-stopper: the photo shows for 2 seconds, then a RANDOM video from
+  // Scroll-stopper: the photo shows for ~1.2 seconds, then a RANDOM video from
   // the review takes over (muted + looping, TikTok-style). A new random clip
   // is picked every time the slide becomes the active one, so re-scrolling
   // past the same villa doesn't always show the same footage. Scrolling away
@@ -173,7 +173,7 @@ function FeedSlide({ villa, active, saved, onToggleSave, onOpen }) {
     }
     const t = setTimeout(() => {
       setVideoUrl(videos[Math.floor(Math.random() * videos.length)].url);
-    }, 2000);
+    }, 1200);
     return () => {
       clearTimeout(t);
       setVideoUrl(null);

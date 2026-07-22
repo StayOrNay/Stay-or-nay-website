@@ -361,8 +361,7 @@ const DOCK_ITEMS = [
   { to: '/', label: 'Explore', Icon: MapIcon },
   { to: '/feed', label: 'Feed', Icon: Layers },
   { to: '/check', label: 'Check a villa', Icon: Search },
-  { to: '/write-review', label: 'Write a review', Icon: Star },
-  { to: '/request-review', label: 'Request a review', Icon: PenLine },
+  { to: '/review', label: 'Review', Icon: Star, also: ['/write-review', '/request-review'] },
   { to: '/you', label: 'You', Icon: User },
 ];
 
@@ -379,12 +378,12 @@ function ExploreDock() {
       <button type="button" className="dock-logo" onClick={replay} aria-label="Replay the StayOrNay intro" title="StayOrNay — back to the globe">
         <span className="pin-core" />
       </button>
-      {DOCK_ITEMS.map(({ to, label, Icon }) => (
+      {DOCK_ITEMS.map(({ to, label, Icon, also }) => (
         <NavLink
           key={to}
           to={to}
           end={to === '/'}
-          className={({ isActive }) => `explore-dock-item${isActive ? ' active' : ''}`}
+          className={({ isActive }) => `explore-dock-item${isActive || (also || []).includes(window.location.pathname) ? ' active' : ''}`}
         >
           <Icon size={20} />
           <span className="dock-tip">{label}</span>

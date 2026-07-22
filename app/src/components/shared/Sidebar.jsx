@@ -1,13 +1,14 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { Map, Layers, PenLine, Star, User, Search } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { Map, Layers, Star, User, Search } from 'lucide-react';
 
+// Write + Request live behind ONE "Review" entry (they fork on /review).
+// The `also` list keeps the entry lit while inside either flow.
 const NAV_ITEMS = [
   { to: '/', label: 'Explore', Icon: Map },
   { to: '/feed', label: 'Feed', Icon: Layers },
   { to: '/check', label: 'Check a villa', Icon: Search },
-  { to: '/write-review', label: 'Write a review', Icon: Star },
-  { to: '/request-review', label: 'Request a review', Icon: PenLine },
+  { to: '/review', label: 'Review', Icon: Star, also: ['/write-review', '/request-review'] },
   { to: '/you', label: 'You', Icon: User },
 ];
 
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
  * logic, just reflowed for a wide canvas with room to spare.
  */
 export function Sidebar({ onLogoClick }) {
+  const { pathname } = useLocation();
   return (
     <nav
       style={{
@@ -54,12 +56,14 @@ export function Sidebar({ onLogoClick }) {
         <span style={{ color: 'var(--nay-600)' }}>Nay</span>
       </button>
 
-      {NAV_ITEMS.map(({ to, label, Icon }) => (
+      {NAV_ITEMS.map(({ to, label, Icon, also }) => (
         <NavLink
           key={to}
           to={to}
           end={to === '/'}
-          style={({ isActive }) => ({
+          style={({ isActive: navActive }) => {
+            const isActive = navActive || (also || []).includes(pathname);
+            return ({
             display: 'flex',
             alignItems: 'center',
             gap: 12,
@@ -71,14 +75,18 @@ export function Sidebar({ onLogoClick }) {
             fontSize: 15,
             color: isActive ? 'var(--brand)' : 'var(--text-muted)',
             background: isActive ? 'var(--brand-soft)' : 'transparent',
-          })}
+          });
+          }}
         >
-          {({ isActive }) => (
-            <>
-              <Icon size={20} fill={isActive && label === 'Saved' ? 'currentColor' : 'none'} />
-              {label}
-            </>
-          )}
+          {({ isActive: navActive }) => {
+            const isActive = navActive || (also || []).includes(pathname);
+            return (
+              <>
+                <Icon size={20} fill={isActive && label === 'Saved' ? 'currentColor' : 'none'} />
+                {label}
+              </>
+            );
+          }}
         </NavLink>
       ))}
     </nav>
