@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Save, Check, ImagePlus, X, Trash2, EyeOff, Play, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
+import { MapPin, Save, Check, ImagePlus, X, Trash2, EyeOff, Play, Image as ImageIcon, Video as VideoIcon, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import { Input, Button, Tag } from '../components/core';
 import { Header, LocationPicker, AddressSearch } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
@@ -61,6 +61,17 @@ export function AdminEditReviewsScreen() {
   );
 }
 
+// Compact square button used for the tile move-left / move-right arrows.
+function reorderBtn(disabled) {
+  return {
+    flex: 'none', width: 24, height: 24, borderRadius: 'var(--radius-sm)',
+    border: '1px solid var(--border-soft)', background: 'var(--surface-card)',
+    color: disabled ? 'var(--text-faint)' : 'var(--text-body)',
+    cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.4 : 1,
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+  };
+}
+
 // Filename at the end of a storage URL, minus the cache-busting query string —
 // enough to tell two otherwise identical-looking thumbnails apart.
 function fileNameFromUrl(url) {
@@ -105,6 +116,9 @@ function ReviewEditor({ review, adminUserId, onGone }) {
   const name = propertyName || 'Untitled property';
   const videoCount = mediaUrls.filter((m) => m.type === 'video').length;
   const photoCount = mediaUrls.length - videoCount;
+  // The front-page image is the first photo in the array (see firstPhotoUrl in
+  // useVillasWithReviews). Track which tile that is so it can be badged.
+  const coverIndex = mediaUrls.findIndex((m) => m.type === 'photo');
 
   const setScore = (key, value) => setScores((prev) => ({ ...prev, [key]: value }));
 
@@ -139,6 +153,29 @@ function ReviewEditor({ review, adminUserId, onGone }) {
   };
 
   const removeMedia = (url) => setMediaUrls((prev) => prev.filter((m) => m.url !== url));
+
+  // Reorder the media set. The public site's cover image (Explore card, Feed,
+  // detail hero) is simply the FIRST photo in this array, and the detail
+  // gallery shows them in this order too — so moving a tile left/right, or
+  // sending a photo to the front, is all it takes to change what leads the
+  // review. Only written to the row on Save, like every other edit here.
+  const moveMedia = (index, dir) => setMediaUrls((prev) => {
+    const j = index + dir;
+    if (j < 0 || j >= prev.length) return prev;
+    const next = [...prev];
+    [next[index], next[j]] = [next[j], next[index]];
+    return next;
+  });
+
+  // One-click "make this the front-page photo": pull it out and drop it at the
+  // very front, so it becomes the first photo (and thus the cover).
+  const makeCover = (index) => setMediaUrls((prev) => {
+    if (index <= 0) return prev;
+    const next = [...prev];
+    const [item] = next.splice(index, 1);
+    next.unshift(item);
+    return next;
+  });
 
   const save = async () => {
     setSaving(true);
@@ -228,9 +265,21 @@ function ReviewEditor({ review, adminUserId, onGone }) {
                 // one mixed list — that's how they're referred to everywhere else.
                 const kindIndex = mediaUrls.slice(0, i + 1).filter((x) => (x.type === 'video') === isVid).length;
                 const caption = `${isVid ? 'Video' : 'Photo'} ${kindIndex}`;
+                const isCover = i === coverIndex;
                 return (
                   <div key={`${m.url}-${i}`} style={{ width: 104, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div style={{ position: 'relative', width: 104, height: 104, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: `1px solid ${isVid ? 'var(--brand)' : 'var(--border-soft)'}`, background: isVid ? '#000' : 'var(--surface-sunken)' }}>
+                    <div style={{ position: 'relative', width: 104, height: 104, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: isCover ? '2px solid var(--brand)' : `1px solid ${isVid ? 'var(--brand)' : 'var(--border-soft)'}`, background: isVid ? '#000' : 'var(--surface-sunken)' }}>
+                      {isCover && (
+                        <span
+                          style={{
+                            position: 'absolute', left: 4, top: 4, zIndex: 1, display: 'inline-flex', alignItems: 'center', gap: 3,
+                            padding: '2px 7px', borderRadius: 999, background: 'var(--brand)', color: '#fff',
+                            fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 700, letterSpacing: 0.3, pointerEvents: 'none',
+                          }}
+                        >
+                          <Star size={9} fill="#fff" /> Cover
+                        </span>
+                      )}
                       {isVid ? (
                         <video
                           src={m.url}
@@ -271,6 +320,48 @@ function ReviewEditor({ review, adminUserId, onGone }) {
                         <X size={13} />
                       </button>
                     </div>
+                    {/* Reorder controls: move within the sequence, or send a
+                        photo straight to the front to make it the cover. */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <button
+                        type="button"
+                        onClick={() => moveMedia(i, -1)}
+                        disabled={i === 0}
+                        aria-label={`Move ${caption} earlier`}
+                        title="Move earlier"
+                        style={reorderBtn(i === 0)}
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      {!isVid && !isCover ? (
+                        <button
+                          type="button"
+                          onClick={() => makeCover(i)}
+                          title="Use as the front-page cover"
+                          style={{
+                            flex: 1, minWidth: 0, height: 24, cursor: 'pointer', display: 'inline-flex',
+                            alignItems: 'center', justifyContent: 'center', gap: 3,
+                            border: '1px solid var(--border-soft)', borderRadius: 'var(--radius-sm)',
+                            background: 'var(--surface-card)', color: 'var(--text-muted)',
+                            fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 600,
+                          }}
+                        >
+                          <Star size={10} /> Cover
+                        </button>
+                      ) : (
+                        <span style={{ flex: 1 }} />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => moveMedia(i, 1)}
+                        disabled={i === mediaUrls.length - 1}
+                        aria-label={`Move ${caption} later`}
+                        title="Move later"
+                        style={reorderBtn(i === mediaUrls.length - 1)}
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </div>
                     <span
                       title={fileNameFromUrl(m.url)}
                       style={{
@@ -307,7 +398,7 @@ function ReviewEditor({ review, adminUserId, onGone }) {
               />
             </div>
             <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-faint)' }}>
-              Videos are outlined and playable; tap a photo to open it full size. Removals only take effect when you save. iPhone HEIC photos convert automatically.
+              The <strong style={{ fontWeight: 600, color: 'var(--brand)' }}>Cover</strong> photo is what shows on the front page — use ‹ › to reorder, or tap <strong style={{ fontWeight: 600 }}>Cover</strong> on any photo to move it to the front. Videos are outlined and playable; tap a photo to open it full size. Changes only take effect when you save. iPhone HEIC photos convert automatically.
             </p>
           </div>
 
