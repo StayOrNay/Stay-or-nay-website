@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Save, Check, ImagePlus, X, Trash2, EyeOff, Play } from 'lucide-react';
+import { MapPin, Save, Check, ImagePlus, X, Trash2, EyeOff, Play, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
 import { Input, Button, Tag } from '../components/core';
 import { Header, LocationPicker } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
 import { isAdmin } from '../lib/admin';
-import { fetchAllApprovedReviews, updateReview, deleteReview, uploadReviewMedia } from '../lib/reviews';
+import { fetchAllApprovedReviews, updateReview, deleteReview, uploadReviewMedia, normalizeMediaList } from '../lib/reviews';
 import { CATEGORIES, MAX_PER_CATEGORY, MAX_TOTAL, totalFromCategories, verdictFromTotal } from '../lib/reviewScore';
 import { prepareMediaForUpload } from '../lib/compressMedia';
 
@@ -61,8 +61,15 @@ export function AdminEditReviewsScreen() {
   );
 }
 
-function isVideoUrl(url) {
-  return /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url || '');
+// Filename at the end of a storage URL, minus the cache-busting query string —
+// enough to tell two otherwise identical-looking thumbnails apart.
+function fileNameFromUrl(url) {
+  try {
+    const path = decodeURIComponent(String(url).split(/[?#]/)[0]);
+    return path.split('/').pop() || path;
+  } catch {
+    return String(url);
+  }
 }
 
 function ReviewEditor({ review, adminUserId, onGone }) {
@@ -81,7 +88,10 @@ function ReviewEditor({ review, adminUserId, onGone }) {
   const [scores, setScores] = useState(() =>
     CATEGORIES.reduce((acc, c) => ({ ...acc, [c.key]: Number(review[`score_${c.key}`]) || 0 }), {})
   );
-  const [mediaUrls, setMediaUrls] = useState(() => Array.isArray(review.media_urls) ? review.media_urls : []);
+  // Always held as normalized { url, type } objects, whichever of the two
+  // historical shapes the row happens to store. Saved back in that same
+  // object shape so the rest of the app (Explore/Feed/detail) keeps working.
+  const [mediaUrls, setMediaUrls] = useState(() => normalizeMediaList(review.media_urls));
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -93,6 +103,8 @@ function ReviewEditor({ review, adminUserId, onGone }) {
   const total = totalFromCategories(scores);
   const verdict = verdictFromTotal(total);
   const name = propertyName || 'Untitled property';
+  const videoCount = mediaUrls.filter((m) => m.type === 'video').length;
+  const photoCount = mediaUrls.length - videoCount;
 
   const setScore = (key, value) => setScores((prev) => ({ ...prev, [key]: value }));
 
@@ -108,7 +120,16 @@ function ReviewEditor({ review, adminUserId, onGone }) {
     try {
       const { files: prepared } = await prepareMediaForUpload(picked);
       const { urls, error: upErr } = await uploadReviewMedia(prepared, adminUserId);
-      if (urls.length) setMediaUrls((prev) => [...prev, ...urls]);
+      // urls[i] always corresponds to prepared[i], so the photo/video type is
+      // taken from the source file rather than guessed from the extension —
+      // same as "Write a review" does.
+      if (urls.length) {
+        const added = urls.map((url, i) => ({
+          url,
+          type: (prepared[i]?.type || '').startsWith('video/') ? 'video' : 'photo',
+        }));
+        setMediaUrls((prev) => [...prev, ...added]);
+      }
       if (upErr) setError(upErr.message || String(upErr));
     } catch (err) {
       setError(err?.message || String(err));
@@ -117,7 +138,7 @@ function ReviewEditor({ review, adminUserId, onGone }) {
     }
   };
 
-  const removeMedia = (url) => setMediaUrls((prev) => prev.filter((u) => u !== url));
+  const removeMedia = (url) => setMediaUrls((prev) => prev.filter((m) => m.url !== url));
 
   const save = async () => {
     setSaving(true);
@@ -195,38 +216,77 @@ function ReviewEditor({ review, adminUserId, onGone }) {
           {/* ---- Photos & videos ---- */}
           <div>
             <label style={label}>Photos & videos</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-              {mediaUrls.map((url) => (
-                <div key={url} style={{ position: 'relative', width: 84, height: 84, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-soft)', background: 'var(--surface-sunken)' }}>
-                  {isVideoUrl(url) ? (
-                    <>
-                      <video src={url} preload="metadata" muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      <span style={{ position: 'absolute', left: 4, bottom: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', color: '#fff' }}>
-                        <Play size={11} />
+            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+              <Tag variant="outline" iconLeft={<ImageIcon size={12} />}>{photoCount} photo{photoCount === 1 ? '' : 's'}</Tag>
+              <Tag variant="outline" iconLeft={<VideoIcon size={12} />}>{videoCount} video{videoCount === 1 ? '' : 's'}</Tag>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 8 }}>
+              {mediaUrls.map((m, i) => {
+                const isVid = m.type === 'video';
+                // Photos and videos are numbered within their own kind, so the
+                // caption reads "Photo 2" / "Video 1" rather than a position in
+                // one mixed list — that's how they're referred to everywhere else.
+                const kindIndex = mediaUrls.slice(0, i + 1).filter((x) => (x.type === 'video') === isVid).length;
+                const caption = `${isVid ? 'Video' : 'Photo'} ${kindIndex}`;
+                return (
+                  <div key={`${m.url}-${i}`} style={{ width: 104, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ position: 'relative', width: 104, height: 104, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: `1px solid ${isVid ? 'var(--brand)' : 'var(--border-soft)'}`, background: isVid ? '#000' : 'var(--surface-sunken)' }}>
+                      {isVid ? (
+                        <video
+                          src={m.url}
+                          preload="metadata"
+                          muted
+                          playsInline
+                          controls
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        />
+                      ) : (
+                        <a href={m.url} target="_blank" rel="noreferrer" title={`Open ${caption} full size`} style={{ display: 'block', lineHeight: 0, width: '100%', height: '100%' }}>
+                          <img src={m.url} alt={caption} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        </a>
+                      )}
+                      {/* Type badge sits bottom-left so it survives even when the
+                          thumbnail itself fails to load (dead/expired storage URL). */}
+                      <span
+                        style={{
+                          position: 'absolute', left: 4, bottom: 4, display: 'inline-flex', alignItems: 'center', gap: 3,
+                          padding: '2px 6px', borderRadius: 999, background: 'rgba(0,0,0,0.65)', color: '#fff',
+                          fontFamily: 'var(--font-body)', fontSize: 10, fontWeight: 700, letterSpacing: 0.2, pointerEvents: 'none',
+                        }}
+                      >
+                        {isVid ? <Play size={9} /> : <ImageIcon size={9} />}
+                        {caption}
                       </span>
-                    </>
-                  ) : (
-                    <img src={url} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removeMedia(url)}
-                    aria-label="Remove this file"
-                    title="Remove"
-                    style={{
-                      position: 'absolute', top: 3, right: 3, width: 22, height: 22, borderRadius: '50%',
-                      border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      background: 'rgba(0,0,0,0.6)', color: '#fff',
-                    }}
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-              ))}
+                      <button
+                        type="button"
+                        onClick={() => removeMedia(m.url)}
+                        aria-label={`Remove ${caption}`}
+                        title={`Remove ${caption}`}
+                        style={{
+                          position: 'absolute', top: 3, right: 3, width: 22, height: 22, borderRadius: '50%',
+                          border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          background: 'rgba(0,0,0,0.6)', color: '#fff',
+                        }}
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                    <span
+                      title={fileNameFromUrl(m.url)}
+                      style={{
+                        fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-faint)',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', direction: 'rtl', textAlign: 'left',
+                      }}
+                    >
+                      {fileNameFromUrl(m.url)}
+                    </span>
+                  </div>
+                );
+              })}
               <label
                 htmlFor={`admin-media-${review.id}`}
                 style={{
-                  width: 84, height: 84, borderRadius: 'var(--radius-md)', cursor: uploading ? 'wait' : 'pointer',
+                  width: 104, height: 104, borderRadius: 'var(--radius-md)', cursor: uploading ? 'wait' : 'pointer',
                   border: '1.5px dashed var(--border-default)', display: 'inline-flex', flexDirection: 'column',
                   alignItems: 'center', justifyContent: 'center', gap: 4,
                   color: 'var(--text-muted)', fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600, textAlign: 'center',
@@ -247,7 +307,7 @@ function ReviewEditor({ review, adminUserId, onGone }) {
               />
             </div>
             <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-faint)' }}>
-              Removals only take effect when you save. iPhone HEIC photos convert automatically.
+              Videos are outlined and playable; tap a photo to open it full size. Removals only take effect when you save. iPhone HEIC photos convert automatically.
             </p>
           </div>
 

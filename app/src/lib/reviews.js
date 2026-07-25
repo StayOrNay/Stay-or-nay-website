@@ -16,6 +16,36 @@ const NOT_CONFIGURED_ERROR = {
   message: "Reviews aren't set up yet — the site owner needs to add Supabase project keys.",
 };
 
+const VIDEO_EXT_RE = /\.(mp4|mov|webm|m4v|avi|mkv|ogv|3gp)(\?|#|$)/i;
+
+/**
+ * `media_urls` comes in two shapes, and always has: the current writer stores
+ * `{ url, type: 'photo' | 'video' }`, while older reviews (and the legacy seed
+ * data) stored a bare URL string with no type at all. Anything that reads the
+ * column has to cope with both, so do it once, here.
+ *
+ * Returns a consistent `{ url, type }` object; when the type is missing it's
+ * inferred from the file extension, defaulting to 'photo'.
+ */
+export function normalizeMediaItem(item) {
+  if (!item) return null;
+  if (typeof item === 'string') {
+    return { url: item, type: VIDEO_EXT_RE.test(item) ? 'video' : 'photo' };
+  }
+  const url = item.url || item.publicUrl || '';
+  if (!url) return null;
+  const type = item.type === 'video' || item.type === 'photo'
+    ? item.type
+    : (VIDEO_EXT_RE.test(url) ? 'video' : 'photo');
+  return { ...item, url, type };
+}
+
+/** Same as normalizeMediaItem, across a whole media_urls array. */
+export function normalizeMediaList(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map(normalizeMediaItem).filter(Boolean);
+}
+
 /**
  * Uploads each File to Supabase Storage under a per-user folder and returns
  * their public URLs. Stops and returns what succeeded so far on the first
