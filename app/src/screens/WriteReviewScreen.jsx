@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ImagePlus, X, Send, AlertCircle, CheckCircle2, Link2, Image as ImageIcon, Video as VideoIcon, Info, MapPin, Crosshair, LifeBuoy } from 'lucide-react';
 import { Input, Button, VerdictBadge, Tag } from '../components/core';
-import { Header, LocationPicker } from '../components/shared';
+import { Header, LocationPicker, AddressSearch } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { CATEGORIES, MAX_PER_CATEGORY, NAY_THRESHOLD, MAX_TOTAL, MIN_PHOTOS, MIN_VIDEOS, MIN_BODY_CHARS, emptyScores, totalFromCategories, verdictFromTotal } from '../lib/reviewScore';
@@ -318,14 +318,19 @@ export function WriteReviewScreen() {
                 reviewer drops the pin themselves. We seed it from the typed
                 area, then they drag it onto the real spot. */}
             <div className="rise" style={{ '--i': 4, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                <label style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13, color: 'var(--text-body)' }}>Pin the exact spot</label>
-                <Button type="button" variant="ghost" size="sm" iconLeft={<Crosshair size={15} />} disabled={locating || !area.trim()} onClick={locateFromArea}>
-                  {locating ? 'Locating…' : 'Center on area'}
-                </Button>
-              </div>
+              <AddressSearch
+                label="Pin the exact spot"
+                near={coords}
+                initialQuery={area}
+                onPick={({ lon, lat }) => setCoords({ lon, lat })}
+                trailing={
+                  <Button type="button" variant="ghost" size="sm" iconLeft={<Crosshair size={15} />} disabled={locating || !area.trim()} onClick={locateFromArea}>
+                    {locating ? 'Locating…' : 'Center on area'}
+                  </Button>
+                }
+              />
               <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-faint)' }}>
-                Drag the pin (or tap the map) to place the villa as precisely as you can.
+                Know the address? Tap <strong style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Enter address</strong> to jump straight there. Otherwise drag the pin (or tap the map) to place the villa as precisely as you can.
               </p>
               {linkStatus === 'looking' && (
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-muted)' }}>Reading the location from your booking link…</div>

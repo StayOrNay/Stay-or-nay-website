@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, Save, Check, ImagePlus, X, Trash2, EyeOff, Play, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
 import { Input, Button, Tag } from '../components/core';
-import { Header, LocationPicker } from '../components/shared';
+import { Header, LocationPicker, AddressSearch } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
 import { isAdmin } from '../lib/admin';
 import { fetchAllApprovedReviews, updateReview, deleteReview, uploadReviewMedia, normalizeMediaList } from '../lib/reviews';
@@ -351,9 +351,14 @@ function ReviewEditor({ review, adminUserId, onGone }) {
 
           {/* ---- Location ---- */}
           <div>
-            <label style={label}>Location on the map</label>
+            <AddressSearch
+              label="Location on the map"
+              near={coords}
+              initialQuery={area}
+              onPick={({ lon, lat }) => setCoords({ lon, lat })}
+            />
             <p style={{ margin: '4px 0 8px', fontFamily: 'var(--font-body)', fontSize: 12.5, color: 'var(--text-faint)' }}>
-              Drag the pin (or tap the map) onto where you think the villa is. It updates instantly on save.
+              Type the address to jump straight there, or drag the pin (tap the map) onto where you think the villa is. It updates instantly on save.
             </p>
             <div style={{ position: 'relative', height: 260, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-soft)' }}>
               <LocationPicker value={coords} onChange={(lon, lat) => setCoords({ lon, lat })} initialCenter={coords || undefined} />

@@ -132,6 +132,64 @@ export async function reverseGeocodeFullAddress(lon, lat) {
 }
 
 /**
+ * Forward-geocodes a FULL ADDRESS ("Jl. Pantai Berawa No.12, Canggu") into a
+ * short list of ranked candidates, for the "type the address instead of
+ * hunting for it on the map" button next to the review form's pin.
+ *
+ * Returns several results rather than one because street addresses are
+ * genuinely ambiguous — the same road name repeats across Bali, and villa
+ * addresses are often only precise to the street. Showing the matches lets
+ * the reviewer pick the right one (and notice when the geocoder guessed a
+ * different country entirely) instead of silently teleporting the pin.
+ *
+ * `near` — usually wherever the pin already sits — biases results toward that
+ * point, which massively improves hit rate on informal local addresses.
+ *
+ * Each candidate is { lon, lat, label, detail, accuracy }: `label` is the
+ * full formatted address, `accuracy` is Mapbox's feature type ('address',
+ * 'street', 'place'…) so the UI can warn when a match is only street- or
+ * town-level. Returns [] on no match or any failure — never throws.
+ */
+export async function geocodeAddressCandidates(query, near = null) {
+  const q = (query || '').trim();
+  if (!q) return [];
+  const params = [
+    `q=${encodeURIComponent(q)}`,
+    `access_token=${MAPBOX_TOKEN}`,
+    'limit=5',
+  ];
+  if (near && typeof near.lon === 'number' && typeof near.lat === 'number') {
+    params.push(`proximity=${near.lon},${near.lat}`);
+  }
+  try {
+    const res = await fetch(`https://api.mapbox.com/search/geocode/v6/forward?${params.join('&')}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data?.features || [])
+      .map((f) => {
+        const c = f?.geometry?.coordinates;
+        if (!c || c.length < 2) return null;
+        const props = f.properties || {};
+        const ctx = props.context || {};
+        return {
+          lon: c[0],
+          lat: c[1],
+          label: props.full_address || props.name || q,
+          // Second line: town + region/country, so two same-named streets are
+          // distinguishable at a glance.
+          detail: [ctx.place?.name, ctx.region?.name || ctx.country?.name]
+            .filter(Boolean)
+            .join(', '),
+          accuracy: props.feature_type || null,
+        };
+      })
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Forward-geocodes a free-text place ("Uluwatu, Bali") into coordinates so a
  * user-submitted review can be pinned on the Explore map. Returns
  * { lon, lat, label } or null if nothing matches / the request fails — the

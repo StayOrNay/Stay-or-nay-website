@@ -4,3 +4,4 @@ export { Sidebar } from './Sidebar';
 export { MapPin } from './MapPin';
 export { SatelliteMap } from './SatelliteMap';
 export { LocationPicker } from './LocationPicker';
+export { AddressSearch } from './AddressSearch';
