@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, ChevronsUp } from 'lucide-react';
+import { Heart, ChevronsUp, Volume2, VolumeX } from 'lucide-react';
 import { VerdictBadge, Tag, VillaCard } from '../components/core';
 import { useVillasWithReviews } from '../hooks/useVillasWithReviews';
 import { useSaved } from '../context/SavedContext';
@@ -23,6 +23,10 @@ export function FeedScreen() {
   const containerRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showHint, setShowHint] = useState(true);
+  // Sound is off by default (browsers require muted to autoplay), but once the
+  // viewer taps the speaker we keep sound on for every following clip — that
+  // first tap is the user gesture that unlocks audible autoplay.
+  const [muted, setMuted] = useState(true);
 
   useEffect(() => {
     if (isDesktop) return undefined;
@@ -105,6 +109,9 @@ export function FeedScreen() {
           key={v.id}
           villa={v}
           active={i === activeIndex}
+          preload={Math.abs(i - activeIndex) <= 1}
+          muted={muted}
+          onToggleMute={() => setMuted((m) => !m)}
           saved={saved.has(v.id)}
           onToggleSave={() => toggleSave(v.id)}
           onOpen={() => navigate(`/villa/${v.id}`)}
@@ -153,32 +160,69 @@ export function FeedScreen() {
   );
 }
 
-function FeedSlide({ villa, active, saved, onToggleSave, onOpen }) {
-  // Scroll-stopper: the photo shows for ~1.2 seconds, then a RANDOM video from
-  // the review takes over (muted + looping, TikTok-style). A new random clip
-  // is picked every time the slide becomes the active one, so re-scrolling
-  // past the same villa doesn't always show the same footage. Scrolling away
-  // unmounts the <video>, which stops playback and its network fetch. If the
-  // clip can't play on this device (codec), we just stay on the photo.
+function FeedSlide({ villa, active, preload, muted, onToggleMute, saved, onToggleSave, onOpen }) {
+  // Scroll-stopper: the photo shows briefly, then a RANDOM video from the
+  // review takes over (looping, TikTok-style). The clip is CHOSEN and starts
+  // buffering as soon as this slide is near the viewport (preload), so by the
+  // time it becomes active the footage is ready and plays on cue — roughly a
+  // second after the swipe, not several. A fresh random clip is picked each
+  // time the slide comes back into view. If the clip can't play on this
+  // device (codec), we just stay on the photo.
   const videos = React.useMemo(
     () => (villa.mediaUrls || []).filter((m) => m && m.type === 'video' && m.url),
     [villa.mediaUrls],
   );
+  const videoRef = useRef(null);
   const [videoUrl, setVideoUrl] = useState(null);
+  const [showVideo, setShowVideo] = useState(false);
+  const [failed, setFailed] = useState(false);
 
+  // Pick a clip and start buffering it as soon as the slide is near.
   useEffect(() => {
-    if (!active || videos.length === 0) {
+    if (failed || videos.length === 0 || !(preload || active)) {
       setVideoUrl(null);
       return undefined;
     }
-    const t = setTimeout(() => {
-      setVideoUrl(videos[Math.floor(Math.random() * videos.length)].url);
-    }, 1200);
-    return () => {
-      clearTimeout(t);
-      setVideoUrl(null);
+    setVideoUrl((cur) => cur || videos[Math.floor(Math.random() * videos.length)].url);
+    return undefined;
+  }, [preload, active, videos, failed]);
+
+  // When the slide is active, reveal + play the (already buffering) clip after
+  // a short beat. Play is called explicitly and retried muted if the browser
+  // blocks audible autoplay — that's what makes it start reliably every time.
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!active || !videoUrl) {
+      setShowVideo(false);
+      if (vid) {
+        try { vid.pause(); vid.currentTime = 0; } catch { /* ignore */ }
+      }
+      return undefined;
+    }
+    const start = () => {
+      setShowVideo(true);
+      if (!vid) return;
+      vid.muted = muted;
+      const p = vid.play();
+      if (p && typeof p.catch === 'function') {
+        p.catch(() => {
+          // Audible autoplay refused — fall back to muted so it still plays.
+          vid.muted = true;
+          vid.play().catch(() => {});
+        });
+      }
     };
-  }, [active, videos]);
+    const t = setTimeout(start, 900);
+    return () => clearTimeout(t);
+  }, [active, videoUrl, muted]);
+
+  // Live mute/unmute toggle while a clip is on screen.
+  useEffect(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    vid.muted = muted;
+    if (active && showVideo && !muted) vid.play().catch(() => {});
+  }, [muted, active, showVideo]);
 
   return (
     <section
@@ -207,20 +251,22 @@ function FeedSlide({ villa, active, saved, onToggleSave, onOpen }) {
       />
       {videoUrl && (
         <video
+          ref={videoRef}
           key={videoUrl}
           src={videoUrl}
-          autoPlay
-          muted
+          muted={muted}
           loop
           playsInline
-          onError={() => setVideoUrl(null)}
+          preload="auto"
+          onError={() => setFailed(true)}
           style={{
             position: 'absolute',
             inset: 0,
             width: '100%',
             height: '100%',
             objectFit: 'cover',
-            animation: 'feedVideoIn 500ms var(--ease-out) both',
+            opacity: showVideo ? 1 : 0,
+            transition: 'opacity 500ms var(--ease-out)',
           }}
         />
       )}
@@ -278,6 +324,27 @@ function FeedSlide({ villa, active, saved, onToggleSave, onOpen }) {
             {saved ? 'Saved' : 'Save'}
           </span>
         </button>
+        {videos.length > 0 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleMute(); }}
+            aria-label={muted ? 'Unmute video' : 'Mute video'}
+            style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, color: '#fff' }}
+          >
+            <span
+              style={{
+                width: 46, height: 46, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.16)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backdropFilter: 'blur(6px)',
+              }}
+            >
+              {muted ? <VolumeX size={22} /> : <Volume2 size={22} />}
+            </span>
+            <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 700, textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
+              {muted ? 'Sound' : 'On'}
+            </span>
+          </button>
+        )}
         <VerdictBadge verdict={villa.verdict} score={villa.score} outOf={villa.scoreOutOf} size="sm" />
       </div>
 
