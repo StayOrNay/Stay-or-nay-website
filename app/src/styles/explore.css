@@ -172,6 +172,26 @@
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
+/* Empty-state pill — shown along the bottom edge when a search/filter
+   leaves no matching stays, so the search visibly "reacts". */
+.explore-empty-pill {
+  position: absolute; left: 12px; right: 12px; bottom: 16px; z-index: 11;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 11px 14px; border-radius: 999px;
+}
+.explore-empty-pill .label-text {
+  font-family: var(--font-body); font-size: 13px; color: var(--paper-050);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.explore-empty-pill button {
+  flex: none; display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08); color: var(--paper-050);
+  border-radius: 999px; padding: 6px 12px; cursor: pointer;
+  font-family: var(--font-body); font-weight: 700; font-size: 12.5px;
+}
+.explore-empty-pill button:active { transform: scale(0.96); }
+
 /* ---------- map pins: drop-in ----------
    IMPORTANT: Mapbox owns the marker element's own `transform` (it writes a
    translate() every frame to position the pin — see SatelliteMap's marker

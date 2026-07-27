@@ -27,6 +27,7 @@ export function ExploreScreen() {
   const [locationLabel, setLocationLabel] = useState('Bali, Indonesia');
   const [mapBounds, setMapBounds] = useState(null);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
+  const [query, setQuery] = useState('');
   const [showScoring, setShowScoring] = useState(false);
   const mapRef = useRef(null);
   const geocodeTimerRef = useRef(null);
@@ -37,8 +38,18 @@ export function ExploreScreen() {
   // (the desktop side list, the map pins, the on-screen "N verdicts" count)
   // reads from this filtered set, so a filter narrows the whole Explore view
   // at once, not just the list.
-  const filteredVillas = useMemo(() => applyFilters(villas, filters), [villas, filters]);
+  const filteredVillas = useMemo(
+    () => applySearch(applyFilters(villas, filters), query),
+    [villas, filters, query],
+  );
   const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
+
+  // Clear both the search box and every filter — used by the "no matches"
+  // reset buttons so a stray search term can't leave the list stuck empty.
+  const resetAll = useCallback(() => {
+    setQuery('');
+    setFilters(DEFAULT_FILTERS);
+  }, []);
 
   const sel = filteredVillas.find((v) => v.id === selected);
 
@@ -91,7 +102,13 @@ export function ExploreScreen() {
             <div className={`glass-night theme-night explore-panel explore-enter-panel${immersive ? ' hidden-panel' : ''}`}>
               <div className="explore-panel-scroll">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <Input search iconLeft={<Search size={18} />} placeholder="Search anywhere…" />
+                  <Input
+                    search
+                    iconLeft={<Search size={18} />}
+                    placeholder="Search by name or area…"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                     <div className="explore-location-chip">
                       <span className="live-dot" />
@@ -118,7 +135,7 @@ export function ExploreScreen() {
                   </div>
                 ))}
                 {villas.length > 0 && filteredVillas.length === 0 && (
-                  <NoMatches onReset={() => setFilters(DEFAULT_FILTERS)} />
+                  <NoMatches onReset={resetAll} query={query} />
                 )}
               </div>
             </div>
@@ -143,7 +160,13 @@ export function ExploreScreen() {
           <>
             <div className="theme-night explore-mobile-top explore-enter-card" style={{ animationDelay: '200ms' }}>
               <div>
-                <Input search iconLeft={<Search size={18} />} placeholder="Search anywhere…" />
+                <Input
+                  search
+                  iconLeft={<Search size={18} />}
+                  placeholder="Search by name or area…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
               </div>
               <FiltersControl filters={filters} setFilters={setFilters} activeCount={activeFilterCount} align="right" compact />
               <button
@@ -205,6 +228,19 @@ export function ExploreScreen() {
                     </span>
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* Nothing matched the current search/filters — say so instead of
+                silently hiding the strip, so the search clearly "reacts". */}
+            {!sel && villas.length > 0 && filteredVillas.length === 0 && (
+              <div className="glass-night theme-night explore-empty-pill explore-enter-card" style={{ animationDelay: '440ms' }}>
+                <span className="label-text">
+                  {query.trim() ? `No stays match “${query.trim()}”` : 'No stays match these filters'}
+                </span>
+                <button type="button" onClick={resetAll} aria-label="Clear search and filters">
+                  <RotateCcw size={14} /> Clear
+                </button>
               </div>
             )}
           </>
@@ -400,7 +436,25 @@ function ExploreDock() {
  * logic is testable and shared by the list, the map pins and the count.
  * ------------------------------------------------------------------ */
 
-const DEFAULT_FILTERS = { beds: 0, pool: false, minScore: 0, stayOnly: false, sort: 'best' };
+const DEFAULT_FILTERS = { beds: 0, pool: false, minScore: 0, stayOnly: false, type: 'any', sort: 'best' };
+
+// Kind of stay — inferred from the listing's name / area / tags, since the
+// review form doesn't (yet) capture a structured property type. Powers the
+// "Villa / Hotel / Hostel" filter. Anything that isn't clearly a hotel or a
+// hostel falls back to "villa", which is the vast majority of the site.
+const TYPE_OPTIONS = [
+  { key: 'any', label: 'Any' },
+  { key: 'villa', label: 'Villa' },
+  { key: 'hotel', label: 'Hotel' },
+  { key: 'hostel', label: 'Hostel' },
+];
+
+function propertyType(v) {
+  const hay = `${v.name || ''} ${v.location || ''} ${(v.tags || []).join(' ')}`.toLowerCase();
+  if (/\bhostel\b|\bbackpacker/.test(hay)) return 'hostel';
+  if (/\bhotel\b|\bresort\b|\bsuites?\b|\binn\b/.test(hay)) return 'hotel';
+  return 'villa';
+}
 
 const CATEGORY_SORT_KEYS = ['cleanliness', 'location', 'value', 'amenities', 'host'];
 
@@ -433,6 +487,7 @@ function applyFilters(villas, f) {
     // against the 0-50 minimum the user picks (matching "Write a review").
     if (f.minScore && (v.score || 0) / 2 < f.minScore) return false;
     if (f.stayOnly && v.verdict !== 'stay') return false;
+    if (f.type && f.type !== 'any' && propertyType(v) !== f.type) return false;
     return true;
   });
   if (f.sort === 'score') list = [...list].sort((a, b) => (b.score || 0) - (a.score || 0));
@@ -444,8 +499,36 @@ function applyFilters(villas, f) {
   return list;
 }
 
+// Free-text search over the (already-filtered) list. Returns only the
+// matches, ranked so the best ones surface first: a name that *starts* with
+// what you've typed beats a name that merely contains it, which beats an
+// area match. So typing "L" floats every stay whose name begins with L to
+// the top and drops everything that doesn't match at all — the search box
+// now actually reacts instead of sitting inert.
+function searchRank(v, q) {
+  const name = (v.name || '').toLowerCase();
+  const loc = (v.location || '').toLowerCase();
+  const words = name.split(/\s+/);
+  if (name.startsWith(q)) return 0;
+  if (words.some((w) => w.startsWith(q))) return 1;
+  if (name.includes(q)) return 2;
+  if (loc.startsWith(q) || loc.split(/\s+/).some((w) => w.startsWith(q))) return 3;
+  if (loc.includes(q)) return 4;
+  return Infinity;
+}
+
+function applySearch(list, query) {
+  const q = (query || '').trim().toLowerCase();
+  if (!q) return list;
+  return list
+    .map((v, i) => ({ v, i, r: searchRank(v, q) }))
+    .filter((x) => x.r !== Infinity)
+    .sort((a, b) => a.r - b.r || a.i - b.i)
+    .map((x) => x.v);
+}
+
 function countActiveFilters(f) {
-  return [f.beds > 0, f.pool, f.minScore > 0, f.stayOnly, f.sort !== 'best'].filter(Boolean).length;
+  return [f.beds > 0, f.pool, f.minScore > 0, f.stayOnly, f.type !== 'any', f.sort !== 'best'].filter(Boolean).length;
 }
 
 function FiltersControl({ filters, setFilters, activeCount, align = 'left', compact = false }) {
@@ -501,6 +584,16 @@ function FiltersControl({ filters, setFilters, activeCount, align = 'left', comp
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {SORT_OPTIONS.map((o) => (
                   <Chip key={o.key} active={filters.sort === o.key} onClick={() => set({ sort: o.key })}>
+                    {o.label}
+                  </Chip>
+                ))}
+              </div>
+            </FilterGroup>
+
+            <FilterGroup label="Property type">
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {TYPE_OPTIONS.map((o) => (
+                  <Chip key={o.key} active={filters.type === o.key} onClick={() => set({ type: o.key })}>
                     {o.label}
                   </Chip>
                 ))}
@@ -622,11 +715,12 @@ function Segmented({ options, value, onChange }) {
   );
 }
 
-function NoMatches({ onReset }) {
+function NoMatches({ onReset, query }) {
+  const q = (query || '').trim();
   return (
     <div style={{ textAlign: 'center', padding: '24px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
       <p style={{ margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)' }}>
-        No villas match these filters.
+        {q ? `No stays match “${q}”.` : 'No villas match these filters.'}
       </p>
       <button
         type="button"
@@ -638,7 +732,7 @@ function NoMatches({ onReset }) {
           color: 'var(--text-body)', fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 13,
         }}
       >
-        <RotateCcw size={14} /> Clear filters
+        <RotateCcw size={14} /> {q ? 'Clear search & filters' : 'Clear filters'}
       </button>
     </div>
   );

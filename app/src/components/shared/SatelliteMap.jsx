@@ -27,8 +27,11 @@ function buildMarkerEl(villa) {
 
   const label = document.createElement('div');
   label.style.cssText =
-    "font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:#fff;background:rgba(12,23,20,0.72);" +
-    'padding:2px 7px;border-radius:999px;margin-bottom:4px;white-space:nowrap;letter-spacing:0.02em;';
+    "font-family:'Hanken Grotesk',system-ui,-apple-system,sans-serif;font-size:11.5px;font-weight:600;" +
+    'color:#fff;background:rgba(10,18,16,0.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);' +
+    'padding:3px 10px;border-radius:999px;margin-bottom:5px;white-space:nowrap;letter-spacing:0.005em;' +
+    'border:1px solid rgba(255,255,255,0.14);box-shadow:0 1px 6px rgba(0,0,0,0.28);' +
+    'text-shadow:0 1px 2px rgba(0,0,0,0.4);max-width:184px;overflow:hidden;text-overflow:ellipsis;';
   label.textContent = villa.name;
 
   const badge = document.createElement('div');
