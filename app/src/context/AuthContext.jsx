@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { trackEvent } from '../lib/analytics';
 
 const AuthContext = createContext(null);
 
@@ -18,17 +19,36 @@ const NOT_CONFIGURED_ERROR = {
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(isSupabaseConfigured);
+  // Guards the analytics `login` event against double-counting: Supabase can
+  // re-emit SIGNED_IN on token refresh and tab re-focus, which would otherwise
+  // look like a fresh login every time someone leaves the tab open.
+  const loginReported = useRef(false);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
+      // A restored session is someone already signed in, not a new login.
+      if (data.session) loginReported.current = true;
       setLoading(false);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
+
+      if (event === 'SIGNED_IN' && newSession && !loginReported.current) {
+        loginReported.current = true;
+        // Covers every route in: password, Google OAuth (which completes on
+        // redirect back, after signInWithGoogle has already returned), and
+        // magic links. Tracking it here rather than in each function is the
+        // only way the redirect-based ones get counted at all.
+        trackEvent('login', {
+          method: newSession.user?.app_metadata?.provider ?? 'unknown',
+        });
+      }
+
+      if (event === 'SIGNED_OUT') loginReported.current = false;
     });
 
     return () => listener.subscription.unsubscribe();
@@ -41,6 +61,9 @@ export function AuthProvider({ children }) {
       password,
       options: { emailRedirectTo: window.location.origin },
     });
+    // No email address or user ID is sent — GA4's terms forbid personal data,
+    // and the count is what's useful anyway.
+    if (!error) trackEvent('sign_up', { method: 'email' });
     return { error };
   };
 
@@ -86,6 +109,9 @@ export function AuthProvider({ children }) {
       email,
       options: { emailRedirectTo: window.location.origin },
     });
+    // Only the request is measurable here — the sign-in itself lands later,
+    // via the SIGNED_IN listener above, once they click the emailed link.
+    if (!error) trackEvent('magic_link_requested');
     return { error };
   };
 

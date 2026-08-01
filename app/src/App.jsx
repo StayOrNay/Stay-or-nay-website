@@ -8,6 +8,7 @@ import { ImmersiveProvider, useImmersive } from './context/ImmersiveContext';
 import { TabBar, Sidebar } from './components/shared';
 import { LandingExperience } from './intro/LandingExperience';
 import { useIsDesktop } from './hooks/useMediaQuery';
+import { trackPageview } from './lib/analytics';
 import { ExploreScreen } from './screens/ExploreScreen';
 import { FeedScreen } from './screens/FeedScreen';
 import { SavedScreen } from './screens/SavedScreen';
@@ -69,6 +70,13 @@ function AppShell() {
   useEffect(() => {
     if (!isHome) setImmersive(false);
   }, [isHome]);
+
+  // One analytics pageview per route change. HashRouter means the browser
+  // URL never changes path, so gtag's built-in pageview would only ever see
+  // "/" — this is what makes per-screen traffic show up in GA4 at all.
+  useEffect(() => {
+    trackPageview(location.pathname + location.search);
+  }, [location.pathname, location.search]);
 
   // Clicking the wordmark takes you back to "the start" — the Bali
   // globe-landing intro, not just the Explore screen underneath it. Routing
