@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Search, X, ChevronLeft, ChevronRight, SlidersHorizontal, RotateCcw, Check, Map as MapIcon, Layers, PenLine, Star, User, Globe, HelpCircle } from 'lucide-react';
+import { Search, X, ChevronLeft, ChevronRight, SlidersHorizontal, RotateCcw, Check, Map as MapIcon, Layers, Star, User, Globe, HelpCircle, ArrowRight, MapPin } from 'lucide-react';
 import { CATEGORIES, MAX_PER_CATEGORY, MAX_TOTAL, NAY_THRESHOLD, MIN_PHOTOS, MIN_VIDEOS } from '../lib/reviewScore';
 import { Input, VerdictBadge, Tag, VillaCard } from '../components/core';
 import { SatelliteMap } from '../components/shared';
@@ -24,12 +24,17 @@ export function ExploreScreen() {
   const { immersive, setImmersive, introDone, setIntroDone } = useImmersive();
   const villas = useVillasWithReviews();
   const [selected, setSelected] = useState(null);
+  const [hovered, setHovered] = useState(null);
+  // Trails `selected` by one collapse animation so the expanding drawer has
+  // something to render on the way *out* as well as on the way in.
+  const [drawerId, setDrawerId] = useState(null);
   const [locationLabel, setLocationLabel] = useState('Bali, Indonesia');
   const [mapBounds, setMapBounds] = useState(null);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [query, setQuery] = useState('');
   const [showScoring, setShowScoring] = useState(false);
   const mapRef = useRef(null);
+  const cardRefs = useRef({});
   const geocodeTimerRef = useRef(null);
   const geocodeSeqRef = useRef(0);
   useSaved(); // keeps saved-state context warm for sibling routes
@@ -52,6 +57,92 @@ export function ExploreScreen() {
   }, []);
 
   const sel = filteredVillas.find((v) => v.id === selected);
+
+  /* ---------------------------------------------------------------- *
+   * Pin ⇄ list: picking a villa anywhere picks it everywhere.
+   *
+   * Clicking a pin used to do nothing but draw an outline somewhere in a
+   * list the user may well have scrolled past — so the click looked
+   * broken. Now one handler owns the whole gesture: the map flies to the
+   * pin (offset clear of the panel), the panel un-hides if it was
+   * collapsed, and the matching card scrolls itself into view and opens
+   * its detail drawer. Clicking the same pin again closes it, as does
+   * clicking bare map or pressing Escape.
+   * ---------------------------------------------------------------- */
+
+  // The panel floats over the left edge of the map (88px dock + 356px
+  // panel + gap). Flying with this offset drops the pin into the middle of
+  // what's left, instead of underneath the panel. On mobile the bottom
+  // sheet covers the lower strip, so the pin is nudged upward instead.
+  // (Always the desktop offset on desktop, even when the panel is currently
+  // hidden — a pin click un-hides it, so by the time the camera arrives the
+  // panel is back and the pin needs to be clear of it.)
+  const flyOffset = useCallback(() => (isDesktop ? [230, 0] : [0, -90]), [isDesktop]);
+
+  const handleSelect = useCallback(
+    (id) => {
+      if (id == null) {
+        setSelected(null);
+        return;
+      }
+      const next = selected === id ? null : id;
+      setSelected(next);
+      if (next && mapRef.current && mapRef.current.flyToVilla) {
+        mapRef.current.flyToVilla(next, { offset: flyOffset() });
+      }
+      // A pin click while the list is hidden should bring the list back —
+      // otherwise the "here's the villa" half of the interaction is
+      // invisible.
+      if (next && isDesktop) setImmersive(false);
+    },
+    [selected, flyOffset, isDesktop, setImmersive],
+  );
+
+  // Scroll the chosen card into view. Runs after the selection lands, so it
+  // also covers selections made from the map while the list was scrolled
+  // somewhere else entirely.
+  //
+  // Two deliberate choices here. `block: 'end'` rather than 'center':
+  // these cards lead with a tall 3:4 photo, so centering one parks the
+  // viewport in the middle of the picture with the name, the scores and
+  // the button all below the fold — exactly the parts the click was asking
+  // to see. Aligning the bottom instead guarantees the drawer is on screen
+  // and fills the rest upward with as much of the photo as fits. And the
+  // delay lets the drawer finish expanding first, so the scroll targets
+  // the card's final height instead of its collapsed one; it also lands
+  // mid-flight of the camera, which makes the two read as one movement.
+  useEffect(() => {
+    if (!selected || !isDesktop || immersive) return undefined;
+    const t = setTimeout(() => {
+      const el = cardRefs.current[selected];
+      if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 430);
+    return () => clearTimeout(t);
+  }, [selected, isDesktop, immersive]);
+
+  // Keep the drawer mounted for one collapse animation after deselection.
+  useEffect(() => {
+    if (selected) {
+      setDrawerId(selected);
+      return undefined;
+    }
+    const t = setTimeout(() => setDrawerId(null), 420);
+    return () => clearTimeout(t);
+  }, [selected]);
+
+  // A filter or search that hides the selected villa should also drop the
+  // selection — otherwise a pin stays "chosen" with no card to show for it.
+  useEffect(() => {
+    if (selected && !filteredVillas.some((v) => v.id === selected)) setSelected(null);
+  }, [filteredVillas, selected]);
+
+  // Escape backs out of the selection (unless the scoring popup owns it).
+  useEffect(() => {
+    if (!selected || showScoring) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setSelected(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selected, showScoring]);
 
   // Only the villas whose pin actually falls inside the map's current
   // viewport — not every villa on the site. The "N verdicts" header is
@@ -88,7 +179,15 @@ export function ExploreScreen() {
   return (
     <div className="explore-map" style={{ position: 'relative', flex: 1, overflow: 'hidden', background: 'var(--ink-800)', display: 'flex' }}>
       <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-        <SatelliteMap ref={mapRef} villas={filteredVillas} selectedId={selected} onSelect={setSelected} onMoveEnd={handleMoveEnd} />
+        <SatelliteMap
+          ref={mapRef}
+          villas={filteredVillas}
+          selectedId={selected}
+          hoveredId={hovered}
+          onSelect={handleSelect}
+          onHover={setHovered}
+          onMoveEnd={handleMoveEnd}
+        />
 
         {/* Desktop chrome floats OVER the full-bleed map — "mission
             control" glass, matching the landing the visitor just dove in
@@ -123,17 +222,46 @@ export function ExploreScreen() {
                     </div>
                   </div>
                 </div>
-                {filteredVillas.map((v, i) => (
-                  <div key={v.id} className="explore-enter-card" style={{ animationDelay: `${550 + Math.min(i, 6) * 90}ms` }}>
-                    <VillaCard
-                      name={v.name} location={v.location} coords={v.coords} image={v.image}
-                      verdict={v.verdict} score={v.score} scoreOutOf={v.scoreOutOf}
-                      price={v.price} currency={v.currency} tags={v.tags}
-                      onClick={() => navigate(`/villa/${v.id}`)}
-                      style={v.id === selected ? { outline: '2px solid var(--brand)', outlineOffset: 2 } : {}}
-                    />
-                  </div>
-                ))}
+                {filteredVillas.map((v, i) => {
+                  const isSel = v.id === selected;
+                  return (
+                    <div
+                      key={v.id}
+                      ref={(el) => { cardRefs.current[v.id] = el; }}
+                      className={
+                        'explore-enter-card explore-card-wrap' +
+                        (isSel ? ' is-selected' : '') +
+                        (selected && !isSel ? ' is-dimmed' : '') +
+                        (hovered === v.id && !isSel ? ' is-hovered' : '')
+                      }
+                      style={{ animationDelay: `${550 + Math.min(i, 6) * 90}ms` }}
+                      onMouseEnter={() => setHovered(v.id)}
+                      onMouseLeave={() => setHovered((h) => (h === v.id ? null : h))}
+                    >
+                      {/* Clicking the card itself still goes straight to the
+                          full review — the drawer is the "look before you
+                          leap" layer, never a gate in front of it. */}
+                      <VillaCard
+                        name={v.name} location={v.location} coords={v.coords} image={v.image}
+                        verdict={v.verdict} score={v.score} scoreOutOf={v.scoreOutOf}
+                        price={v.price} currency={v.currency} tags={v.tags}
+                        onClick={() => navigate(`/villa/${v.id}`)}
+                        style={isSel ? { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 } : undefined}
+                      />
+                      <div className="explore-card-drawer">
+                        <div className="drawer-clip">
+                          {v.id === drawerId && (
+                            <SelectedDetail
+                              villa={v}
+                              onOpen={() => navigate(`/villa/${v.id}`)}
+                              onClose={() => setSelected(null)}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
                 {villas.length > 0 && filteredVillas.length === 0 && (
                   <NoMatches onReset={resetAll} query={query} />
                 )}
@@ -215,10 +343,7 @@ export function ExploreScreen() {
                     key={v.id}
                     type="button"
                     className="glass-night theme-night explore-strip-card"
-                    onClick={() => {
-                      setSelected(v.id);
-                      if (mapRef.current && mapRef.current.flyToVilla) mapRef.current.flyToVilla(v.id);
-                    }}
+                    onClick={() => handleSelect(v.id)}
                   >
                     {v.image && <img src={v.image} alt="" loading="lazy" />}
                     <span className="strip-info">
@@ -250,7 +375,7 @@ export function ExploreScreen() {
             in the side list. Dark glass, matching the rest of the map room. */}
         {!isDesktop && sel && (
           <div
-            className="glass-night theme-night"
+            className="glass-night theme-night explore-sheet"
             style={{
               position: 'absolute', left: 10, right: 10, bottom: 10, zIndex: 12,
               borderRadius: 'var(--radius-xl)', padding: 14,
@@ -269,16 +394,103 @@ export function ExploreScreen() {
                 <h3 style={{ margin: '6px 0 2px', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, letterSpacing: '-0.015em', color: 'var(--text-strong)' }}>{sel.name}</h3>
                 <div style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-muted)' }}>{sel.location}</div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: 7 }}>
-                  <Tag variant="outline" tone="sun">{sel.currency}{sel.price} / night</Tag>
+                  {sel.price != null && <Tag variant="outline" tone="sun">{sel.currency}{sel.price} / night</Tag>}
                 </div>
               </div>
             </div>
+            {/* Same category read-out the desktop drawer gives — the point
+                of tapping a pin is to judge the stay without leaving the
+                map, and a bare thumbnail can't do that. */}
+            <CategoryBars categories={sel.categories} />
+            <OpenReviewButton onClick={() => navigate(`/villa/${sel.id}`)} />
           </div>
         )}
       </div>
 
       {showScoring && <ScoringHelpPopup onClose={() => setShowScoring(false)} />}
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * SelectedDetail — the drawer that unfolds under a villa's card when its
+ * pin is clicked on the map. Deliberately not a second copy of the villa
+ * page: it answers the one question a pin can't ("is this stay any good,
+ * and *why*?") with the five category scores, then hands off. Everything
+ * else lives one click away on the review itself.
+ * ------------------------------------------------------------------ */
+
+function SelectedDetail({ villa, onOpen, onClose }) {
+  return (
+    <div className="explore-drawer-body">
+      <div className="drawer-head">
+        <span className="drawer-eyebrow">
+          <MapPin size={12} /> Picked on the map
+        </span>
+        <button type="button" onClick={onClose} aria-label="Clear selection" className="drawer-close">
+          <X size={16} />
+        </button>
+      </div>
+      <CategoryBars categories={villa.categories} />
+      <OpenReviewButton onClick={onOpen} />
+    </div>
+  );
+}
+
+/**
+ * The five review categories as bars. Colour tracks the score rather than
+ * the villa's overall verdict, so a "Stay" with a weak Cleanliness score
+ * still shows that weakness honestly instead of painting every bar green.
+ */
+function barTone(score) {
+  if (score >= 8) return 'var(--stay-500)';
+  if (score >= 5) return 'var(--sun-500)';
+  return 'var(--nay-500)';
+}
+
+// The full category names ("Value for money", "Host & service") are written
+// for the review form, where there's a whole line to read them on. In a
+// 356px panel they ellipsize into "Value for mo…", so the bars use a short
+// form. Same categories, same order, just the word that carries meaning.
+const SHORT_CATEGORY_LABELS = {
+  location: 'Location',
+  value: 'Value',
+  cleanliness: 'Cleanliness',
+  amenities: 'Amenities',
+  host: 'Host',
+};
+
+function CategoryBars({ categories }) {
+  const rows = CATEGORIES.map((c) => ({
+    ...c,
+    label: SHORT_CATEGORY_LABELS[c.key] || c.label,
+    score: Number(categories?.[c.key]),
+  })).filter((r) => Number.isFinite(r.score));
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="explore-cat-bars">
+      {rows.map((r, i) => (
+        <div key={r.key} className="cat-row" style={{ '--cat-delay': `${i * 55}ms` }}>
+          <span className="cat-label">{r.label}</span>
+          <span className="cat-track">
+            <span
+              className="cat-fill"
+              style={{ width: `${(r.score / MAX_PER_CATEGORY) * 100}%`, background: barTone(r.score) }}
+            />
+          </span>
+          <span className="cat-value">{r.score}<span className="cat-of">/{MAX_PER_CATEGORY}</span></span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function OpenReviewButton({ onClick }) {
+  return (
+    <button type="button" onClick={onClick} className="explore-open-btn press">
+      See the full review <ArrowRight size={16} />
+    </button>
   );
 }
 

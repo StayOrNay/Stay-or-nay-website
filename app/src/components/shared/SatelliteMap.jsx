@@ -4,6 +4,36 @@ import { mapboxgl } from '../../lib/mapbox';
 import { baliLightPreset } from '../../intro/daynight';
 import { BALI, EXPLORE_ZOOM } from '../../intro/geo';
 
+/**
+ * Applies the "is this pin the one being talked about right now" styling.
+ *
+ * There are three states a pin can be in and they are deliberately
+ * distinguishable at a glance, because the pin and the villa card in the
+ * side list are two views of the same thing and the user has to be able to
+ * tell instantly which card belongs to which pin:
+ *   - active  : the selected villa. Scaled up, white ring on the badge,
+ *               a pulsing halo, name label turned solid, lifted above its
+ *               neighbours so it can never be occluded by another pin.
+ *   - hovered : the card under the cursor in the side list. Same lift and
+ *               a soft ring, but no halo — enough to answer "which one is
+ *               that?" without competing with the actual selection.
+ *   - idle    : everything else.
+ */
+function applyMarkerState(entry, { active, hovered }) {
+  const { wrap, inner, badge, ring, label } = entry;
+  inner.style.transform = active ? 'scale(1.16)' : hovered ? 'scale(1.08)' : 'scale(1)';
+  badge.style.borderColor = active ? '#fff' : hovered ? 'rgba(255,255,255,0.6)' : 'transparent';
+  // The pulse keyframes drive opacity, so the animation is gated behind a
+  // class rather than left running invisibly on all 40-odd pins.
+  ring.classList.toggle('is-on', !!active);
+  ring.style.opacity = active ? '1' : '0';
+  label.style.background = active || hovered ? 'rgba(10,18,16,0.9)' : 'rgba(10,18,16,0.55)';
+  label.style.borderColor = active ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.14)';
+  // Mapbox writes `transform` on the wrapper (see the note below) but never
+  // touches z-index, so this is a safe property to own.
+  wrap.style.zIndex = active ? '5' : hovered ? '4' : '';
+}
+
 function buildMarkerEl(villa) {
   const isStay = villa.verdict === 'stay';
   const tone = isStay ? '#14875A' : '#D9472E';
@@ -31,8 +61,20 @@ function buildMarkerEl(villa) {
     'color:#fff;background:rgba(10,18,16,0.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);' +
     'padding:3px 10px;border-radius:999px;margin-bottom:5px;white-space:nowrap;letter-spacing:0.005em;' +
     'border:1px solid rgba(255,255,255,0.14);box-shadow:0 1px 6px rgba(0,0,0,0.28);' +
-    'text-shadow:0 1px 2px rgba(0,0,0,0.4);max-width:184px;overflow:hidden;text-overflow:ellipsis;';
+    'text-shadow:0 1px 2px rgba(0,0,0,0.4);max-width:184px;overflow:hidden;text-overflow:ellipsis;' +
+    'transition:background 180ms ease,border-color 180ms ease;';
   label.textContent = villa.name;
+
+  // The badge sits inside a relatively-positioned shell so the selection
+  // halo can be absolutely positioned around it without affecting layout.
+  const badgeShell = document.createElement('div');
+  badgeShell.style.cssText = 'position:relative;display:flex;';
+
+  const ring = document.createElement('div');
+  ring.className = 'snay-pin-ring';
+  ring.style.cssText =
+    `position:absolute;inset:-5px;border-radius:999px;border:2px solid ${tone};` +
+    'pointer-events:none;opacity:0;transition:opacity 200ms ease;';
 
   const badge = document.createElement('div');
   badge.style.cssText =
@@ -45,11 +87,14 @@ function buildMarkerEl(villa) {
   const tail = document.createElement('div');
   tail.style.cssText = `width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid ${tone};`;
 
+  badgeShell.appendChild(ring);
+  badgeShell.appendChild(badge);
+
   inner.appendChild(label);
-  inner.appendChild(badge);
+  inner.appendChild(badgeShell);
   inner.appendChild(tail);
 
-  return { wrap, inner, badge };
+  return { wrap, inner, badge, ring, label };
 }
 
 /**
@@ -61,7 +106,7 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
   // Same center/zoom the globe intro lands its zoom-in on (see GlobeIntro's
   // ISLAND_ZOOM/BALI) — kept as one shared shot rather than two maps with
   // slightly different framing.
-  { villas, selectedId, onSelect, onMoveEnd, center = [BALI.lon, BALI.lat], zoom = EXPLORE_ZOOM },
+  { villas, selectedId, hoveredId = null, onSelect, onHover, onMoveEnd, center = [BALI.lon, BALI.lat], zoom = EXPLORE_ZOOM },
   ref,
 ) {
   const containerRef = useRef(null);
@@ -69,13 +114,19 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
   const markersRef = useRef({});
   const loadedRef = useRef(false);
   const onSelectRef = useRef(onSelect);
+  const onHoverRef = useRef(onHover);
   const onMoveEndRef = useRef(onMoveEnd);
   const villasRef = useRef(villas);
   const selectedIdRef = useRef(selectedId);
+  const hoveredIdRef = useRef(hoveredId);
 
   useEffect(() => {
     onSelectRef.current = onSelect;
   }, [onSelect]);
+
+  useEffect(() => {
+    onHoverRef.current = onHover;
+  }, [onHover]);
 
   useEffect(() => {
     onMoveEndRef.current = onMoveEnd;
@@ -84,6 +135,10 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
   useEffect(() => {
     selectedIdRef.current = selectedId;
   }, [selectedId]);
+
+  useEffect(() => {
+    hoveredIdRef.current = hoveredId;
+  }, [hoveredId]);
 
   // Rebuild the villa pins from the CURRENT list. Runs on map load AND every
   // time the villa list changes — the reviews come from an async fetch, so the
@@ -96,18 +151,30 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
     markersRef.current = {};
     (villasRef.current || []).forEach((v) => {
       if (typeof v.lon !== 'number' || typeof v.lat !== 'number') return;
-      const { wrap, inner, badge } = buildMarkerEl(v);
+      const parts = buildMarkerEl(v);
+      const { wrap } = parts;
       wrap.addEventListener('click', (e) => {
         e.stopPropagation();
         if (onSelectRef.current) onSelectRef.current(v.id);
       });
+      // Hovering a pin lights up its card in the side list, exactly as
+      // hovering the card lights up the pin — the link between the two runs
+      // in both directions so neither view feels like the "real" one.
+      wrap.addEventListener('mouseenter', () => {
+        if (onHoverRef.current) onHoverRef.current(v.id);
+      });
+      wrap.addEventListener('mouseleave', () => {
+        if (onHoverRef.current) onHoverRef.current(null);
+      });
       const marker = new mapboxgl.Marker({ element: wrap, anchor: 'bottom' })
         .setLngLat([v.lon, v.lat])
         .addTo(map);
-      markersRef.current[v.id] = { marker, wrap, inner, badge };
-      const active = v.id === selectedIdRef.current;
-      inner.style.transform = active ? 'scale(1.12)' : 'scale(1)';
-      badge.style.borderColor = active ? '#fff' : 'transparent';
+      const entry = { marker, ...parts };
+      markersRef.current[v.id] = entry;
+      applyMarkerState(entry, {
+        active: v.id === selectedIdRef.current,
+        hovered: v.id === hoveredIdRef.current,
+      });
     });
   }, []);
 
@@ -121,9 +188,30 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
     recenter() {
       if (mapRef.current) mapRef.current.flyTo({ center, zoom, pitch: 0, bearing: 0, duration: 900 });
     },
-    flyToVilla(id) {
-      const v = villas.find((x) => x.id === id);
-      if (v && mapRef.current) mapRef.current.flyTo({ center: [v.lon, v.lat], zoom: 14, pitch: 45, duration: 1100 });
+    /**
+     * Fly the camera to one villa's pin.
+     *
+     * `offset` is the whole point of this signature: the Explore screen
+     * floats a panel over the left third of the map, so centering the pin
+     * would park it underneath that panel. The caller passes the pixel
+     * offset for whatever chrome is currently covering the map (a left
+     * panel on desktop, the bottom sheet on mobile) and the pin lands in
+     * the part the user can actually see. `minZoom` keeps an already
+     * close-in camera from zooming *out* just because a pin was clicked.
+     */
+    flyToVilla(id, { offset = [0, 0], zoom: toZoom = 14, pitch = 45, duration = 1200 } = {}) {
+      const map = mapRef.current;
+      const v = (villasRef.current || []).find((x) => x.id === id);
+      if (!v || !map || typeof v.lon !== 'number' || typeof v.lat !== 'number') return;
+      map.flyTo({
+        center: [v.lon, v.lat],
+        zoom: Math.max(map.getZoom(), toZoom),
+        pitch,
+        offset,
+        duration,
+        essential: true,
+        curve: 1.3,
+      });
     },
   }));
 
@@ -162,6 +250,14 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
     map.on('load', () => {
       loadedRef.current = true;
       syncMarkers();
+    });
+
+    // Clicking bare map — anywhere that isn't a pin — dismisses the current
+    // selection, the way every map app behaves. Marker clicks can't reach
+    // here: markers are DOM elements layered above the canvas and they call
+    // stopPropagation anyway, so this only ever fires on the map itself.
+    map.on('click', () => {
+      if (onSelectRef.current) onSelectRef.current(null);
     });
 
     map.on('error', (e) => {
@@ -204,12 +300,10 @@ export const SatelliteMap = forwardRef(function SatelliteMap(
   }, []);
 
   useEffect(() => {
-    Object.entries(markersRef.current).forEach(([id, { inner, badge }]) => {
-      const active = id === selectedId;
-      inner.style.transform = active ? 'scale(1.12)' : 'scale(1)';
-      badge.style.borderColor = active ? '#fff' : 'transparent';
+    Object.entries(markersRef.current).forEach(([id, entry]) => {
+      applyMarkerState(entry, { active: id === selectedId, hovered: id === hoveredId });
     });
-  }, [selectedId]);
+  }, [selectedId, hoveredId]);
 
   return <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />;
 });

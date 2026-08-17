@@ -92,6 +92,114 @@
 }
 .explore-panel-scroll::-webkit-scrollbar { width: 0; }
 
+/* ---------- map pin ⇄ list card link ----------
+   Clicking a pin selects its card and vice versa, so the two views need a
+   shared visual language: the chosen card gets a brand ring and lifts, the
+   rest recede. The recede is done with `filter`, NOT `opacity`, on purpose
+   — these cards carry the .explore-enter-card entrance animation, and an
+   animation with `forwards` pins opacity:1 in the cascade, so an opacity
+   rule here would simply never apply. */
+.explore-card-wrap {
+  position: relative;
+  border-radius: var(--radius-lg);
+  transition:
+    box-shadow var(--dur-slow) var(--ease-out),
+    filter var(--dur-slow) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+.explore-card-wrap.is-dimmed { filter: saturate(0.5) brightness(0.78); }
+.explore-card-wrap.is-dimmed:hover { filter: none; }
+.explore-card-wrap.is-hovered { transform: translateY(-2px); }
+.explore-card-wrap.is-selected {
+  box-shadow:
+    0 0 0 2px var(--brand),
+    0 20px 44px -20px rgba(0, 0, 0, 0.75);
+  /* Breathing room for the scroll-into-view landing (block: 'end'), so the
+     ring isn't flush against the bottom edge of the panel. */
+  scroll-margin-bottom: 20px;
+}
+
+/* The drawer animates open by transitioning a grid track from 0fr to 1fr —
+   the one way to get a real height transition without hardcoding a pixel
+   height the content may outgrow. */
+.explore-card-drawer {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 400ms var(--ease-out);
+}
+.explore-card-wrap.is-selected .explore-card-drawer { grid-template-rows: 1fr; }
+.explore-card-drawer > .drawer-clip { overflow: hidden; min-height: 0; }
+
+.explore-drawer-body {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 12px 14px 14px;
+  background: var(--surface-card);
+  border-top: 1px solid var(--border-soft);
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+}
+.explore-drawer-body .drawer-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.explore-drawer-body .drawer-eyebrow {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--brand);
+}
+.explore-drawer-body .drawer-close {
+  flex: none; display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; padding: 0; border: none; border-radius: 999px;
+  background: transparent; color: var(--text-faint); cursor: pointer;
+  transition: background var(--dur-fast), color var(--dur-fast);
+}
+.explore-drawer-body .drawer-close:hover { background: var(--surface-sunken); color: var(--text-strong); }
+
+/* ---------- category score bars ---------- */
+.explore-cat-bars { display: flex; flex-direction: column; gap: 7px; }
+.explore-cat-bars .cat-row {
+  display: grid;
+  grid-template-columns: 92px 1fr 42px;
+  align-items: center; gap: 9px;
+}
+.explore-cat-bars .cat-label {
+  font-family: var(--font-body); font-size: 12px; color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.explore-cat-bars .cat-track {
+  height: 6px; border-radius: 999px; overflow: hidden;
+  background: var(--surface-sunken);
+}
+.explore-cat-bars .cat-fill {
+  display: block; height: 100%; border-radius: 999px;
+  transform-origin: left center;
+  animation: catGrow 620ms var(--ease-out) both;
+  animation-delay: var(--cat-delay, 0ms);
+}
+@keyframes catGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.explore-cat-bars .cat-value {
+  font-family: var(--font-mono); font-size: 11.5px; font-weight: 700;
+  color: var(--text-strong); text-align: right; white-space: nowrap;
+}
+.explore-cat-bars .cat-of { color: var(--text-faint); font-weight: 400; }
+
+/* ---------- "see the full review" ---------- */
+.explore-open-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; padding: 10px 14px; border: none; border-radius: var(--radius-pill);
+  background: var(--brand); color: #fff; cursor: pointer;
+  font-family: var(--font-body); font-weight: 700; font-size: 13.5px;
+  transition: background var(--dur-fast) var(--ease-out), transform var(--dur-base) var(--ease-pop);
+}
+.explore-open-btn:hover { background: var(--brand-hover); }
+.explore-open-btn:active { transform: scale(0.98); }
+.explore-open-btn svg { transition: transform var(--dur-base) var(--ease-out); }
+.explore-open-btn:hover svg { transform: translateX(3px); }
+
+/* Mobile sheet reuses the same two pieces under its summary row. */
+.explore-sheet .explore-cat-bars { margin-top: 12px; }
+.explore-sheet .explore-open-btn { margin-top: 12px; }
+
 /* ---------- slide handle ---------- */
 .explore-handle {
   position: absolute; top: 50%; z-index: 46;
@@ -208,6 +316,17 @@
 .explore-map .mapboxgl-marker:nth-child(3n) > div { animation-delay: 160ms; }
 .explore-map .mapboxgl-marker:nth-child(5n) > div { animation-delay: 240ms; }
 
+/* Selected pin halo — a slow single ping so the chosen pin stays findable
+   after the camera settles, without turning the map into a disco. The ring
+   is a nested element (see SatelliteMap's buildMarkerEl), so animating its
+   transform is safe: it is not the element Mapbox positions. */
+@keyframes pinPulse {
+  0%   { transform: scale(0.92); opacity: 0.9; }
+  70%  { transform: scale(1.7);  opacity: 0; }
+  100% { transform: scale(1.7);  opacity: 0; }
+}
+.explore-map .snay-pin-ring.is-on { animation: pinPulse 2s var(--ease-out) infinite; }
+
 /* ---------- location chip ---------- */
 .explore-location-chip {
   display: inline-flex; align-items: center; gap: 8px;
@@ -246,4 +365,7 @@
 @media (prefers-reduced-motion: reduce) {
   .explore-enter-dock, .explore-enter-panel, .explore-enter-card, .stamp-in, .pop-key { animation: none; opacity: 1; }
   .explore-map .mapboxgl-marker > div { animation: none; }
+  .explore-map .snay-pin-ring.is-on { animation: none; }
+  .explore-cat-bars .cat-fill { animation: none; }
+  .explore-card-drawer { transition: none; }
 }
