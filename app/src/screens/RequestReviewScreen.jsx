@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Send, AlertCircle, CheckCircle2, Clock, Loader2, XCircle, Link2, Bell } from 'lucide-react';
+import { Send, AlertCircle, CheckCircle2, Clock, Loader2, XCircle, Link2, Bell, UserCheck } from 'lucide-react';
 import { Input, Button, Tag } from '../components/core';
 import { Header } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +8,7 @@ import { submitReviewRequest, fetchMyReviewRequests } from '../lib/reviewRequest
 
 const STATUS_META = {
   open: { label: 'Open — waiting on us', tone: 'sun', Icon: Clock },
+  assigned: { label: 'Reviewer confirmed', tone: 'sky', Icon: UserCheck },
   in_progress: { label: 'Being looked into', tone: 'sun', Icon: Loader2 },
   fulfilled: { label: 'Review ready', tone: 'stay', Icon: CheckCircle2 },
   declined: { label: 'Declined', tone: 'nay', Icon: XCircle },

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, PenLine, Bell, Settings, UserRound, UserRoundPen, Globe, ScrollText, ChevronRight, ShieldCheck, ClipboardList, MapPin, LogOut, Camera } from 'lucide-react';
+import { HandHeart, Heart, PenLine, Bell, Settings, UserRound, UserRoundPen, Globe, ScrollText, ChevronRight, ShieldCheck, ClipboardList, MapPin, LogOut, Camera } from 'lucide-react';
 import { Avatar, Tag, Button } from '../components/core';
 import { Header } from '../components/shared';
 import { useAuth } from '../context/AuthContext';
@@ -10,6 +10,7 @@ const BASE_ROWS = [
   { Icon: UserRoundPen, label: 'Edit profile', to: '/you/profile' },
   { Icon: Heart, label: 'Saved', to: '/saved' },
   { Icon: PenLine, label: 'Your reviews', to: '/you/reviews' },
+  { Icon: HandHeart, label: 'Open requests', to: '/requests' },
   { Icon: Bell, label: 'Verdict alerts', to: '/you/alerts' },
   { Icon: Settings, label: 'Settings', to: '/you/settings' },
   { Icon: UserRound, label: 'Account', to: '/you/account' },

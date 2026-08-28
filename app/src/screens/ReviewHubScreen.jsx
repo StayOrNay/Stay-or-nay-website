@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, PenLine, ChevronRight } from 'lucide-react';
+import { Star, PenLine, ChevronRight, HandHeart } from 'lucide-react';
 import { Header } from '../components/shared';
 
 /**
@@ -23,6 +23,12 @@ const OPTIONS = [
     title: 'Request a review',
     text: "Thinking about booking? Paste the listing link and we'll go take an honest look for you — free, verdict back in about 3 days.",
   },
+  {
+    to: '/requests',
+    Icon: HandHeart,
+    title: 'Take a request',
+    text: "Somewhere near you on the list? Put your hand up for it — we'll confirm you first, then it's yours to go review.",
+  },
 ];
 
 export function ReviewHubScreen() {
@@ -34,7 +40,7 @@ export function ReviewHubScreen() {
       <Header title="Review" />
       <div style={{ padding: 18, maxWidth: 560, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 48 }}>
         <p className="rise" style={{ '--i': 0, margin: 0, fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.55 }}>
-          Been there yourself, or want us to go for you?
+          Been there yourself, want us to go for you, or fancy going for someone else?
         </p>
         {OPTIONS.map((o, i) => (
           <button

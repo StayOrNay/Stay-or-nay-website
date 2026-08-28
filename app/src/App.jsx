@@ -31,6 +31,7 @@ import { RequestReviewScreen } from './screens/RequestReviewScreen';
 import { CheckVillaScreen } from './screens/CheckVillaScreen';
 import { ReviewHubScreen } from './screens/ReviewHubScreen';
 import { AdminReviewRequestsScreen } from './screens/AdminReviewRequestsScreen';
+import { OpenRequestsScreen } from './screens/OpenRequestsScreen';
 
 /**
  * Mobile-first app shell that becomes a real wide site at the desktop
@@ -165,6 +166,7 @@ export default function App() {
             <Route path="/request-review" element={<RequestReviewScreen />} />
             <Route path="/check" element={<CheckVillaScreen />} />
             <Route path="/review" element={<ReviewHubScreen />} />
+            <Route path="/requests" element={<OpenRequestsScreen />} />
             <Route path="/you/review-requests" element={<AdminReviewRequestsScreen />} />
             <Route path="/villa/:id" element={<VillaDetailScreen />} />
           </Route>
