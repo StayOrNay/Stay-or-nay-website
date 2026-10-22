@@ -9,7 +9,7 @@
 // To open the site to everyone: set LAUNCHED to true (or delete this file)
 // and push.
 
-const LAUNCHED = false;
+const LAUNCHED = true;
 const PREVIEW_KEY = "vVZf5W9JRHE7";
 const COOKIE = "son_preview";
 
