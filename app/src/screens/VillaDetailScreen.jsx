@@ -68,11 +68,16 @@ export function VillaDetailScreen() {
           review clips fill the tall frame almost exactly anyway. */}
       <div style={{ position: 'relative', flex: isDesktop ? '1 1 auto' : 'none', minHeight: 0, width: '100%', height: isDesktop ? 'auto' : '76dvh', background: '#000' }}>
         {active.type === 'video' ? (
-          <video key={active.url} src={active.url} controls playsInline style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', background: '#000' }} />
+          // The video starts below the back/share/save buttons so they never
+          // sit on top of the browser's own video controls (full screen,
+          // picture-in-picture, volume) in the video's top corners.
+          <video key={active.url} src={active.url} controls playsInline style={{ position: 'absolute', top: 64, left: 0, right: 0, bottom: 0, width: '100%', height: 'calc(100% - 64px)', objectFit: 'contain', display: 'block', background: '#000' }} />
         ) : (
           <img src={active.url} alt={villa.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         )}
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(12,23,20,0.30) 0%, transparent 26%, transparent 62%, rgba(12,23,20,0.55) 100%)' }} />
+        {active.type !== 'video' && (
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(180deg, rgba(12,23,20,0.30) 0%, transparent 26%, transparent 62%, rgba(12,23,20,0.55) 100%)' }} />
+        )}
         {/* top controls */}
         <div style={{ position: 'absolute', top: 12, left: 12, right: 12, display: 'flex', justifyContent: 'space-between' }}>
           <IconButton ariaLabel="Back" onClick={() => navigate(-1)}><ChevronLeft size={22} /></IconButton>
@@ -84,7 +89,7 @@ export function VillaDetailScreen() {
           </div>
         </div>
         {/* coords bottom-right */}
-        {villa.coords && (
+        {villa.coords && active.type !== 'video' && (
           <div style={{ position: 'absolute', right: 16, bottom: 20, fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.04em', color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
             {villa.coords}
           </div>
